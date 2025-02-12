@@ -23,31 +23,70 @@
         @endforeach
     </ul>
 </div> --}}
-<nav class="custom-side-nav" data-v-7cf6c81e=""><ul class="main-menu" data-v-7cf6c81e=""><li data-v-7cf6c81e=""><a href="/shop" class="menu-item" data-v-7cf6c81e="">All Products
-</a></li> <li data-v-7cf6c81e=""><a href="/category/clothes?close=false" class="menu-item" data-v-7cf6c81e="">Clothes
+<style>
+    .sidebar-menu {
+        /* width: 250px; */
+        /* background: #fff;
+        border-right: 1px solid #ddd;
+        padding: 15px; */
+        align-items: center;
+        color: #333;
+        /* display: flex; */
+        justify-content: space-between;
+        margin: 0;
+        padding: 2px 0 2px 15px;
+        text-transform: capitalize;
+    }
 
-  <i class="fa fa-plus float-right mr-2" data-v-7cf6c81e=""></i></a> <!----></li><li data-v-7cf6c81e=""><a href="/category/nursing?close=false" class="menu-item" data-v-7cf6c81e="">Nursing
+    .menu-item {
+        font-size: 16px;
+        font-weight: 600;
+        padding: 10px 0;
+        cursor: pointer;
+    }
 
-  <i class="fa fa-plus float-right mr-2" data-v-7cf6c81e=""></i></a> <!----></li><li data-v-7cf6c81e=""><a href="/category/feeding?close=false" class="menu-item" data-v-7cf6c81e="">Feeding
+    .submenu,
+    .subsubmenu {
+        list-style: none;
+        padding-left: 15px;
+        display: none;
+    }
 
-  <i class="fa fa-plus float-right mr-2" data-v-7cf6c81e=""></i></a> <!----></li><li data-v-7cf6c81e=""><a href="/category/diapers?close=false" class="menu-item" data-v-7cf6c81e="">Diapers
+    .submenu a,
+    .subsubmenu a {
+        text-decoration: none;
+        color: #333;
+        display: block;
+        padding: 5px 0;
+    }
 
-  <i class="fa fa-plus float-right mr-2" data-v-7cf6c81e=""></i></a> <!----></li><li data-v-7cf6c81e=""><a href="/category/bath-skin?close=false" class="menu-item" data-v-7cf6c81e="">Bath &amp; Skin
+    .menu-toggle::after {
+        content: '+';
+        float: right;
+        font-size: 18px;
+    }
 
-  <i class="fa fa-plus float-right mr-2" data-v-7cf6c81e=""></i></a> <!----></li><li data-v-7cf6c81e=""><a href="/category/health-safety?close=false" class="menu-item" data-v-7cf6c81e="">Health &amp; Safety
+    .menu-toggle.expanded::after {
+        content: '-';
+    }
+</style>
+@foreach (get_level_zero_categories()->take(12) as $key => $category)
+    @php
+        $category_name = $category->getTranslation('name');
+    @endphp
 
-  <i class="fa fa-plus float-right mr-2" data-v-7cf6c81e=""></i></a> <!----></li><li data-v-7cf6c81e=""><a href="/category/toys?close=false" class="menu-item" data-v-7cf6c81e="">Toys
+    <div class="sidebar-menu">
 
-  <i class="fa fa-plus float-right mr-2" data-v-7cf6c81e=""></i></a> <!----></li><li data-v-7cf6c81e=""><a href="/category/gears?close=false" class="menu-item" data-v-7cf6c81e="">Gears
 
-  <i class="fa fa-plus float-right mr-2" data-v-7cf6c81e=""></i></a> <!----></li><li data-v-7cf6c81e=""><a href="/category/classy-home?close=false" class="menu-item" data-v-7cf6c81e="">Classy Home
-
-  <i class="fa fa-plus float-right mr-2" data-v-7cf6c81e=""></i></a> <!----></li><li data-v-7cf6c81e=""><a href="/category/birthday?close=false" class="menu-item" data-v-7cf6c81e="">Birthday
-
-  <i class="fa fa-plus float-right mr-2" data-v-7cf6c81e=""></i></a> <!----></li><li data-v-7cf6c81e=""><a href="/category/moms?close=false" class="menu-item" data-v-7cf6c81e="">Moms
-
-  <i class="fa fa-plus float-right mr-2" data-v-7cf6c81e=""></i></a> <!----></li><li data-v-7cf6c81e=""><a href="/category/winter?close=false" class="menu-item" data-v-7cf6c81e="">Winter
-
-  <i class="fa fa-plus float-right mr-2" data-v-7cf6c81e=""></i></a> <!----></li><li data-v-7cf6c81e=""><a href="/category/footwear?close=false" class="menu-item" data-v-7cf6c81e="">Footwear
-
-  <i class="fa fa-plus float-right mr-2" data-v-7cf6c81e=""></i></a> <!----></li></ul></nav>
+        <div class="menu-item menu-toggle">{{ $category_name }}</div>
+        <ul class="submenu">
+            <li><a href="#">Breastfeeding</a></li>
+            <li><a href="#">Baby Bottles</a></li>
+            <li class="menu-toggle">Accessories</li>
+            <ul class="subsubmenu">
+                <li><a href="#">Pumps</a></li>
+                <li><a href="#">Sterilizers</a></li>
+            </ul>
+        </ul>
+    </div>
+@endforeach

@@ -44,17 +44,42 @@
                 height: 203px !important;
             }
         }
+
+        /* this for hasib  */
+        .content-wrapper {
+        display: flex;
+        height: 100vh; /* Full viewport height */
+        overflow: hidden; /* Prevent full-page scrolling */
+    }
+
+    .sidebar {
+        width: 25%; /* Approx. col-3 width */
+        position: fixed;
+        height: 100vh; /* Full height */
+        overflow-y: auto; /* Scroll inside if needed */
+        background: #f8f9fa; /* Light gray background */
+        padding: 15px;
+        border-right: 1px solid #ddd;
+    }
+
+    .main-content {
+        margin-left: 25%; /* Push content to the right */
+        width: 75%; /* Approx. col-9 width */
+        height: 100vh;
+        overflow-y: auto; /* Allow vertical scrolling */
+        padding: 15px;
+    }
     </style>
-    <div class="row">
-        <div class="col-3">
-            @include('frontend.inc.top_floating_buttons')
+    <div class="content-wrapper">
+        <div class="sidebar">
+            {{-- @include('frontend.inc.top_floating_buttons') --}}
             @include('frontend.custom.partials.category_menu')
             
             {{-- <div class="position-static d-none d-xl-block col-auto">
                 @include('frontend.' . get_setting('homepage_select') . '.partials.category_menu')
             </div> --}}
         </div>
-        <div class="col-9">
+        <div class="main-content">
 
             @php $lang = get_system_language()->code;  @endphp
 
