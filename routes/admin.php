@@ -174,7 +174,7 @@ Route::group(['prefix' => 'admin', 'middleware' => ['auth', 'admin', 'prevent-ba
     Route::controller(NoteController::class)->group(function () {
         Route::get('/note/edit/{id}', 'edit')->name('note.edit');
         Route::get('note/delete/{note}', 'destroy')->name('note.delete');
-        // Route::post('/get-notes', 'getNotes')->name('get_notes');
+        Route::post('note/update-seller-access', 'updateSelelrAccess')->name('note.update-seller-access');
     });
 
     // Seller
@@ -213,6 +213,7 @@ Route::group(['prefix' => 'admin', 'middleware' => ['auth', 'admin', 'prevent-ba
     Route::resource('customers', CustomerController::class);
     Route::controller(CustomerController::class)->group(function () {
         Route::get('customers_ban/{customer}', 'ban')->name('customers.ban');
+        Route::get('customers-suspicious/{customer}', 'suspicious')->name('customers.suspicious');
         Route::get('/customers/login/{id}', 'login')->name('customers.login');
         Route::get('/customers/destroy/{id}', 'destroy')->name('customers.destroy');
         Route::post('/bulk-customer-delete', 'bulk_customer_delete')->name('bulk-customer-delete');
@@ -267,9 +268,10 @@ Route::group(['prefix' => 'admin', 'middleware' => ['auth', 'admin', 'prevent-ba
         Route::get('/google-map', 'google_map')->name('google-map.index');
         Route::get('/google-firebase', 'google_firebase')->name('google-firebase.index');
 
+        Route::get('/whatsapp-chat', 'whatsappChat')->name('whatsapp_chat.index');
+        Route::post('/whatsapp_chat/update', 'whatsappChatUpdate')->name('whatsapp_chat.update');
+
         //Facebook Settings
-        Route::get('/facebook-chat', 'facebook_chat')->name('facebook_chat.index');
-        Route::post('/facebook_chat', 'facebook_chat_update')->name('facebook_chat.update');
         Route::get('/facebook-comment', 'facebook_comment')->name('facebook-comment');
         Route::post('/facebook-comment', 'facebook_comment_update')->name('facebook-comment.update');
         Route::post('/facebook_pixel', 'facebook_pixel_update')->name('facebook_pixel.update');

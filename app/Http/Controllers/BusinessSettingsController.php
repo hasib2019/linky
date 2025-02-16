@@ -6,6 +6,7 @@ use Illuminate\Http\Request;
 use App\Models\BusinessSetting;
 use App\Models\PaymentMethod;
 use Artisan;
+use CoreComponentRepository;
 use Illuminate\Support\Facades\Redirect;
 use Illuminate\Support\Facades\URL;
 use Str;
@@ -24,7 +25,7 @@ class BusinessSettingsController extends Controller
         $this->middleware(['permission:order_configuration'])->only('order_configuration');
         $this->middleware(['permission:file_system_&_cache_configuration'])->only('file_system');
         $this->middleware(['permission:social_media_logins'])->only('social_login');
-        $this->middleware(['permission:facebook_chat'])->only('facebook_chat');
+        $this->middleware(['permission:whatsapp_chat'])->only('whatsappChat');
         $this->middleware(['permission:facebook_comment'])->only('facebook_comment');
         $this->middleware(['permission:analytics_tools_configuration'])->only('google_analytics');
         $this->middleware(['permission:google_recaptcha_configuration'])->only('google_recaptcha');
@@ -35,62 +36,86 @@ class BusinessSettingsController extends Controller
 
     public function general_setting(Request $request)
     {
+        CoreComponentRepository::instantiateShopRepository();
+        CoreComponentRepository::initializeCache();
         return view('backend.setup_configurations.general_settings');
     }
 
     public function activation(Request $request)
     {
+        CoreComponentRepository::instantiateShopRepository();
+        CoreComponentRepository::initializeCache();
         return view('backend.setup_configurations.activation');
     }
 
     public function social_login(Request $request)
     {
+        CoreComponentRepository::instantiateShopRepository();
+        CoreComponentRepository::initializeCache();
         return view('backend.setup_configurations.social_login');
     }
 
     public function smtp_settings(Request $request)
     {
+        CoreComponentRepository::instantiateShopRepository();
+        CoreComponentRepository::initializeCache();
         return view('backend.setup_configurations.smtp_settings');
     }
 
     public function google_analytics(Request $request)
     {
+        CoreComponentRepository::instantiateShopRepository();
+        CoreComponentRepository::initializeCache();
         return view('backend.setup_configurations.google_configuration.google_analytics');
     }
 
     public function google_recaptcha(Request $request)
     {
+        CoreComponentRepository::instantiateShopRepository();
+        CoreComponentRepository::initializeCache();
         return view('backend.setup_configurations.google_configuration.google_recaptcha');
     }
 
     public function google_map(Request $request)
     {
+        CoreComponentRepository::instantiateShopRepository();
+        CoreComponentRepository::initializeCache();
         return view('backend.setup_configurations.google_configuration.google_map');
     }
 
     public function google_firebase(Request $request)
     {
+        CoreComponentRepository::instantiateShopRepository();
+        CoreComponentRepository::initializeCache();
         return view('backend.setup_configurations.google_configuration.google_firebase');
     }
 
-    public function facebook_chat(Request $request)
+    public function whatsappChat(Request $request)
     {
-        return view('backend.setup_configurations.facebook_chat');
+        CoreComponentRepository::instantiateShopRepository();
+        CoreComponentRepository::initializeCache();
+        return view('backend.setup_configurations.whatsapp_chat');
     }
 
     public function facebook_comment(Request $request)
     {
+        CoreComponentRepository::instantiateShopRepository();
+        CoreComponentRepository::initializeCache();
         return view('backend.setup_configurations.facebook_configuration.facebook_comment');
     }
 
     public function payment_method(Request $request)
     {
+        CoreComponentRepository::instantiateShopRepository();
+        CoreComponentRepository::initializeCache();
         $payment_methods = PaymentMethod::whereNull('addon_identifier')->get();
         return view('backend.setup_configurations.payment_method.index', compact('payment_methods'));
     }
 
     public function file_system(Request $request)
     {
+        CoreComponentRepository::instantiateShopRepository();
+        CoreComponentRepository::initializeCache();
         return view('backend.setup_configurations.file_system');
     }
 
@@ -221,15 +246,15 @@ class BusinessSettingsController extends Controller
      * @param  \Illuminate\Http\Request  $request
      * @return \Illuminate\Http\Response
      */
-    public function facebook_chat_update(Request $request)
+    public function whatsappChatUpdate(Request $request)
     {
         foreach ($request->types as $key => $type) {
             $this->overWriteEnvFile($type, $request[$type]);
         }
 
-        $business_settings = BusinessSetting::where('type', 'facebook_chat')->first();
+        $business_settings = BusinessSetting::where('type', 'whatsapp_chat')->first();
 
-        if ($request->has('facebook_chat')) {
+        if ($request->has('whatsapp_chat')) {
             $business_settings->value = 1;
             $business_settings->save();
         } else {

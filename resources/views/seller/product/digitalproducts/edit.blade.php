@@ -412,6 +412,8 @@
         fq_bought_product_selection_type();
     });
 
+    AIZ.plugins.tagify();
+
     function fq_bought_product_selection_type(){
         var productSelectionType = $("input[name='frequently_bought_selection_type']:checked").val();
         if(productSelectionType == 'product'){

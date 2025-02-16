@@ -44,10 +44,20 @@
 
                                                 <div class="form-group">
                                                     <label>{{ translate('Your Email')}}</label>
-                                                    <input type="email" class="form-control rounded-0{{ $errors->has('email') ? ' is-invalid' : '' }}" value="{{ old('email') }}" placeholder="{{  translate('Email') }}" name="email" required>
+                                                    <input type="email" class="form-control rounded-0{{ $errors->has('email') ? ' is-invalid' : '' }}" value="{{ $email ?? old('email') }}" placeholder="{{  translate('Email') }}" name="email" required  {{$email  ? 'readonly' : ''}}>
                                                     @if ($errors->has('email'))
                                                         <span class="invalid-feedback" role="alert">
                                                             <strong>{{ $errors->first('email') }}</strong>
+                                                        </span>
+                                                    @endif
+                                                </div>
+
+                                                <div class="form-group">
+                                                    <label>{{ translate('Your Phone')}}</label>
+                                                    <input type="phone" class="form-control rounded-0{{ $errors->has('phone') ? ' is-invalid' : '' }}" value="{{ $phone ?? old('phone') }}" placeholder="{{  translate('Phone') }}" name="phone" required  {{$phone  ? 'readonly' : ''}}>
+                                                    @if ($errors->has('phone'))
+                                                        <span class="invalid-feedback" role="alert">
+                                                            <strong>{{ $errors->first('phone') }}</strong>
                                                         </span>
                                                     @endif
                                                 </div>

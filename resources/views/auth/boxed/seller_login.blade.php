@@ -91,7 +91,7 @@
                                     <!-- Register Now -->
                                     <p class="fs-12 text-gray mb-0">
                                         {{ translate('Dont have an account?')}}
-                                        <a href="{{ route('shops.create') }}" class="ml-2 fs-14 fw-700 animate-underline-primary">{{ translate('Register Now')}}</a>
+                                        <a href="{{ route('shop-reg.verification') }}" class="ml-2 fs-14 fw-700 animate-underline-primary">{{ translate('Register Now')}}</a>
                                     </p>
                                 </div>
                             </div>

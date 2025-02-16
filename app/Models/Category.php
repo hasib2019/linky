@@ -34,6 +34,11 @@ class Category extends Model
     {
         return $this->belongsToMany(Product::class, 'product_categories');
     }
+
+    public function preorderProducts()
+    {
+        return $this->belongsToMany(PreorderProduct::class, 'preorder_product_categories');
+    }
     
     public function bannerImage(){
     	return $this->belongsTo(Upload::class, 'banner');

@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Api\V2;
 
+use App\Http\Resources\V2\FlashDealBannerCollection;
 use App\Http\Resources\V2\FlashDealCollection;
 use App\Http\Resources\V2\ProductCollection;
 use App\Http\Resources\V2\ProductMiniCollection;
@@ -27,6 +28,15 @@ class FlashDealController extends Controller
             ->get();
 
         return new FlashDealCollection($flash_deals);
+    }
+    public function banners()
+    {
+        $flash_deals = FlashDeal::where('status', 1)
+            ->where('start_date', '<=', strtotime(date('d-m-Y')))
+            ->where('end_date', '>=', strtotime(date('d-m-Y')))
+            ->get();
+
+        return new FlashDealBannerCollection($flash_deals);
     }
 
     public function products($id)

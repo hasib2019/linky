@@ -53,6 +53,10 @@
                                         data-target="#orders-notifications" role="tab" id="orders-tab">{{ translate('Orders') }}</a>
                                 </li>
                                 <li class="nav-item">
+                                    <a class="nav-link text-dark" data-toggle="tab" data-type="preorder" href="javascript:void(0);"
+                                        data-target="#preorders-notifications" role="tab" id="preorders-tab">{{ translate('Preorders') }}</a>
+                                </li>
+                                <li class="nav-item">
                                     <a class="nav-link text-dark" data-toggle="tab" data-type="seller" href="javascript:void(0);"
                                         data-target="#sellers-notifications" role="tab" id="sellers-tab">{{ translate('Products') }}</a>
                                 </li>
@@ -64,6 +68,9 @@
                             <div class="tab-content c-scrollbar-light overflow-auto" style="height: 75vh; max-height: 400px; overflow-y: auto;">
                                 <div class="tab-pane active" id="orders-notifications" role="tabpanel">
                                     <x-unread_notification :notifications="auth()->user()->unreadNotifications()->where('type', 'App\Notifications\OrderNotification')->take(20)->get()" />
+                                </div>
+                                <div class="tab-pane" id="preorders-notifications" role="tabpanel">
+                                    <x-unread_notification :notifications="auth()->user()->unreadNotifications()->where('type', 'App\Notifications\PreorderNotification')->take(20)->get()" />
                                 </div>
                                 <div class="tab-pane" id="sellers-notifications" role="tabpanel">
                                     <x-unread_notification :notifications="auth()->user()->unreadNotifications()->where('type', 'like', '%shop%')->take(20)->get()" />

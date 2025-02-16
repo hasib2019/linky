@@ -4,7 +4,6 @@ namespace App\Http\Controllers;
 
 use Auth;
 use Hash;
-use Mail;
 use Cache;
 use Cookie;
 use App\Models\Page;
@@ -17,7 +16,6 @@ use App\Models\Product;
 use App\Models\Category;
 use App\Models\FlashDeal;
 use App\Models\OrderDetail;
-use Illuminate\Support\Str;
 use App\Models\ProductQuery;
 use Illuminate\Http\Request;
 use App\Models\AffiliateConfig;
@@ -27,12 +25,15 @@ use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Facades\Response;
 use Illuminate\Auth\Events\PasswordReset;
 use App\Models\Cart;
+use App\Models\Preorder;
+use App\Models\PreorderProduct;
 use App\Utility\EmailUtility;
 use Artisan;
 use DB;
 use Illuminate\Support\Facades\Redirect;
 use Illuminate\Support\Facades\URL;
 use ZipArchive;
+use Carbon\Carbon;
 
 class HomeController extends Controller
 {
@@ -93,6 +94,24 @@ class HomeController extends Controller
     public function load_best_sellers_section()
     {
         return view('frontend.' . get_setting('homepage_select') . '.partials.best_sellers_section');
+    }
+    public function load_preorder_featured_products_section()
+    {
+
+        // $preorder_products = Cache::remember('preorder_products', 3600, function () {
+            $preorder_products = PreorderProduct::where('is_published', 1)->where('is_featured',1)
+            ->where(function ($query) {
+                $query->whereHas('user', function ($q) {
+                    $q->where('user_type', 'admin');
+                })->orWhereHas('user.shop', function ($q) {
+                    $q->where('verification_status', 1);
+                });
+            })
+            ->latest()
+            ->limit(12)
+            ->get();
+        // });
+        return view('frontend.' . get_setting('homepage_select') . '.partials.preorder_products_section', compact('preorder_products'));
     }
 
     public function login()
@@ -415,6 +434,86 @@ class HomeController extends Controller
                 $products = $products->paginate(24)->appends(request()->query());
 
                 return view('frontend.seller_shop', compact('shop', 'type', 'products', 'selected_categories', 'min_price', 'max_price', 'brand_id', 'sort_by', 'rating'));
+            }
+
+            if ($type == 'all-preorder-products') {
+                $sort_by = $request->sort_by;
+                $min_price = $request->min_price;
+                $max_price = $request->max_price;
+                $selected_categories = array();
+                $is_available = array();
+                $brand_id = null;
+                $rating = null;
+
+                $conditions = ['user_id' => $shop->user->id, 'is_published' => 1];
+
+                if ($request->brand != null) {
+                    $brand_id = (Brand::where('slug', $request->brand)->first() != null) ? Brand::where('slug', $request->brand)->first()->id : null;
+                    $conditions = array_merge($conditions, ['brand_id' => $brand_id]);
+                }
+
+                $products = PreorderProduct::where('is_published',1)->where('user_id' , $shop->user->id);
+
+                if ($request->has('is_available') && $request->is_available !== null) {
+                    $availability = $request->is_available;
+                    $currentDate = Carbon::now()->format('Y-m-d');
+                    $products->where(function ($query) use ($availability, $currentDate) {
+                        if ($availability == 1) {
+                            $query->where('is_available', 1)->orWhere('available_date', '<=', $currentDate);
+                        } else {
+                            $query->where(function ($query) {
+                                $query->where('is_available', '!=', 1)
+                                      ->orWhereNull('is_available');
+                            })
+                            ->where(function ($query) use ($currentDate) {
+                                $query->whereNull('available_date')
+                                      ->orWhere('available_date', '>', $currentDate);
+                            });
+                        }
+                    });
+                
+                    $is_available = $availability;
+                } else {
+                    $is_available = null;
+
+                }
+
+
+                if ($request->has('selected_categories')) {
+                    $selected_categories = $request->selected_categories;
+                    $products->whereIn('category_id', $selected_categories);
+                }
+
+                if ($min_price != null && $max_price != null) {
+                    $products->where('unit_price', '>=', $min_price)->where('unit_price', '<=', $max_price);
+                }
+
+                if ($request->has('rating')) {
+                    $rating = $request->rating;
+                    $products->where('rating', '>=', $rating);
+                }
+
+                switch ($sort_by) {
+                    case 'newest':
+                        $products->orderBy('created_at', 'desc');
+                        break;
+                    case 'oldest':
+                        $products->orderBy('created_at', 'asc');
+                        break;
+                    case 'price-asc':
+                        $products->orderBy('unit_price', 'asc');
+                        break;
+                    case 'price-desc':
+                        $products->orderBy('unit_price', 'desc');
+                        break;
+                    default:
+                        $products->orderBy('id', 'desc');
+                        break;
+                }
+
+                $products = $products->paginate(24)->appends(request()->query());
+
+                return view('frontend.seller_shop', compact('shop', 'type', 'products', 'selected_categories', 'min_price', 'max_price', 'brand_id', 'sort_by', 'rating','is_available'));
             }
 
             return view('frontend.seller_shop', compact('shop', 'type'));

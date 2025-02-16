@@ -1,6 +1,7 @@
 <?php
 
 use Carbon\Carbon;
+use App\Models\PreorderProductReview;
 use App\Models\Tax;
 use App\Models\Cart;
 use App\Models\City;
@@ -57,6 +58,9 @@ use App\Models\LastViewedProduct;
 use App\Models\PaymentMethod;
 use App\Models\UserCoupon;
 use App\Models\NotificationType;
+use App\Models\PreorderConversationMessage;
+use App\Models\PreorderConversationThread;
+use App\Models\PreorderProduct;
 use App\Utility\EmailUtility;
 
 //sensSMS function for OTP
@@ -1550,6 +1554,23 @@ if (!function_exists('seller_package_validity_check')) {
     }
 }
 
+if (!function_exists('seller_package_validity_check_for_preorder_product')) {
+    function seller_package_validity_check_for_preorder_product($user_id = null)
+    {
+        $user = $user_id == null ? \App\Models\User::find(auth()->user()->id) : \App\Models\User::find($user_id);
+        $shop = $user->shop;
+        $package_validation = false;
+        if (
+            $shop->preorder_product_upload_limit > $user->preorderProducts()->count()
+            && $shop->package_invalid_at != null
+            && Carbon::now()->diffInDays(Carbon::parse($shop->package_invalid_at), false) >= 0
+        ) {
+            $package_validation = true;
+        }
+        return $package_validation;
+    }
+}
+
 // Get URL params
 if (!function_exists('get_url_params')) {
     function get_url_params($url, $key)
@@ -1992,6 +2013,17 @@ if (!function_exists('get_categories_by_products')) {
         return $category_query->whereIn('id', $category_ids)->get();
     }
 }
+// Get categories by products
+if (!function_exists('get_categories_by_preorder_products')) {
+    function get_categories_by_preorder_products($user_id)
+    {
+        $product_query = PreorderProduct::query();
+        $category_ids = $product_query->where('user_id', $user_id)->where('is_published', 1)->pluck('category_id')->toArray();
+
+        $category_query = Category::query();
+        return $category_query->whereIn('id', $category_ids)->get();
+    }
+}
 
 // Get single Color name
 if (!function_exists('get_single_color_name')) {
@@ -2287,6 +2319,26 @@ if (!function_exists('get_non_viewed_conversations')) {
     {
         $Conversation_query = Conversation::query();
         return $Conversation_query->where('sender_id', Auth::user()->id)->where('sender_viewed', 0)->get();
+    }
+}
+
+// get non-viewed Conversations
+if (!function_exists('get_non_viewed_preorder_conversations')) {
+    function get_non_viewed_preorder_conversations()
+    {
+        $userId = in_array(auth()->user()->user_type, ['admin', 'staff']) ?  get_admin()->id : auth()->id();
+
+        $numberOfUnreadMsg = PreorderConversationMessage::where('receiver_viewed', 0)
+        ->whereHas('preorderConversationThread', function ($query) use ($userId) {
+            $query->where(function ($query) use ($userId) {
+                $query->where('sender_id', $userId)
+                    ->orWhere('receiver_id', $userId);
+            });
+        })
+        ->where('sender_id', '!=', $userId)
+        ->count();
+
+        return $numberOfUnreadMsg;
     }
 }
 
@@ -2707,4 +2759,240 @@ if (!function_exists('timezones')) {
             '(GMT+13:00) Nuku\'alofa' => 'Pacific/Tongatapu'
         );
     }
+}
+
+
+function formatToArray($input) {
+    // Remove extra quotes from the string
+    $cleanedString = trim($input, '"');
+    
+    // Split the string by commas to get each element
+    $values = explode(',', $cleanedString);
+    
+    // Filter out "NaN" and non-numeric values, convert to integers
+    $result = array_filter($values, function($value) {
+        return is_numeric($value);
+    });
+
+    // Convert numeric values to integers
+    $result = array_map('intval', $result);
+    
+    return $result;
+}
+
+
+//preorder_product_availability_check
+if (!function_exists('preorder_product_availability_check')) {
+    function preorder_product_availability_check($product)
+    {
+        if($product->is_available){
+            return true;
+        }
+        $publishDate = Carbon::parse($product->available_date); 
+        if (Carbon::today()->greaterThanOrEqualTo($publishDate)) {
+            return true;
+        }
+        return false;
+    }
+}
+
+
+// preorder steps fill color
+if (!function_exists('preorder_fill_color')) {
+    function preorder_fill_color($current_order_status, $previous_order_status = 0)
+    {
+        $color = match (true) {
+            $current_order_status === 2 => '#28a745', 
+            $current_order_status === 3 => '#dc3545', 
+            $current_order_status === 1 || $previous_order_status == 2 => '#FF6002', 
+            $current_order_status === 0 => '#9d9da6', 
+            default => '#000000', 
+        };
+        return $color;
+    }
+}
+
+// preorder discount in percentage
+if (!function_exists('preorder_discount_in_percentage')) {
+    function preorder_discount_in_percentage($product)
+    {
+        $base = preorder_home_base_price($product, false);
+        $reduced = preorder_home_discounted_base_price($product, false);
+        $discount = $base - $reduced;
+        $dp = ($discount * 100) / ($base > 0 ? $base : 1);
+        return round($dp);
+    }
+}
+
+// preorder home base price
+if (!function_exists('preorder_home_base_price')) {
+    function preorder_home_base_price($product, $formatted = true)
+    {
+        $price = $product->unit_price;
+        $tax = 0;
+
+        foreach ($product->taxes as $product_tax) {
+            if ($product_tax->tax_type == 'percent') {
+                $tax += ($price * $product_tax->tax) / 100;
+            } elseif ($product_tax->tax_type == 'amount') {
+                $tax += $product_tax->tax;
+            }
+        }
+        $price += $tax;
+        return $formatted ? format_price(convert_price($price)) : convert_price($price);
+    }
+}
+
+
+//Shows preorder Base Price with discount
+if (!function_exists('preorder_home_discounted_base_price')) {
+    function preorder_home_discounted_base_price($product, $formatted = true)
+    {
+        $price = $product->unit_price;
+        $tax = 0;
+
+        $discount_applicable = false;
+
+        if ($product->discount_start_date == null) {
+            $discount_applicable = true;
+        } elseif (
+            strtotime(date('d-m-Y H:i:s')) >= $product->discount_start_date &&
+            strtotime(date('d-m-Y H:i:s')) <= $product->discount_end_date
+        ) {
+            $discount_applicable = true;
+        }
+
+        if ($discount_applicable) {
+            if ($product->discount_type == 'percent') {
+                $price -= ($price * $product->discount) / 100;
+            } elseif ($product->discount_type == 'amount') {
+                $price -= $product->discount;
+            }
+        }
+
+        foreach ($product->taxes as $product_tax) {
+            if ($product_tax->tax_type == 'percent') {
+                $tax += ($price * $product_tax->tax) / 100;
+            } elseif ($product_tax->tax_type == 'amount') {
+                $tax += $product_tax->tax;
+            }
+        }
+        $price += $tax;
+
+
+        return $formatted ? format_price(convert_price($price)) : convert_price($price);
+    }
+}
+
+
+// preorder steps fill color
+if (!function_exists('preorder_status_show')) {
+    function preorder_status_show($order)
+    {
+        $order_status = $order->status;
+        $status_name = '';
+        switch ($order_status) {
+            case 'refund_status':
+                $status_name = translate('Refund Requested');
+                break;
+            case 'delivery_status':
+                $status_name = translate('Delivered');
+                break;
+            case 'shipping_status':
+                $status_name = translate('In Shipping');
+                break;
+            case 'final_order_status':
+                $status_name = translate('Final Order Request');
+                break;
+            case 'prepayment_confirm_status':
+                $status_name = translate('Prepayment Request');
+                break;
+            case 'request_preorder_status':
+                $status_name = translate('Preorder Request');
+                break;
+            default:
+            $status_name = '';
+                break;
+        }
+
+        return $status_name;
+    }
+}
+// is_review_given
+if (!function_exists('is_review_given')) {
+    function is_review_given($order)
+    {
+
+         $review = PreorderProductReview::where('user_id', auth()->id())->where('preorder_product_id', $order->preorder_product->id)->first();
+         if($review){
+            return '#28a745';
+         }
+         return '#9d9da6';
+    }
+}
+// preorder_discount_price
+if (!function_exists('preorder_discount_price')) {
+    function preorder_discount_price($product)
+    {
+        if($product->discount_start_date != null && (strtotime(date('d-m-Y')) > $product->discount_start_date || strtotime(date('d-m-Y')) < $product->discount_end_date)){
+            $discount = $product->discount;
+            $discounted_price = $product->discount_type = 'flat' ? $product->unit_price - $discount : $product->unit_price - ((($product->unit_price * $discount) / 100)) ;
+        }else{
+            $discounted_price = $product->unit_price;
+        }
+         return $discounted_price;
+    }
+}
+
+// preorder_payment_type
+if (!function_exists('preorder_payment_type')) {
+    function preorder_payment_type($order)
+    {
+        $payment_type = translate('Manual');
+        if($order->final_order_status != 0){
+            $payment_type = translate('Final Payment');
+        }
+        if($order->prepayment != null){
+            $payment_type = translate('Prepayment');
+        }
+
+        return $payment_type;
+    }
+}
+
+// preorder product 
+if (!function_exists('filter_preorder_product')) {
+    function filter_preorder_product($products)
+    {
+        if (get_setting('vendor_system_activation') == 1) {
+            return $products->where(function ($query) {
+                $query->whereHas('user', function ($q) {
+                    $q->where('user_type', 'admin');
+                })->orWhereHas('user.shop', function ($q) {
+                    $q->where('verification_status', 1);
+                });
+            });
+        } else {
+            return $products;
+        }
+
+    }
+}
+
+
+function filter_single_preorder_product($product)
+{
+    if (get_setting('vendor_system_activation') == 1) {
+        $user = $product->user;
+
+        if ($user->user_type == 'seller') {
+            // Return the product only if the seller's shop is verified
+            return optional($user->shop)->verification_status == 1 ? $product : null;
+        }
+        // Return the product if the user is not a seller (e.g., admin)
+        return $product;
+    } 
+    
+    // If vendor system is not activated, return the product directly
+    return $product;
 }

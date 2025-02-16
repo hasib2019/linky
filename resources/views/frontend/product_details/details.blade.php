@@ -572,8 +572,16 @@
                                 <img src="{{ static_asset('assets/img/refund-sticker.jpg') }}" height="36">
                             @endif
                         </a>
-                        <a href="{{ route('returnpolicy') }}" class="text-blue hov-text-primary fs-14 ml-3"
-                            target="_blank">{{ translate('View Policy') }}</a>
+                        @if($detailedProduct->refund_note_id != null)
+                            <span href="javascript:void(1);" 
+                                data-toggle="modal" data-target="#refund-note-modal"
+                                class="border-bottom border-bottom-4 ml-2 text-secondary-base">
+                                {{ translate('Refund Note') }}
+                            </span>
+                        @endif
+                        
+                        <a href="{{ route('returnpolicy') }}" class="text-blue hov-text-primary fs-14 ml-3" target="_blank">{{ translate('View Policy') }}</a>
+                        
                     @else
                         <div class="text-dark fs-14 fw-400 mt-2">{{ translate('Not Applicable') }}</div>
                     @endif

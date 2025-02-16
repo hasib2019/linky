@@ -122,24 +122,27 @@
         </div>
         <div class="row">
             <!-- about & subscription -->
+            
             <div class="col-xl-6 col-lg-7">
                 <div class="mb-4 text-secondary text-justify">
                     {!! get_setting('about_us_description',null,App::getLocale()) !!}
                 </div>
-                <h5 class="fs-14 fw-700 text-soft-light mt-1 mb-3">{{ translate('Subscribe to our newsletter for regular updates about Offers, Coupons & more') }}</h5>
-                <div class="mb-3">
-                    <form method="POST" action="{{ route('subscribers.store') }}">
-                        @csrf
-                        <div class="row gutters-10">
-                            <div class="col-8">
-                                <input type="email" class="form-control border-secondary rounded-0 text-white w-100 bg-transparent" placeholder="{{ translate('Your Email Address') }}" name="email" required>
+                @if(get_setting('newsletter_activation'))
+                    <h5 class="fs-14 fw-700 text-soft-light mt-1 mb-3">{{ translate('Subscribe to our newsletter for regular updates about Offers, Coupons & more') }}</h5>
+                    <div class="mb-3">
+                        <form method="POST" action="{{ route('subscribers.store') }}">
+                            @csrf
+                            <div class="row gutters-10">
+                                <div class="col-8">
+                                    <input type="email" class="form-control border-secondary rounded-0 text-white w-100 bg-transparent" placeholder="{{ translate('Your Email Address') }}" name="email" required>
+                                </div>
+                                <div class="col-4">
+                                    <button type="submit" class="btn btn-primary rounded-0 w-100">{{ translate('Subscribe') }}</button>
+                                </div>
                             </div>
-                            <div class="col-4">
-                                <button type="submit" class="btn btn-primary rounded-0 w-100">{{ translate('Subscribe') }}</button>
-                            </div>
-                        </div>
-                    </form>
-                </div>
+                        </form>
+                    </div>
+                @endif
             </div>
 
             <div class="col d-none d-lg-block"></div>
@@ -316,7 +319,8 @@
                             <li class="mb-2">
                                 <p class="fs-13 text-soft-light mb-0">
                                     {{ translate('Become A Seller') }}
-                                    <a href="{{ route('shops.create') }}" class="fs-13 fw-700 text-secondary-base ml-2">{{ translate('Apply Now') }}</a>
+                                    <a href="{{ route('shop-reg.verification') }}" class="fs-13 fw-700 text-secondary-base ml-2">{{ translate('Apply Now') }}</a>
+                                    {{-- <a href="{{ route('shops.create') }}" class="fs-13 fw-700 text-secondary-base ml-2">{{ translate('Apply Now') }}</a> --}}
                                 </p>
                             </li>
                             @guest

@@ -96,7 +96,7 @@ class NotificationUtility
 
     public static function sendFirebaseNotification($req)
     {        
-        $url = 'https://fcm.googleapis.com/fcm/send';
+        $url = 'https://fcm.googleapis.com/v1/projects/myproject-b5ae1/messages:send';
 
         $fields = array
         (

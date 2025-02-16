@@ -2,6 +2,11 @@
 
 @section('content')
 
+@php
+    CoreComponentRepository::instantiateShopRepository();
+    CoreComponentRepository::initializeCache();
+@endphp
+
 <div class="aiz-titlebar text-left mt-2 mb-3">
     <div class="row align-items-center">
         <div class="col-auto">
@@ -42,7 +47,7 @@
                     <option value="">{{ translate('All Sellers') }}</option>
                     @foreach (App\Models\User::where('user_type', '=', 'seller')->get() as $key => $seller)
                         <option value="{{ $seller->id }}" @if ($seller->id == $seller_id) selected @endif>
-                            {{ $seller->shop->name }} ({{ $seller->name }})
+                            {{ $seller->shop?->name }} ({{ $seller->name }})
                         </option>
                     @endforeach
                 </select>

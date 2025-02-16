@@ -39,9 +39,15 @@
 
                     <!-- Description -->
                     <div class="form-group row">
-                        <label class="col-md-2 col-from-label">{{ translate('Description') }} <i class="las la-language text-danger" title="{{ translate('Translatable') }}"></i></label>
+                        <label class="col-md-2 col-from-label">
+                            {{ translate('Description') }} <i class="las la-language text-danger" title="{{ translate('Translatable') }}"></i>
+                            <p class="fs-10">({{ translate('Max 900 Character') }})</p>
+                        </label>
                         <div class="col-md-10">
                             <textarea name="description" rows="8" class="form-control">{{ $note->description }}</textarea>
+                            @error('description')
+                                <small class="form-text text-danger">{{ $message }}</small>
+                            @enderror
                         </div>
                     </div>
                     <div class="form-group mb-0 text-right">

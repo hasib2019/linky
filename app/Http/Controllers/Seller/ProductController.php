@@ -281,7 +281,6 @@ class ProductController extends Controller
         $product = Product::findOrFail($request->id);
         $product->published = $request->status;
         if (addon_is_activated('seller_subscription') && $request->status == 1) {
-            $shop = $product->user->shop;
             if (!seller_package_validity_check()) {
                 return 2;
             }

@@ -99,7 +99,8 @@ class UpdateController extends Controller
                     '7.9.2'=>'v792.sql', '7.9.3'=>'v793.sql', '8'=>'v800.sql', '8.1'=>'v810.sql', '8.2'=>'v820.sql',
                     '8.3'=>'v830.sql', '8.4'=>'v840.sql', '8.5'=>'v850.sql', '8.6'=>'v860.sql', '8.7'=>'v870.sql',
                     '8.8'=>'v880.sql', '8.9'=>'v890.sql', '9.0'=>'v900.sql', '9.1'=>'v910.sql', '9.2'=>'v920.sql', 
-                    '9.2.1'=>'v921.sql', '9.3'=>'v930.sql', '9.4'=>'v940.sql', '9.5'=>'v950.sql' ];
+                    '9.2.1'=>'v921.sql', '9.3'=>'v930.sql', '9.4'=>'v940.sql', '9.5'=>'v950.sql', '9.6'=>'v960.sql', 
+                    '9.6.1'=>'v961.sql', '9.7'=>'v970.sql','9.8'=>'v980.sql' ];
 
         $keys = array_keys($versions);
         $current_version = (get_setting('current_version') != null) ? get_setting('current_version') : '7.1.0';

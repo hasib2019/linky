@@ -176,6 +176,20 @@ class NotificationController extends Controller
             }
         }
 
+        // Preorder notification redirect
+        if($notification->type == 'App\Notifications\PreorderNotification'){
+            if($userType == 'admin'){
+                return redirect()->route('preorder-order.show', encrypt($notification->data['preorder_id']));
+            }
+            elseif($userType == 'seller'){
+                return redirect()->route('seller.preorder-order.show', encrypt($notification->data['preorder_id']));
+            }
+            elseif($userType == 'customer'){
+                
+                return redirect()->route('preorder.order_details', encrypt($notification->data['preorder_id']));
+            }
+        }
+
         // Custom notification redirect
         elseif($notification->type == 'App\Notifications\CustomNotification'){
             return redirect()->to($notification->data['link']);

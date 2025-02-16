@@ -82,6 +82,40 @@
                     </a>
                 </li>
 
+                <!-- Preorder -->
+                @if (addon_is_activated('preorder'))
+                    <li class="aiz-side-nav-item">
+                        <a href="javascript:void(0);" class="aiz-side-nav-link">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16.002" viewBox="0 0 16 16.002">
+                                <path id="Union_63" data-name="Union 63" d="M14072,894a8,8,0,1,1,8,8A8.011,8.011,0,0,1,14072,894Zm1,0a7,7,0,1,0,7-7A7.007,7.007,0,0,0,14073,894Zm10.652,3.674-3.2-2.781a1,1,0,0,1-.953-1.756V889.5a.5.5,0,1,1,1,0v3.634a1,1,0,0,1,.5.863c0,.015,0,.029,0,.044l3.311,2.876a.5.5,0,0,1,.05.7.5.5,0,0,1-.708.049Z" transform="translate(-14072 -885.998)" fill="#b5b5bf"/>
+                            </svg>
+                            <span class="aiz-side-nav-text ml-3">{{ translate('Preorder') }}</span>
+                            <span class="aiz-side-nav-arrow"></span>
+                        </a>
+                        <ul class="aiz-side-nav-list level-2">
+                            <li class="aiz-side-nav-item">
+                                <a href="{{ route('preorder.order_list') }}" class="aiz-side-nav-link {{ areActiveRoutes(['preorder.order_list', 'purchase_history.details']) }}">
+                                    <span class="aiz-side-nav-text">{{ translate('Preorder List') }}</span>
+                                </a>
+                            </li>
+                            @if (get_setting('conversation_system') == 1) 
+                                @php
+                                    $preorderConversation = get_non_viewed_preorder_conversations();
+                                @endphp    
+                                <li class="aiz-side-nav-item">
+                                    <a href="{{ route('preorder-conversations.customer-index') }}"
+                                        class="aiz-side-nav-link {{ areActiveRoutes(['preorder-conversations.customer-show']) }}">
+                                        <span class="aiz-side-nav-text">{{ translate('Preorder Conversations') }}</span>
+                                        @if ($preorderConversation > 0)
+                                            <span class="badge badge-danger">({{ $preorderConversation }})</span>
+                                        @endif
+                                    </a>
+                                </li>
+                            @endif
+                        </ul>
+                    </li>
+                @endif
+
                 <!-- Downloads -->
                 <li class="aiz-side-nav-item">
                     <a href="{{ route('digital_purchase_history.index') }}"

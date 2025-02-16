@@ -36,6 +36,24 @@ class EmailUtility
         Mail::to($emailSendTo)->queue(new MailManager($array));
     }
 
+    // Email verification for seller Registration
+    public static function email_verification_for_registration_seller($emailIdentifier, $email, $verificationCode){
+        $emailTemplate = EmailTemplate::whereIdentifier($emailIdentifier)->first();
+
+        $emailSubject = $emailTemplate->subject;
+        $emailSubject = str_replace('[[store_name]]', get_setting('site_name'), $emailSubject);
+
+        $emailBody = $emailTemplate->default_text;
+        $emailBody = str_replace('[[store_name]]', get_setting('site_name'), $emailBody);
+        $emailBody = str_replace('[[code]]', $verificationCode, $emailBody);
+        $emailBody = str_replace('[[admin_email]]', get_admin()->email, $emailBody);
+
+        $array['subject'] = $emailSubject;
+        $array['content'] = $emailBody;
+
+        Mail::to($email)->queue(new MailManager($array));
+    }
+
     // Seller registration email to Admin & Seller
     public static function selelr_registration_email($emailIdentifier, $user, $password = null){
         $admin = get_admin();
@@ -56,7 +74,7 @@ class EmailUtility
         $emailBody = str_replace('[[seller_shop_name]]', $shop->name, $emailBody);
         $emailBody = str_replace('[[seller_shop_address]]', $shop->address, $emailBody);
         $emailBody = str_replace('[[date]]', date('d-m-Y', strtotime($user->created_at)), $emailBody);
-        $emailBody = str_replace('[[admin_email]]', get_admin()->email, $emailBody);
+        $emailBody = str_replace('[[admin_email]]', $admin->email, $emailBody);
 
         $array['subject'] = $emailSubject;
         $array['content'] = $emailBody;
@@ -84,7 +102,7 @@ class EmailUtility
                 $emailBody = str_replace('[[delivery_boy_password]]', $password, $emailBody);
                 $emailBody = str_replace('[[delivery_boy_country]]', $user->country, $emailBody);
                 $emailBody = str_replace('[[date]]', date('d-m-Y', strtotime($user->created_at)), $emailBody);
-                $emailBody = str_replace('[[admin_email]]', get_admin()->email, $emailBody);
+                $emailBody = str_replace('[[admin_email]]', $admin->email, $emailBody);
     
                 $array['subject'] = $emailSubject;
                 $array['content'] = $emailBody;
@@ -192,7 +210,7 @@ class EmailUtility
                 $emailBody = str_replace('[[payment_method]]', $payment_method, $emailBody);
                 $emailBody = str_replace('[[store_name]]', get_setting('site_name'), $emailBody);;
                 $emailBody = str_replace('[[date]]', date('d-m-Y'), $emailBody);
-                $emailBody = str_replace('[[admin_email]]', get_admin()->email, $emailBody);
+                $emailBody = str_replace('[[admin_email]]', $admin->email, $emailBody);
 
                 $array['subject'] = $emailSubject;
                 $array['content'] = $emailBody;
@@ -211,7 +229,7 @@ class EmailUtility
         $customer = $refundReqest->user;
         $seller = $refundReqest->seller;
         $productName = $refundReqest->orderDetail->product->getTranslation('name');
-        $shopName = $refundReqest->order->shop->user->user_type == 'seller' ? $refundReqest->order->shop->name : null;
+        $shopName = $refundReqest?->order?->shop?->user->user_type == 'seller' ? $refundReqest?->order?->shop->name : null;
 
         $admin = get_admin();
         foreach($emailIdentifiers as $emailIdentifier){
@@ -243,7 +261,7 @@ class EmailUtility
                 $emailBody = str_replace('[[request_date]]', date('d-m-Y', strtotime($refundReqest->created_at)), $emailBody);
                 $emailBody = str_replace('[[refund_amount]]', single_price($refundReqest->refund_amount), $emailBody);
                 $emailBody = str_replace('[[processes_date]]', date('d-m-Y'), $emailBody);
-                $emailBody = str_replace('[[admin_email]]', get_admin()->email, $emailBody);
+                $emailBody = str_replace('[[admin_email]]', $admin->email, $emailBody);
     
                 $array['subject'] = $emailSubject;
                 $array['content'] = $emailBody;
@@ -254,4 +272,5 @@ class EmailUtility
             }
         }
     }
+
 }

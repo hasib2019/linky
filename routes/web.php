@@ -107,6 +107,15 @@ Route::controller(VerificationController::class)->group(function () {
     Route::get('/verification-confirmation/{code}', 'verification_confirmation')->name('email.verification.confirmation');
 });
 
+Route::resource('shops', ShopController::class)->middleware('handle-demo-login');
+Route::controller(ShopController::class)->group(function () {
+    Route::get('/shop/registration/verification', 'verifyRegEmailorPhone')->name('shop-reg.verification');
+    Route::post('/shop/registration/verification-code-send', 'sendRegVerificationCode')->name('shop-reg.verification_code_send');
+    Route::get('/shop/registration/verify-code/{id}', 'regVerifyCode')->name('shop-reg.verify_code');
+    Route::post('/shop/registration/verification-code-confirmation', 'regVerifyCodeConfirmation')->name('shop-reg.verify_code_confirmation');
+    
+});
+
 Route::controller(HomeController::class)->group(function () {
     Route::get('/email-change/callback', 'email_change_callback')->name('email_change.callback');
     Route::post('/password/reset/email/submit', 'reset_password_with_code')->name('password.update');
@@ -128,6 +137,7 @@ Route::controller(HomeController::class)->group(function () {
     Route::post('/home/section/newest-products', 'load_newest_product_section')->name('home.section.newest_products');
     Route::post('/home/section/home-categories', 'load_home_categories_section')->name('home.section.home_categories');
     Route::post('/home/section/best-sellers', 'load_best_sellers_section')->name('home.section.best_sellers');
+    Route::post('/home/section/preorder-products', 'load_preorder_featured_products_section')->name('home.section.preorder_products');
 
     //category dropdown menu ajax call
     Route::post('/category/nav-element-list', 'get_category_items')->name('category.elements');
@@ -268,7 +278,6 @@ Route::group(['middleware' => ['user', 'verified', 'unbanned']], function () {
 // Checkout Routs
 Route::group(['prefix' => 'checkout'], function () {
     Route::controller(CheckoutController::class)->group(function () {
-        // Route::get('/', 'get_shipping_info')->name('checkout.shipping_info');
         Route::get('/', 'index')->name('checkout');
         Route::any('/delivery-info', 'store_shipping_info')->name('checkout.store_shipping_infostore');
         Route::post('/payment-select', 'store_delivery_info')->name('checkout.store_delivery_info');
@@ -279,9 +288,6 @@ Route::group(['prefix' => 'checkout'], function () {
         Route::post('/guest-customer-info-check', 'guestCustomerInfoCheck')->name('guest_customer_info_check');
         Route::post('/updateDeliveryAddress', 'updateDeliveryAddress')->name('checkout.updateDeliveryAddress');
         Route::post('/updateDeliveryInfo', 'updateDeliveryInfo')->name('checkout.updateDeliveryInfo');
-        //Club point
-        // Route::post('/apply-club-point', 'apply_club_point')->name('checkout.apply_club_point');
-        // Route::post('/remove-club-point', 'remove_club_point')->name('checkout.remove_club_point');
     });
 });
 
@@ -376,10 +382,10 @@ Route::group(['middleware' => ['auth']], function () {
 
     Route::controller(NoteController::class)->group(function () {
         Route::post('/get-notes', 'getNotes')->name('get_notes');
+        Route::get('/get-single-note/{id}', 'getSingleNote')->name('get-single-note');
+        
     });
 });
-
-Route::resource('shops', ShopController::class)->middleware('handle-demo-login');
 
 Route::get('/instamojo/payment/pay-success', [InstamojoController::class, 'success'])->name('instamojo.success');
 

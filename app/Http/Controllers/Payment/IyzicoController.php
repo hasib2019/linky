@@ -64,14 +64,14 @@ class IyzicoController extends Controller
         if($paymentType == 'customer_package_payment'){
             $customer_package = CustomerPackage::findOrFail($paymentData['customer_package_id']);
             $amount = $customer_package->amount;
-            $data['customer_package_id'] = $paymentData['service_package_id'];
+            $data['customer_package_id'] = $paymentData['customer_package_id'];
             $firstBasketItemName = "Package Payment";
             $firstBasketItemCategory1 = "Package";
         }
         if($paymentType == 'seller_package_payment'){
             $seller_package = SellerPackage::findOrFail($paymentData['seller_package_id']);
             $amount = $seller_package->amount;
-            $data['seller_package_id'] = $paymentData['service_package_id'];
+            $data['seller_package_id'] = $paymentData['seller_package_id'];
             $firstBasketItemName = "Package Payment";
             $firstBasketItemCategory1 = "Package";
         }

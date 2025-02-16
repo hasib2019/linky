@@ -96,17 +96,6 @@
                                     </div>
                                 </div>
                             @endif
-                            @if (addon_is_activated('refund_request'))
-                                <div class="form-group row">
-                                    <label class="col-md-3 col-from-label">{{ translate('Refundable') }}</label>
-                                    <div class="col-md-8">
-                                        <label class="aiz-switch aiz-switch-success mb-0">
-                                            <input type="checkbox" name="refundable" checked value="1">
-                                            <span></span>
-                                        </label>
-                                    </div>
-                                </div>
-                            @endif
                         </div>
                     </div>
                     <div class="card">
@@ -389,6 +378,47 @@
                             </div>
                         </div>
                     </div>
+
+                    {{-- Refund --}}
+                    @if (addon_is_activated('refund_request'))
+                        <div class="card">
+                            <div class="card-header">
+                                <h5 class="mb-0 h6">{{ translate('Refund') }}</h5>
+                            </div>
+                            <div class="card-body">
+                                <div class="form-group row">
+                                    <label class="col-md-2 col-from-label">{{translate('Refundable')}}?</label>
+                                    <div class="col-md-10">
+                                        <label class="aiz-switch aiz-switch-success mb-0">
+                                            <input type="checkbox" name="refundable" checked value="1" onchange="isRefundable()">
+                                            <span></span>
+                                        </label>
+                                    </div>
+                                </div>
+
+                                <div class="w-100 refund-block d-none">
+                                    <div class="form-group row">
+                                        <div class="col-md-2"></div>
+                                        <div class="col-md-10">
+                                            <input type="hidden" name="refund_note_id" id="refund_note_id">
+                                            
+                                            <h5 class="fs-14 fw-600 mb-3 mt-4 pb-3" style="border-bottom: 1px dashed #e4e5eb;">{{translate('Refund Note')}}</h5>
+                                            <div id="refund_note" class="">
+
+                                            </div>
+                                            <button
+                                                type="button"
+                                                class="btn btn-block border border-dashed hov-bg-soft-secondary mt-2 fs-14 rounded-0 d-flex align-items-center justify-content-center"
+                                                onclick="noteModal('refund')">
+                                                <i class="las la-plus"></i>
+                                                <span class="ml-2">{{ translate('Select Refund Note') }}</span>
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    @endif
 
                     {{-- Warranty --}}
                     <div class="card">
@@ -909,6 +939,16 @@
             $('#warranty_id').removeAttr('required');
         }
     }
+
+    // Refundable
+    function isRefundable(){
+        if($('input[name="refundable"]').is(':checked')) {
+            $('.refund-block').removeClass('d-none');
+        }
+        else {
+            $('.refund-block').addClass('d-none');
+        }
+    }
     
     function noteModal(noteType){
         $.post('{{ route('get_notes') }}',{_token:'{{ @csrf_token() }}', note_type: noteType}, function(data){
@@ -932,6 +972,7 @@
 <script type="text/javascript">
     $(document).ready(function() {
         warrantySelection();
+        isRefundable();
     });
 </script>
 @endsection

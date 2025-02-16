@@ -8,6 +8,7 @@ use DB;
 use Hash;
 use App\Models\BusinessSetting;
 use App\Models\User;
+use MehediIitdu\CoreComponentRepository\CoreComponentRepository;
 use Artisan;
 use Session;
 
@@ -29,8 +30,13 @@ class InstallController extends Controller
         return view('installation.step2');
     }
 
-    public function step3() {
-        return view('installation.step4');
+    public function step3($error = "") {
+        CoreComponentRepository::instantiateShopRepository();
+        if($error == ""){
+            return view('installation.step3');
+        }else {
+            return view('installation.step3', compact('error'));
+        }
     }
 
     public function step4() {

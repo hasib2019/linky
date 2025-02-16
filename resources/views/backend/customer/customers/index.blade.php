@@ -15,6 +15,11 @@
     @endcan
 </div>
 
+<p>
+    <span class="bg-danger d-inline-block h-10px rounded-2 w-10px" ></span> {{ translate('This color indicates that the customer is marked as blocked.') }}
+    <br>
+    <span class="bg-info d-inline-block h-10px rounded-2 w-10px"></span> {{ translate('This color indicates that the customer is marked as suspicious.') }}
+</p>
 
 <div class="card">
     <form class="" id="sort_customers" action="" method="GET">
@@ -49,7 +54,6 @@
             <table class="table aiz-table mb-0">
                 <thead>
                     <tr>
-                        <!--<th data-breakpoints="lg">#</th>-->
                         <th>
                             <div class="form-group">
                                 <div class="aiz-checkbox-inline">
@@ -73,7 +77,6 @@
                     @foreach($users as $key => $user)
                         @if ($user != null)
                             <tr>
-                                <!--<td>{{ ($key+1) + ($users->currentPage() - 1)*$users->perPage() }}</td>-->
                                 <td>
                                     <div class="form-group">
                                         <div class="aiz-checkbox-inline">
@@ -84,7 +87,15 @@
                                         </div>
                                     </div>
                                 </td>
-                                <td>@if($user->banned == 1) <i class="fa fa-ban text-danger" aria-hidden="true"></i> @endif {{$user->name}}</td>
+                                <td>
+                                    <p class="@if($user->banned == 1) text-danger @elseif($user->is_suspicious == 1) text-info @endif">
+                                        @if($user->banned == 1) 
+                                            <i class="las la-ban las" aria-hidden="true"></i>
+                                        @elseif($user->is_suspicious == 1) 
+                                            <i class="las la-exclamation-circle" aria-hidden="true"></i> 
+                                        @endif 
+                                        {{$user->name}}
+                                    </p>
                                 <td>{{$user->email}}</td>
                                 <td>{{$user->phone}}</td>
                                 <td>

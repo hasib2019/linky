@@ -136,4 +136,9 @@ class Product extends Model
         return $this->belongsTo(Note::class, 'warranty_note_id');
     }
 
+    public function refundNote()
+    {
+        return $this->belongsTo(Note::class, 'refund_note_id');
+    }
+
 }

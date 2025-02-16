@@ -87,9 +87,13 @@
                         @if (get_setting('vendor_system_activation') == 1)
                             <!-- Become a Seller -->
                             <li class="list-inline-item mr-0 pl-0 py-2">
-                                <a href="{{ route('shops.create') }}"
+                                <a href="{{ route('shop-reg.verification') }}"
                                     class="text-secondary fs-12 pr-3 d-inline-block border-width-2 border-right">{{ translate('Become a Seller !') }}</a>
                             </li>
+                            {{-- <li class="list-inline-item mr-0 pl-0 py-2">
+                                <a href="{{ route('shops.create') }}"
+                                    class="text-secondary fs-12 pr-3 d-inline-block border-width-2 border-right">{{ translate('Become a Seller !') }}</a>
+                            </li> --}}
                             <!-- Seller Login -->
                             <li class="list-inline-item mr-0 pl-0 py-2">
                                 <a href="{{ route('seller.login') }}"
@@ -252,53 +256,69 @@
                                             <ul class="list-group list-group-flush">
                                                 @forelse($user->unreadNotifications as $notification)
                                                     @php
-                                                        $isLinkable = true;
-                                                        $notificationType = get_notification_type($notification->notification_type_id, 'id');
-                                                        $notifyContent = $notificationType->getTranslation('default_text');
-                                                        $notificationShowDesign = get_setting('notification_show_type');
-                                                        if($notification->type == 'App\Notifications\customNotification' && $notification->data['link'] == null){
-                                                            $isLinkable = false;
+                                                        $showNotification = true;
+                                                        if (($notification->type == 'App\Notifications\PreorderNotification') && !addon_is_activated('preorder'))
+                                                        {
+                                                            $showNotification = false;
                                                         }
                                                     @endphp
-                                                    <li class="list-group-item">
-                                                        <div class="d-flex">
-                                                            @if($notificationShowDesign != 'only_text')
-                                                                <div class="size-35px mr-2">
-                                                                    @php
-                                                                        $notifyImageDesign = '';
-                                                                        if($notificationShowDesign == 'design_2'){
-                                                                            $notifyImageDesign = 'rounded-1';
-                                                                        }
-                                                                        elseif($notificationShowDesign == 'design_3'){
-                                                                            $notifyImageDesign = 'rounded-circle';
-                                                                        }
-                                                                    @endphp
-                                                                    <img
-                                                                        src="{{ uploaded_asset($notificationType->image) }}"
-                                                                        onerror="this.onerror=null;this.src='{{ static_asset('assets/img/notification.png') }}';"
-                                                                        class="img-fit h-100 {{ $notifyImageDesign }}" >
-                                                                </div>
-                                                            @endif
-                                                            <div>
-                                                                @if ($notification->type == 'App\Notifications\OrderNotification')
-                                                                    @php
-                                                                        $orderCode  = $notification->data['order_code'];
-                                                                        $route = route('purchase_history.details', encrypt($notification->data['order_id']));
-                                                                            $orderCode = "<span class='text-blue'>".$orderCode."</span>";
-                                                                        $notifyContent = str_replace('[[order_code]]', $orderCode, $notifyContent);
-                                                                    @endphp
+                                                    @if($showNotification)
+                                                        @php
+                                                            $isLinkable = true;
+                                                            $notificationType = get_notification_type($notification->notification_type_id, 'id');
+                                                            $notifyContent = $notificationType->getTranslation('default_text');
+                                                            $notificationShowDesign = get_setting('notification_show_type');
+                                                            if($notification->type == 'App\Notifications\customNotification' && $notification->data['link'] == null){
+                                                                $isLinkable = false;
+                                                            }
+                                                        @endphp
+                                                        <li class="list-group-item">
+                                                            <div class="d-flex">
+                                                                @if($notificationShowDesign != 'only_text')
+                                                                    <div class="size-35px mr-2">
+                                                                        @php
+                                                                            $notifyImageDesign = '';
+                                                                            if($notificationShowDesign == 'design_2'){
+                                                                                $notifyImageDesign = 'rounded-1';
+                                                                            }
+                                                                            elseif($notificationShowDesign == 'design_3'){
+                                                                                $notifyImageDesign = 'rounded-circle';
+                                                                            }
+                                                                        @endphp
+                                                                        <img
+                                                                            src="{{ uploaded_asset($notificationType->image) }}"
+                                                                            onerror="this.onerror=null;this.src='{{ static_asset('assets/img/notification.png') }}';"
+                                                                            class="img-fit h-100 {{ $notifyImageDesign }}" >
+                                                                    </div>
                                                                 @endif
+                                                                <div>
+                                                                    @if ($notification->type == 'App\Notifications\OrderNotification')
+                                                                        @php
+                                                                            $orderCode  = $notification->data['order_code'];
+                                                                            $route = route('purchase_history.details', encrypt($notification->data['order_id']));
+                                                                                $orderCode = "<span class='text-blue'>".$orderCode."</span>";
+                                                                            $notifyContent = str_replace('[[order_code]]', $orderCode, $notifyContent);
+                                                                        @endphp
+                                                                    @elseif($notification->type == 'App\Notifications\PreorderNotification')
+                                                                        @php
+                                                                            $orderCode  = $notification->data['order_code'];
+                                                                            $route = route('preorder.order_details', encrypt($notification->data['preorder_id']));
+                                                                                $orderCode = "<span class='text-blue'>".$orderCode."</span>";
+                                                                            $notifyContent = str_replace('[[order_code]]', $orderCode, $notifyContent);
+                                                                        @endphp
+                                                                    @endif
 
-                                                                @if($isLinkable = true)
-                                                                    <a href="{{ route('notification.read-and-redirect', encrypt($notification->id)) }}">
-                                                                @endif
-                                                                    <span class="fs-12 text-dark text-truncate-2">{!! $notifyContent !!}</span>
-                                                                @if($isLinkable = true)
-                                                                    </a>
-                                                                @endif
+                                                                    @if($isLinkable = true)
+                                                                        <a href="{{ route('notification.read-and-redirect', encrypt($notification->id)) }}">
+                                                                    @endif
+                                                                        <span class="fs-12 text-dark text-truncate-2">{!! $notifyContent !!}</span>
+                                                                    @if($isLinkable = true)
+                                                                        </a>
+                                                                    @endif
+                                                                </div>
                                                             </div>
-                                                        </div>
-                                                    </li>
+                                                        </li>
+                                                    @endif
                                                 @empty
                                                     <li class="list-group-item">
                                                         <div class="py-4 text-center fs-16">
@@ -437,6 +457,20 @@
                                                 class="user-top-menu-name has-transition ml-3">{{ translate('Purchase History') }}</span>
                                         </a>
                                     </li>
+
+                                    @if (addon_is_activated('preorder'))
+                                    <li class="user-top-nav-element border border-top-0" data-id="1">
+                                        <a href="{{ route('preorder.order_list') }}"
+                                            class="text-truncate text-dark px-4 fs-14 d-flex align-items-center hov-column-gap-1">
+                                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16.002" viewBox="0 0 16 16.002">
+                                                <path id="Union_63" data-name="Union 63" d="M14072,894a8,8,0,1,1,8,8A8.011,8.011,0,0,1,14072,894Zm1,0a7,7,0,1,0,7-7A7.007,7.007,0,0,0,14073,894Zm10.652,3.674-3.2-2.781a1,1,0,0,1-.953-1.756V889.5a.5.5,0,1,1,1,0v3.634a1,1,0,0,1,.5.863c0,.015,0,.029,0,.044l3.311,2.876a.5.5,0,0,1,.05.7.5.5,0,0,1-.708.049Z" transform="translate(-14072 -885.998)" fill="#b5b5bf"/>
+                                              </svg>
+                                            <span
+                                                class="user-top-menu-name has-transition ml-3">{{ translate('Preorder List') }}</span>
+                                        </a>
+                                    </li>
+                                    @endif
+
                                     <li class="user-top-nav-element border border-top-0" data-id="1">
                                         <a href="{{ route('digital_purchase_history.index') }}"
                                             class="text-truncate text-dark px-4 fs-14 d-flex align-items-center hov-column-gap-1">

@@ -72,11 +72,13 @@ class RouteServiceProvider extends ServiceProvider
 
     $this->mapWholesaleRoutes();
 
+    $this->mapPreorderRoutes();
+
     $this->mapWebRoutes();
 
-  // $this->mapInstallRoutes();
+    // $this->mapInstallRoutes();
 
-  //$this->mapUpdateRoutes();
+    // $this->mapUpdateRoutes();
   }
 
   /**
@@ -317,6 +319,20 @@ class RouteServiceProvider extends ServiceProvider
        ->namespace($this->namespace)
        ->group(base_path('routes/seller.php'));
   }
+
+	 /**
+     * Define the "Pre Order" routes for the application.
+     *
+     * These routes all receive session state, CSRF protection, etc.
+     *
+     * @return void
+     */
+    protected function mapPreorderRoutes()
+    {
+        Route::middleware('web')
+            ->namespace($this->namespace)
+            ->group(base_path('routes/preorder.php'));
+    }
 
   /**
    * Define the "api" routes for the application.

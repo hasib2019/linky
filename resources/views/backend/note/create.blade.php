@@ -24,9 +24,15 @@
 
                         <!-- Description -->
                         <div class="form-group row">
-                            <label class="col-md-3 col-from-label">{{ translate('Description') }}</label>
+                            <label class="col-md-3 col-from-label">
+                                {{ translate('Description') }}
+                                <p class="fs-10">({{ translate('Max 900 Character') }})</p>
+                            </label>
                             <div class="col-md-9">
                                 <textarea name="description" rows="8" class="form-control">{{ old('description') }}</textarea>
+                                @error('description')
+                                    <small class="form-text text-danger">{{ $message }}</small>
+                                @enderror
                             </div>
                         </div>
 

@@ -377,31 +377,21 @@
     <script src="{{ static_asset('assets/js/vendors.js') }}"></script>
     <script src="{{ static_asset('assets/js/aiz-core.js?v=') }}{{ rand(1000, 9999) }}"></script>
 
-
-
-    @if (get_setting('facebook_chat') == 1)
+    {{-- WhatsaApp Chat --}}
+    @if (get_setting('whatsapp_chat') == 1)
         <script type="text/javascript">
-            window.fbAsyncInit = function() {
-                FB.init({
-                  xfbml            : true,
-                  version          : 'v3.3'
-                });
-              };
-
-              (function(d, s, id) {
-              var js, fjs = d.getElementsByTagName(s)[0];
-              if (d.getElementById(id)) return;
-              js = d.createElement(s); js.id = id;
-              js.src = 'https://connect.facebook.net/en_US/sdk/xfbml.customerchat.js';
-              fjs.parentNode.insertBefore(js, fjs);
-            }(document, 'script', 'facebook-jssdk'));
+            (function () {
+                var options = {
+                    whatsapp: "{{ env('WHATSAPP_NUMBER') }}",
+                    call_to_action: "{{ translate('Message us') }}",
+                    position: "right", // Position may be 'right' or 'left'
+                };
+                var proto = document.location.protocol, host = "getbutton.io", url = proto + "//static." + host;
+                var s = document.createElement('script'); s.type = 'text/javascript'; s.async = true; s.src = url + '/widget-send-button/js/init.js';
+                s.onload = function () { WhWidgetSendButton.init(host, proto, options); };
+                var x = document.getElementsByTagName('script')[0]; x.parentNode.insertBefore(s, x);
+            })();
         </script>
-        <div id="fb-root"></div>
-        <!-- Your customer chat code -->
-        <div class="fb-customerchat"
-          attribution=setup_tool
-          page_id="{{ env('FACEBOOK_PAGE_ID') }}">
-        </div>
     @endif
 
     <script>
@@ -447,6 +437,17 @@
                 $('#auction_products').html(data);
                 AIZ.plugins.slickCarousel();
             });
+
+            var isPreorderEnabled = @json(addon_is_activated('preorder'));
+
+            if (isPreorderEnabled) {
+                $.post('{{ route('home.section.preorder_products') }}', {
+                    _token: '{{ csrf_token() }}'
+                }, function(data) {
+                    $('#section_featured_preorder_products').html(data);
+                    AIZ.plugins.slickCarousel();
+                });
+            }
 
             $.post('{{ route('home.section.home_categories') }}', {
                 _token: '{{ csrf_token() }}'

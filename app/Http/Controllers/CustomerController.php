@@ -15,6 +15,7 @@ class CustomerController extends Controller
         $this->middleware(['permission:add_customer'])->only('create');
         $this->middleware(['permission:login_as_customer'])->only('login');
         $this->middleware(['permission:ban_customer'])->only('ban');
+        $this->middleware(['permission:mark_customer_suspected'])->only('suspicious');
         $this->middleware(['permission:delete_customer'])->only('destroy');
     }
 
@@ -222,6 +223,21 @@ class CustomerController extends Controller
         } else {
             $user->banned = 1;
             flash(translate('Customer Banned Successfully'))->success();
+        }
+
+        $user->save();
+        
+        return back();
+    }
+    public function suspicious($id) {
+        $user = User::findOrFail(decrypt($id));
+
+        if($user->is_suspicious == 1) {
+            $user->is_suspicious = 0;
+            flash(translate('Customer unsuspected  Successfully'))->success();
+        } else {
+            $user->is_suspicious = 1;
+            flash(translate('Customer suspected Successfully'))->success();
         }
 
         $user->save();

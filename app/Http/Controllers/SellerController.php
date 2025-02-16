@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Addon;
 use App\Models\Cart;
 use Illuminate\Http\Request;
 use App\Models\User;
@@ -11,6 +12,7 @@ use App\Models\OrderDetail;
 use App\Models\Wishlist;
 use Illuminate\Support\Facades\Hash;
 use App\Notifications\ShopVerificationNotification;
+use App\Services\PreorderService;
 use App\Utility\EmailUtility;
 use Cache;
 use Illuminate\Support\Facades\Notification;
@@ -234,12 +236,21 @@ class SellerController extends Controller
                 Wishlist::where('product_id', $product_id)->delete();
             }
         }
+
         $orders = Order::where('user_id', $shop->user_id)->get();
 
         foreach ($orders as $key => $order) {
             OrderDetail::where('order_id', $order->id)->delete();
         }
         Order::where('user_id', $shop->user_id)->delete();
+
+        // If Preorder addon is installed, delete preorder products and related data.
+        if(Addon::where('unique_identifier', 'preorder')->first()){
+            $preorderProducts = $shop->user->preorderProducts;
+            foreach($preorderProducts as $preorderProduct){
+                (new PreorderService)->productdestroy($preorderProduct->id);
+            }
+        }
 
         User::destroy($shop->user->id);
 

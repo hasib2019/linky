@@ -3,6 +3,7 @@
 @section('content')
 
 <div class="row">
+
     <div class="col-lg-7 mx-auto">
         <div class="card">
             <div class="card-header">
@@ -12,7 +13,13 @@
                 @csrf
                 <div class="card-body">
                     <div class="form-group row">
-                        <label class="col-sm-3 col-from-label" for="purchase_code">{{ translate('Purchase code')}}</label>
+                        <label class="col-sm-3 col-from-label" for="domain_purchase_code">{{ translate('Main item purchase code')}}</label>
+                        <div class="col-sm-9">
+                            <input type="text" id="domain_purchase_code" name="domain_purchase_code" class="form-control" autocomplete="off" required>
+                        </div>
+                    </div>
+                    <div class="form-group row">
+                        <label class="col-sm-3 col-from-label" for="purchase_code">{{ translate('Addon purchase code')}}</label>
                         <div class="col-sm-9">
                             <input type="text" id="purchase_code" name="purchase_code" class="form-control" autocomplete="off" required>
                         </div>

@@ -45,7 +45,7 @@
                                 <span class="fs-14 text-light">{{ translate('Rating') }}</span>
                             </p>
                             <h3 class="mb-0 text-white fs-30">
-                                {{ $authUser->shop->rating }}
+                                {{ $authUser->shop?->rating }}
                             </h3>
                         </div>
                         <div class="col-auto text-right">
@@ -68,7 +68,7 @@
                                     </g>
                                 </g>
                             </svg>
-                            <p class="fs-12 text-light my-2 ml-1">{{ translate('Followers').' '.$authUser->shop->followers()->count() }}</p>
+                            <p class="fs-12 text-light my-2 ml-1">{{ translate('Followers').' '.$authUser->shop?->followers()->count() }}</p>
                         </div>
                         <div class="d-flex align-items-center">
                             <svg xmlns="http://www.w3.org/2000/svg" width="16.5" height="16.5" viewBox="0 0 16.5 16.5">
@@ -85,7 +85,7 @@
                                     </g>
                                 </g>
                             </svg>
-                            <p class="fs-12 text-light my-2 ml-1">{{ translate('Custom Followers').' '.$authUser->shop->custom_followers }}</p>
+                            <p class="fs-12 text-light my-2 ml-1">{{ translate('Custom Followers').' '.$authUser->shop?->custom_followers }}</p>
                         </div>
                     </div>
                 </div>
@@ -402,7 +402,7 @@
                         <div class="card-title">
                             <h6 class="mb-0">{{ translate('Purchased Package') }}</h6>
                         </div>
-                        @if ($authUser->shop->seller_package)
+                        @if ($authUser->shop?->seller_package)
                             <div class="d-flex">
                                 <div class="col-3">
                                     <img src="{{ uploaded_asset($authUser->shop->seller_package->logo) }}"
@@ -416,6 +416,11 @@
                                         <p class="mb-1 text-muted">{{ translate('Product Upload Limit') }}:
                                             {{ $authUser->shop->product_upload_limit }} {{ translate('Times') }}
                                         </p>
+                                        @if(addon_is_activated('preorder'))
+                                            <p class="mb-1 text-muted">{{ translate('Preorder Product Upload Limit') }}:
+                                                {{ $authUser->shop->preorder_product_upload_limit }} {{ translate('Times') }}
+                                            </p>
+                                        @endif
                                         <p class="text-muted mb-4">{{ translate('Package Expires at') }}:
                                             {{ $authUser->shop->package_invalid_at }}
                                         </p>
@@ -434,7 +439,7 @@
             @endif
             <div
                 class="card mb-0 @if (addon_is_activated('seller_subscription')) px-4 py-5 @else p-5 h-100 @endif d-flex align-items-center justify-content-center">
-                @if ($authUser->shop->verification_status == 0)
+                @if ($authUser->shop?->verification_status == 0)
                     <div class="my-n4 py-1 text-center">
                         <img src="{{ static_asset('assets/img/non_verified.png') }}" alt=""
                             class="w-xxl-130px w-90px d-block">

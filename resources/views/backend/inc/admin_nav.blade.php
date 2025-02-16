@@ -65,6 +65,10 @@
                         <a class="aiz-topbar-menu fs-13 fw-600 d-flex align-items-center justify-content-center {{ areActiveRoutes(['all_orders.index']) }}"
                             href="{{ route('all_orders.index') }}">{{ translate('Orders') }}</a>
                     @endcan
+                    @if (addon_is_activated('preorder'))
+                    <a class="aiz-topbar-menu fs-13 fw-600 d-flex align-items-center justify-content-center {{ areActiveRoutes(['all_orders.index']) }}"
+                            href="{{ route('all_preorder.list') }}">{{ translate('Preorders') }}</a>
+                    @endif
                     @can('earning_report')
                         <a class="aiz-topbar-menu fs-13 fw-600 d-flex align-items-center justify-content-center {{ areActiveRoutes(['earning_payout_report.index']) }}"
                             href="{{ route('earning_payout_report.index') }}">{{ translate('Earnings') }}</a>
@@ -142,6 +146,12 @@
                                         <a class="nav-link text-dark active" data-toggle="tab" data-type="order" href="javascript:void(0);"
                                             data-target="#orders-notifications" role="tab" id="orders-tab">{{ translate('Orders') }}</a>
                                     </li>
+                                    @if (addon_is_activated('preorder'))
+                                        <li class="nav-item">
+                                            <a class="nav-link text-dark" data-toggle="tab" data-type="preorder" href="javascript:void(0);"
+                                                data-target="#preorders-notifications" role="tab" id="preorders-tab">{{ translate('Preorders') }}</a>
+                                        </li>
+                                    @endif
                                     <li class="nav-item">
                                         <a class="nav-link text-dark" data-toggle="tab" data-type="seller" href="javascript:void(0);"
                                             data-target="#sellers-notifications" role="tab" id="sellers-tab">{{ translate('Sellers') }}</a>
@@ -154,6 +164,9 @@
                                 <div class="tab-content c-scrollbar-light overflow-auto" style="height: 75vh; max-height: 400px; overflow-y: auto;">
                                     <div class="tab-pane active" id="orders-notifications" role="tabpanel">
                                         <x-unread_notification :notifications="auth()->user()->unreadNotifications()->where('type', 'App\Notifications\OrderNotification')->take(20)->get()" />
+                                    </div>
+                                    <div class="tab-pane" id="preorders-notifications" role="tabpanel">
+                                        <x-unread_notification :notifications="auth()->user()->unreadNotifications()->where('type', 'App\Notifications\PreorderNotification')->take(20)->get()" />
                                     </div>
                                     <div class="tab-pane" id="sellers-notifications" role="tabpanel">
                                         <x-unread_notification :notifications="auth()->user()->unreadNotifications()->where('type', 'like', '%shop%')->take(20)->get()" />

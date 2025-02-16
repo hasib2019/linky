@@ -19,6 +19,7 @@ use Mail;
 use App\Mail\InvoiceEmailManager;
 use App\Models\OrdersExport;
 use App\Utility\NotificationUtility;
+use CoreComponentRepository;
 use App\Utility\SmsUtility;
 use Illuminate\Support\Facades\Route;
 use Maatwebsite\Excel\Facades\Excel;
@@ -40,6 +41,8 @@ class OrderController extends Controller
     // All Orders
     public function all_orders(Request $request)
     {
+        CoreComponentRepository::instantiateShopRepository();
+
         $date = $request->date;
         $sort_search = null;
         $delivery_status = null;
@@ -379,6 +382,11 @@ class OrderController extends Controller
         $order->delivery_status = $request->status;
         $order->save();
 
+        if($request->status == 'delivered'){
+            $order->delivered_date = date("Y-m-d H:i:s");
+            $order->save();
+        }
+        
         if ($request->status == 'cancelled' && $order->payment_type == 'wallet') {
             $user = User::where('id', $order->user_id)->first();
             $user->balance += $order->grand_total;

@@ -1,12 +1,8 @@
 <div class="sticky-top z-3 row gutters-10">
     @php
-        $photos = [];
+        $photos = $detailedProduct->photos != null ? explode(',', $detailedProduct->photos) : [];
     @endphp
-    @if ($detailedProduct->photos != null)
-        @php
-            $photos = explode(',', $detailedProduct->photos);
-        @endphp
-    @endif
+    
     <!-- Gallery Images -->
     <div class="col-12">
         <div class="aiz-carousel product-gallery arrow-inactive-transparent arrow-lg-none"

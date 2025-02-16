@@ -293,7 +293,11 @@
             }
 
         });
-        
+
+        function sort_orders(el){
+            $('#sort_orders').submit();
+        }
+
         function bulk_delete() {
             var data = new FormData($('#sort_orders')[0]);
             $.ajax({
@@ -321,16 +325,16 @@
             $("#sort_orders").attr("action", '');
         }
 
-        // Set Commission
-        function unpaid_order_payment_notification(shop_id){
+        // Unpaid Order Payment Notification
+        function unpaid_order_payment_notification(order_id){
             var orderIds = [];
-            orderIds.push(shop_id);
+            orderIds.push(order_id);
             $('#order_ids').val(orderIds);
             $('#complete_unpaid_order_payment').modal('show', {backdrop: 'static'});
         }
 
-        // Set seller bulk commission
-         function bulk_unpaid_order_payment_notification(){
+        // Unpaid Order Payment Notification
+        function bulk_unpaid_order_payment_notification(){
             var orderIds = [];
             $(".check-one[name='id[]']:checked").each(function() {
                 orderIds.push($(this).val());
@@ -342,6 +346,6 @@
             else{
                 AIZ.plugins.notify('danger', '{{ translate('Please Select Order first.') }}');
             }
-         }
+        }
     </script>
 @endsection

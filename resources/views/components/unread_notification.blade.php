@@ -33,11 +33,11 @@
                     <div>
                         {{-- Order Related Notifications --}}
                         @if ($notification->type == 'App\Notifications\OrderNotification')
-                        @php
-                            $orderCode  = $notification->data['order_code'];
-                            $orderCode = "<span class='text-blue'>".$orderCode."</span>";
-                            $notifyContent = str_replace('[[order_code]]', $orderCode, $notifyContent);
-                        @endphp
+                            @php
+                                $orderCode  = $notification->data['order_code'];
+                                $orderCode = "<span class='text-blue'>".$orderCode."</span>";
+                                $notifyContent = str_replace('[[order_code]]', $orderCode, $notifyContent);
+                            @endphp
 
                         {{-- Shop Verification Related Notifications --}}
                         @elseif ($notification->type == 'App\Notifications\ShopVerificationNotification')
@@ -67,7 +67,16 @@
                                 $notifyContent = str_replace('[[shop_name]]', $shopName, $notifyContent);
                                 $notifyContent = str_replace('[[amount]]', $amount, $notifyContent);
                             @endphp
+
+                        {{-- Preorder Notifications --}}
+                        @elseif ($notification->type == 'App\Notifications\PreorderNotification' && addon_is_activated('preorder'))
+                            @php
+                                $orderCode  = $notification->data['order_code'];
+                                $orderCode = "<span class='text-blue'>".$orderCode."</span>";
+                                $notifyContent = str_replace('[[order_code]]', $orderCode, $notifyContent);
+                            @endphp
                         @endif
+
                         <a href="{{ ($user_type == 'admin' || $user_type == 'staff') ?
                                     route('admin.notification.read-and-redirect', encrypt($notification->id)) :
                                     route('seller.notification.read-and-redirect', encrypt($notification->id)) }}">

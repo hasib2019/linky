@@ -4,7 +4,6 @@ namespace App\Http\Controllers;
 
 use App\Models\Product;
 use App\Models\ProductQuery;
-use App\Models\User;
 use Auth;
 use Illuminate\Http\Request;
 

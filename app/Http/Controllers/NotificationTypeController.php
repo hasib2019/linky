@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Http\Requests\NotificationTypeRequest;
+use App\Models\Addon;
 use App\Models\NotificationType;
 use App\Models\NotificationTypeTranslation;
 use DB;
@@ -26,9 +27,21 @@ class NotificationTypeController extends Controller
     public function index(Request $request)
     {
         // Notification Types
+        $addons = Addon::where('activated', 1)->where('unique_identifier','!=', 'preorder')->pluck('unique_identifier')->toArray();
+        
         $notification_type_sort_search = (isset($request->notification_type_sort_search) && $request->notification_type_sort_search) ? $request->notification_type_sort_search : null;
         $notificationUserType = $request->notification_user_type == null ? 'customer' :  $request->notification_user_type;
+
         $notificationTypes = NotificationType::where('user_type', $notificationUserType);
+
+        // If notification templates are for addons, check addons are insatalled and activated.
+        $notificationTypes->where(function ($query) use ($addons) {
+            $query->whereAddon(null)
+                ->orWhere(function ($query) use ($addons) {
+                    $query->whereIn('addon', $addons);
+                });
+        });
+
         if ($notification_type_sort_search != null){
             $notificationTypes = $notificationTypes->where('name', 'like', '%' . $notification_type_sort_search . '%')
                 ->orWhereHas('notificationTypeTranslations', function ($q) use ($notification_type_sort_search) {

@@ -86,7 +86,6 @@ class ReviewController extends Controller
             $categories = [];
         }
         $product = $productId != null ? Product::whereId($productId)->first() : null ;
-        // $products = Product::where('added_by', 'admin')->isApprovedPublished()->where('auction_product', 0)->orderBy('created_at', 'desc')->get();
         return view('backend.product.reviews.create_custom_review', compact('product', 'categories'));
     }
 
