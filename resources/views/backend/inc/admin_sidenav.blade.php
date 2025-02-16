@@ -45,7 +45,7 @@
                 @endcan
 
                 <!-- POS Addon-->
-                @if (addon_is_activated('pos_system') && (auth()->user()->can('pos_manager') || auth()->user()->can('pos_configuration')))
+                @if ( (auth()->user()->can('pos_manager') || auth()->user()->can('pos_configuration')))
                 <li class="aiz-side-nav-item">
                     <a href="#" class="aiz-side-nav-link">
                         <div class="aiz-side-nav-icon">
