@@ -144,9 +144,9 @@
                                     @if ($order->viewed == 0)
                                         <span class="badge badge-inline badge-info">{{ translate('New') }}</span>
                                     @endif
-                                    
+                                    @if (addon_is_activated('pos_system') && $order->order_from == 'pos')
                                         <span class="badge badge-inline badge-danger">{{ translate('POS') }}</span>
-                               
+                                    @endif
                                 </td>
                                 <td>
                                     {{ count($order->orderDetails) }}

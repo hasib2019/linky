@@ -27,7 +27,7 @@
                     </a>
                 </div>
             </div>
-            @if ( && auth()->user()->can('pos_manager'))
+            @if (addon_is_activated('pos_system') && auth()->user()->can('pos_manager'))
             <!-- POS -->
             <div class="aiz-topbar-item mr-3">
                 <div class="d-flex align-items-center">

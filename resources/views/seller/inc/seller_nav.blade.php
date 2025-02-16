@@ -17,6 +17,7 @@
                     </div>
                 </div>
             </div>
+            @if (addon_is_activated('pos_system'))
                 <div class="d-flex justify-content-around align-items-center align-items-stretch ml-3">
                     <div class="aiz-topbar-item">
                         <div class="d-flex align-items-center">
@@ -26,6 +27,7 @@
                         </div>
                     </div>
                 </div>
+            @endif
         </div>
         <div class="d-flex justify-content-around align-items-center align-items-stretch">
 

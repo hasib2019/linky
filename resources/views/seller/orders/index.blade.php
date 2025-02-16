@@ -105,7 +105,7 @@
                                         <td>
                                             <a href="#{{ $order->code }}"
                                                 onclick="show_order_details({{ $order->id }})">{{ $order->code }}</a>
-                                            @if ( $order->order_from == 'pos')
+                                            @if (addon_is_activated('pos_system') && $order->order_from == 'pos')
                                                 <span class="badge badge-inline badge-danger">{{ translate('POS') }}</span>
                                             @endif
                                         </td>
@@ -136,7 +136,7 @@
                                             @endif
                                         </td>
                                         <td class="text-right">
-                                            @if ( $order->order_from == 'pos')
+                                            @if (addon_is_activated('pos_system') && $order->order_from == 'pos')
                                                 <a class="btn btn-soft-success btn-icon btn-circle btn-sm"
                                                     href="{{ route('seller.invoice.thermal_printer', $order->id) }}"
                                                     target="_blank" title="{{ translate('Thermal Printer') }}">
