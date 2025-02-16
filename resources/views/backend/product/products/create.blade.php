@@ -2,10 +2,6 @@
 
 @section('content')
 
-@php
-    CoreComponentRepository::instantiateShopRepository();
-    CoreComponentRepository::initializeCache();
-@endphp
 
 <div class="page-content">
     <div class="aiz-titlebar text-left mt-2 pb-2 px-3 px-md-2rem border-bottom border-gray">
