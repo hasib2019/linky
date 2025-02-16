@@ -95,7 +95,7 @@
                         </div>
                     </div>
 
-                    @if (addon_is_activated('pos_system'))
+               
                     <div class="form-group row">
                         <label class="col-lg-3 col-from-label">{{translate('Barcode')}}</label>
                         <div class="col-lg-8">
@@ -103,7 +103,7 @@
                                 placeholder="{{ translate('Barcode') }}" value="{{ $product->barcode }}">
                         </div>
                     </div>
-                    @endif
+           
                 </div>
             </div>
             <div class="card">

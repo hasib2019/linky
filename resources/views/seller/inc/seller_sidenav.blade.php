@@ -265,8 +265,7 @@
                     </li>
                 @endif
 
-                @if (addon_is_activated('pos_system') &&
-                        get_setting('pos_activation_for_seller') != null &&
+                @if (get_setting('pos_activation_for_seller') != null &&
                         get_setting('pos_activation_for_seller') != 0)
                     <li class="aiz-side-nav-item">
                         <a href="#" class="aiz-side-nav-link">
