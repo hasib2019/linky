@@ -3,8 +3,8 @@
 @section('content')
 
 @php
-    CoreComponentRepository::instantiateShopRepository();
-    CoreComponentRepository::initializeCache();
+    
+    
 @endphp
 
 <div class="row">
