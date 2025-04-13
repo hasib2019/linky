@@ -117,6 +117,7 @@ Route::controller(ShopController::class)->group(function () {
 });
 
 Route::controller(HomeController::class)->group(function () {
+    Route::get('/registration/verification', 'verifyRegEmailorPhone')->name('registration.verification');
     Route::get('/email-change/callback', 'email_change_callback')->name('email_change.callback');
     Route::post('/password/reset/email/submit', 'reset_password_with_code')->name('password.update');
 

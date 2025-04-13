@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Http\Requests\SellerRegistrationRequest;
+use App\Models\AffiliateConfig;
 use Illuminate\Http\Request;
 use App\Models\Shop;
 use App\Models\User;
@@ -15,6 +16,8 @@ use Hash;
 use App\Utility\EmailUtility;
 use Illuminate\Support\Facades\Notification;
 use App\Http\Controllers\OTPVerificationController;
+use Cookie;
+use Illuminate\Support\Facades\Session;
 
 class ShopController extends Controller
 {
@@ -42,23 +45,27 @@ class ShopController extends Controller
      */
     public function create()
     {
-        abort(404);
-        
-        // $email = null;
-        // $phone = null;
-        // if (Auth::check()) {
-        //     if ((Auth::user()->user_type == 'admin' || Auth::user()->user_type == 'customer')) {
-        //         flash(translate('Admin or Customer cannot be a seller'))->error();
-        //         return back();
-        //     }
-        //     if (Auth::user()->user_type == 'seller') {
-        //         flash(translate('This user already a seller'))->error();
-        //         return back();
-        //     }
-        // } else {
+        // check if the seller verification enable
+        if(get_setting('seller_registration_verify') === '1' ){
+            abort(404);
+        }
+
+        // default registration page
+        $email = null;
+        $phone = null;
+        if (Auth::check()) {
+            if ((Auth::user()->user_type == 'admin' || Auth::user()->user_type == 'customer')) {
+                flash(translate('Admin or Customer cannot be a seller'))->error();
+                return back();
+            }
+            if (Auth::user()->user_type == 'seller') {
+                flash(translate('This user already a seller'))->error();
+                return back();
+            }
+        } else {
             
-        //     return view('auth.'.get_setting('authentication_layout_select').'.seller_registration', compact('email','phone'));
-        // }
+            return view('auth.'.get_setting('authentication_layout_select').'.seller_registration', compact('email','phone'));
+        }
     }
 
     /**
@@ -165,6 +172,7 @@ class ShopController extends Controller
     }
 
     public function verifyRegEmailorPhone(){
+        $type = 'seller';
         if (Auth::check()) {
             if ((Auth::user()->user_type == 'admin' || Auth::user()->user_type == 'customer')) {
                 flash(translate('Admin or Customer cannot be a seller'))->error();
@@ -175,7 +183,7 @@ class ShopController extends Controller
                 return back();
             }
         } else {
-            return view('auth.'.get_setting('authentication_layout_select').'.seller_reg_verification');
+            return view('auth.'.get_setting('authentication_layout_select').'.reg_verification', compact('type'));
         }
     }
 
@@ -200,6 +208,8 @@ class ShopController extends Controller
             ['code' => $verificationCode]
         );
         $success = 1;
+        Session::put('registration_type', $request->type);
+
         if ($email) {
             try {
                 EmailUtility::email_verification_for_registration_seller('email_verification_for_registration_seller', $email, $verificationCode);
@@ -232,6 +242,7 @@ class ShopController extends Controller
     }
 
     public function regVerifyCode($id){
+        // $sellerVerification = $id;
         $sellerVerification = RegistrationVerificationCode::whereId(decrypt($id))->first();
         return view('auth.'.get_setting('authentication_layout_select').'.seller_verify_confirmation', compact('sellerVerification'));
     }
@@ -252,7 +263,30 @@ class ShopController extends Controller
         else {
             $sellerVerification->is_verified = 1;
             $sellerVerification->save();
-            return view('auth.'.get_setting('authentication_layout_select').'.seller_registration', compact('sellerVerification','email','phone'));
+            if(session()->get('registration_type') == 'seller'){
+                return view('auth.'.get_setting('authentication_layout_select').'.seller_registration', compact('sellerVerification','email','phone'));
+            }else{
+                if (Auth::check()) {
+                    return redirect()->route('home');
+                }
+                if ($request->has('referral_code') && addon_is_activated('affiliate_system')) {
+                    try {
+                        $affiliate_validation_time = AffiliateConfig::where('type', 'validation_time')->first();
+                        $cookie_minute = 30 * 24;
+                        if ($affiliate_validation_time) {
+                            $cookie_minute = $affiliate_validation_time->value * 60;
+                        }
+        
+                        Cookie::queue('referral_code', $request->referral_code, $cookie_minute);
+                        $referred_by_user = User::where('referral_code', $request->referral_code)->first();
+        
+                        $affiliateController = new AffiliateController;
+                        $affiliateController->processAffiliateStats($referred_by_user->id, 1, 0, 0, 0);
+                    } catch (\Exception $e) {
+                    }
+                }
+                return view('auth.' . get_setting('authentication_layout_select') . '.user_registration', compact('sellerVerification','email','phone'));
+            }
         }
     }
 }

@@ -10,7 +10,8 @@
         @guest
             <p class="fs-14 fw-400 mb-0 px-3 px-sm-4 mt-3"><a
                     href="{{ route('user.login') }}">{{ translate('Login') }}</a> {{ translate('or') }} <a class="mr-1"
-                    href="{{ route('user.registration') }}">{{ translate('Register ') }}</a>{{ translate(' to submit your questions to seller') }}
+                    href="{{ route(get_setting('customer_registration_verify') === '1' ? 'registration.verification' : 'user.registration') }}">{{ translate('Register ') }}</a>{{ translate(' to submit your questions to seller') }}
+                    {{-- href="{{ route('user.registration') }}">{{ translate('Register ') }}</a>{{ translate(' to submit your questions to seller') }} --}}
             </p>
         @endguest
 

@@ -87,7 +87,7 @@
                         @if (get_setting('vendor_system_activation') == 1)
                             <!-- Become a Seller -->
                             <li class="list-inline-item mr-0 pl-0 py-2">
-                                <a href="{{ route('shop-reg.verification') }}"
+                                <a href="{{ route(get_setting('seller_registration_verify') === '1' ? 'shop-reg.verification' : 'shops.create') }}"
                                     class="text-secondary fs-12 pr-3 d-inline-block border-width-2 border-right">{{ translate('Become a Seller !') }}</a>
                             </li>
                             {{-- <li class="list-inline-item mr-0 pl-0 py-2">
@@ -375,7 +375,8 @@
                                 </span>
                                 <a href="{{ route('user.login') }}"
                                     class="text-reset opacity-60 hov-opacity-100 hov-text-primary fs-12 d-inline-block border-right border-soft-light border-width-2 pr-2 ml-3">{{ translate('Login') }}</a>
-                                <a href="{{ route('user.registration') }}"
+                                <a href="{{ route(get_setting('customer_registration_verify') === '1' ? 'registration.verification' : 'user.registration') }}"
+                                {{-- <a href="{{ route('user.registration') }}" --}}
                                     class="text-reset opacity-60 hov-opacity-100 hov-text-primary fs-12 d-inline-block py-2 pl-2">{{ translate('Registration') }}</a>
                             </span>
                         @endauth
@@ -694,9 +695,11 @@
                                 transform="translate(-2.064 -1.995)" fill="#91919b" />
                         </svg>
                     </span>
+
                     <a href="{{ route('user.login') }}"
                         class="text-reset opacity-60 hov-opacity-100 hov-text-primary fs-12 d-inline-block border-right border-soft-light border-width-2 pr-2 ml-3">{{ translate('Login') }}</a>
-                    <a href="{{ route('user.registration') }}"
+                    <a href="{{ route(get_setting('customer_registration_verify') === '1' ? 'registration.verification' : 'user.registration') }}"
+                    {{-- <a href="{{ route('user.registration') }}" --}}
                         class="text-reset opacity-60 hov-opacity-100 hov-text-primary fs-12 d-inline-block py-2 pl-2">{{ translate('Registration') }}</a>
                 </span>
             @endauth

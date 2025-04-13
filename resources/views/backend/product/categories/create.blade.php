@@ -2,6 +2,10 @@
 
 @section('content')
 
+@php
+    CoreComponentRepository::instantiateShopRepository();
+    CoreComponentRepository::initializeCache();
+@endphp
 
 <div class="row">
     <div class="col-lg-8 mx-auto">

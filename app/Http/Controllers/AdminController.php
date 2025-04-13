@@ -13,6 +13,7 @@ use App\Models\User;
 use Artisan;
 use Cache;
 use Carbon\Carbon;
+use CoreComponentRepository;
 use DB;
 
 class AdminController extends Controller
@@ -24,6 +25,7 @@ class AdminController extends Controller
      */
     public function admin_dashboard(Request $request)
     {
+        CoreComponentRepository::initializeCache();
         $root_categories = Category::where('level', 0)->get();
 
         $data['cached_graph_data'] = Cache::remember('cached_graph_data', 86400, function () use ($root_categories) {

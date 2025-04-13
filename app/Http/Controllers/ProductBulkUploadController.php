@@ -11,6 +11,8 @@ use App\Models\ProductsExport;
 use PDF;
 use Maatwebsite\Excel\Facades\Excel;
 use Auth;
+use MyCLabs\Enum\Enum;
+
 
 class ProductBulkUploadController extends Controller
 {

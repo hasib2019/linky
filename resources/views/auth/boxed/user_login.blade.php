@@ -155,11 +155,13 @@
                                             </ul>
                                         @endif
                                     </div>
+                                    
 
                                     <!-- Register Now -->
                                     <p class="fs-12 text-gray mb-0">
                                         {{ translate('Dont have an account?')}}
-                                        <a href="{{ route('user.registration') }}" class="ml-2 fs-14 fw-700 animate-underline-primary">{{ translate('Register Now')}}</a>
+                                        <a href="{{ route(get_setting('customer_registration_verify') === '1' ? 'registration.verification' : 'user.registration') }}" class="ml-2 fs-14 fw-700 animate-underline-primary">{{ translate('Register Now')}}</a>
+                                        {{-- <a href="{{ route('user.registration') }}" class="ml-2 fs-14 fw-700 animate-underline-primary">{{ translate('Register Now')}}</a> --}}
                                     </p>
                                 </div>
                             </div>

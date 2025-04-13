@@ -690,7 +690,8 @@
                             @guest
                                 <p class="fs-14 fw-400 mb-0 px-4 mt-3"><a
                                         href="{{ route('user.login') }}">{{ translate('Login') }}</a> or <a class="mr-1"
-                                        href="{{ route('user.registration') }}">{{ translate('Register ') }}</a>{{ translate(' to submit your questions to seller') }}
+                                        href="{{ route(get_setting('customer_registration_verify') === '1' ? 'registration.verification' : 'user.registration') }}">{{ translate('Register ') }}</a>{{ translate(' to submit your questions to seller') }}
+                                        {{-- href="{{ route('user.registration') }}">{{ translate('Register ') }}</a>{{ translate(' to submit your questions to seller') }} --}}
                                 </p>
                             @endguest
 
@@ -872,7 +873,8 @@
 
                         <div class="text-center mb-3">
                             <p class="text-muted mb-0">{{ translate('Dont have an account?')}}</p>
-                            <a href="{{ route('user.registration') }}">{{ translate('Register Now')}}</a>
+                            <a href="{{ route('registration.verification') }}">{{ translate('Register Now')}}</a>
+                            {{-- <a href="{{ route('user.registration') }}">{{ translate('Register Now')}}</a> --}}
                         </div>
                         @if(get_setting('google_login') == 1 ||
                             get_setting('facebook_login') == 1 ||

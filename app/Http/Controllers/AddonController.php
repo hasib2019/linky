@@ -302,19 +302,20 @@ class AddonController extends Controller
              return translate('This addon is not registered with this domain, please register at first');
         }
 
-        if(self::normalizeDomain(($check_registered_addon[0])) == self::normalizeDomain(($_SERVER['SERVER_NAME']))){
+        // if(self::normalizeDomain(($check_registered_addon[0])) == self::normalizeDomain(($_SERVER['SERVER_NAME']))){
+        if (strcasecmp(self::normalizeDomain($check_registered_addon[0]), self::normalizeDomain($_SERVER['SERVER_NAME'])) === 0) {
             return true;
         }
         return false;
     }
 
-    protected static function checkVerification( $type, $key){
+    public static function checkVerification( $type, $key){
 
         $res  = self::script_activation_check($key);
         return $res;
     }
 
-    protected static function checkActivation( $type, $key){
+    public static function checkActivation( $type, $key){
 
         if($type == 'item'){
             $url = "https://activation.activeitzone.com/item_info/".$key;
@@ -326,7 +327,7 @@ class AddonController extends Controller
     }
 
 
-    protected static function sendRequest( $url) {
+    public static function sendRequest( $url) {
         $ch = curl_init();
         
         curl_setopt($ch, CURLOPT_URL, $url);
@@ -340,7 +341,7 @@ class AddonController extends Controller
         return $response;
     }
 
-    protected static function script_activation_check( $purchase_code) {
+    public static function script_activation_check( $purchase_code) {
         $url = "https://activeitzone.com/activation/verify-purchase-code/".$purchase_code;
         $request_data_json = json_encode(['code' => $purchase_code]);
 
@@ -363,7 +364,7 @@ class AddonController extends Controller
     }
 
 
-    protected static function check_registered_addon($purchase_code) {
+    public static function check_registered_addon($purchase_code) {
         $url = "https://activation.activeitzone.com/registered-addon-list/".$purchase_code;
 
         $ch = curl_init();
@@ -380,7 +381,7 @@ class AddonController extends Controller
     }
 
 
-    protected static function normalizeDomain($domain){
+    public static function normalizeDomain($domain){
             $domain = preg_replace('/^https?:\/\//', '', $domain);
             $domain = preg_replace('/^www\./', '', $domain);
             $parts = explode('.', $domain);
@@ -392,7 +393,7 @@ class AddonController extends Controller
         return $domain;
     }
 
-    protected static function isLocalhostDomain() {
+    public static function isLocalhostDomain() {
         if (isset($_SERVER['HTTP_HOST']) && strpos($_SERVER['HTTP_HOST'], 'localhost') !== false) {
             return true;
         }

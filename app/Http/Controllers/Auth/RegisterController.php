@@ -74,7 +74,8 @@ class RegisterController extends Controller
      */
     protected function create(array $data)
     {
-        if (filter_var($data['email'], FILTER_VALIDATE_EMAIL)) {
+        // dd($data);
+        if (isset($data['email']) && filter_var($data['email'], FILTER_VALIDATE_EMAIL)) {
             $user = User::create([
                 'name' => $data['name'],
                 'email' => $data['email'],
@@ -90,8 +91,11 @@ class RegisterController extends Controller
                     'verification_code' => rand(100000, 999999)
                 ]);
 
-                $otpController = new OTPVerificationController;
-                $otpController->send_code($user);
+                if(get_setting('customer_registration_verify') != '1' ){
+                    $otpController = new OTPVerificationController;
+                    $otpController->send_code($user);
+                }
+
             }
         }
         
@@ -143,7 +147,7 @@ class RegisterController extends Controller
         $this->guard()->login($user);
 
         if($user->email != null){
-            if(BusinessSetting::where('type', 'email_verification')->first()->value != 1){
+            if(BusinessSetting::where('type', 'email_verification')->first()->value != 1 || get_setting('customer_registration_verify') === '1'){
                 $user->email_verified_at = date('Y-m-d H:m:s');
                 $user->save();
                 offerUserWelcomeCoupon();

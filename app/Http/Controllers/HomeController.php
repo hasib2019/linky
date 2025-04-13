@@ -44,6 +44,8 @@ class HomeController extends Controller
      */
     public function index()
     {
+        // $route = route(get_setting('customer_registration_verify') === '1' ? 'registration.verification' : 'user.registration'); 
+        // dd( $route );
         $lang = get_system_language() ? get_system_language()->code : null;
         $featured_categories = Cache::rememberForever('featured_categories', function () {
             return Category::with('bannerImage')->where('featured', 1)->get();
@@ -128,11 +130,34 @@ class HomeController extends Controller
         return view('auth.' . get_setting('authentication_layout_select') . '.user_login');
     }
 
+
+    public function verifyRegEmailorPhone(){
+        $type = 'customer';
+        if (Auth::check()) {
+            if ((Auth::user()->user_type == 'admin' || Auth::user()->user_type == 'seller')) {
+                flash(translate('Admin or seller cannot be a customer'))->error();
+                return back();
+            }
+            if (Auth::user()->user_type == 'customer') {
+                flash(translate('This user already a customer'))->error();
+                return back();
+            }
+        } else {
+            return view('auth.'.get_setting('authentication_layout_select').'.reg_verification', compact('type'));
+        }
+    }
+
     public function registration(Request $request)
     {
+        if(get_setting('customer_registration_verify') === '1' ){
+            abort(404);
+        }
+
         if (Auth::check()) {
             return redirect()->route('home');
         }
+
+
         if ($request->has('referral_code') && addon_is_activated('affiliate_system')) {
             try {
                 $affiliate_validation_time = AffiliateConfig::where('type', 'validation_time')->first();
@@ -149,7 +174,9 @@ class HomeController extends Controller
             } catch (\Exception $e) {
             }
         }
-        return view('auth.' . get_setting('authentication_layout_select') . '.user_registration');
+        $email = null;
+        $phone = null;
+        return view('auth.' . get_setting('authentication_layout_select') . '.user_registration', compact('email','phone'));
     }
 
     public function cart_login(Request $request)
