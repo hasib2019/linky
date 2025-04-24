@@ -203,7 +203,8 @@
                         if(isOkShipping && isOkDelivery && isOkPayment) {
                             allIsOk = true;
                         }else{
-                            AIZ.plugins.notify('danger', '{{ translate("Please fill in all mandatory fields!") }}');
+                            
+                            AIZ.plugins.notify('dark', '{{ translate("Please fill in all mandatory fields!") }}');
                             $('#checkout-form [required]').each(function (i, el) {
                                 if ($(el).val() == '' || $(el).val() == undefined) {
                                     var is_trx_id = $('.d-none #trx_id').length;
