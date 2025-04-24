@@ -126,8 +126,9 @@ class CheckoutController extends Controller
     public function checkout(Request $request)
     {
         // if guest checkout, create user
-        if(auth()->user() == null){
+        if(auth()->user() == null ){
             $guest_user = $this->createUser($request->except('_token', 'payment_option'));
+
             if(gettype($guest_user) == "object"){
                 $errors = $guest_user;
                 return redirect()->route('checkout')->withErrors($errors);
@@ -145,8 +146,7 @@ class CheckoutController extends Controller
         }
         $user = auth()->user();
         $carts = Cart::where('user_id', $user->id)->active()->get();
-
-
+   
         // Minumum order amount check
         if(get_setting('minimum_order_amount_check') == 1){
             $subtotal = 0;
@@ -215,14 +215,13 @@ class CheckoutController extends Controller
     {
         $validator = Validator::make($guest_shipping_info, [
             'name' => 'required|string|max:255',
-            'email' => 'required|email|unique:users|max:255',
             'phone' => 'required|max:12',
             'address' => 'required|max:255',
             'country_id' => 'required|Integer',
             'state_id' => 'required|Integer',
             'city_id' => 'required|Integer'
         ]);
-
+       
         if ($validator->fails()) {
             return $validator->errors();
         }
@@ -234,14 +233,15 @@ class CheckoutController extends Controller
         // User Create
         $user = new User();
         $user->name = $guest_shipping_info['name'];
-        $user->email = $guest_shipping_info['email'];
+        $user->email = !$guest_shipping_info['email'] ? null : $guest_shipping_info['email'];
         $user->phone = addon_is_activated('otp_system') ? '+'.$guest_shipping_info['country_code'].$guest_shipping_info['phone'] : null;
         $user->password = Hash::make($password);
         $user->email_verified_at = $isEmailVerificationEnabled != 1 ? date('Y-m-d H:m:s') : null;
         $user->save();
 
         // Guest Account Opening and verification(if activated) eamil send
-        try {
+        if($guest_shipping_info['email']){
+         try {
             EmailUtility::customer_registration_email('registration_from_system_email_to_customer', $user, $password);
         } catch (\Exception $e) {
             $success = 0;
@@ -250,8 +250,7 @@ class CheckoutController extends Controller
 
         if($success == 0){
             return $success;
-        }
-
+        }   
         // Sending email verification Notification
         if($isEmailVerificationEnabled == 1){
             EmailUtility::email_verification($user, 'customer');
@@ -263,6 +262,10 @@ class CheckoutController extends Controller
                 EmailUtility::customer_registration_email('customer_reg_email_to_admin', $user, null);
             } catch (\Exception $e) {}
         }
+        }
+        
+
+      
 
         // User Address Create
         $address = new Address;
@@ -651,7 +654,7 @@ class CheckoutController extends Controller
                 $order->save();
             }
         }
-
+        auth()->logout();
         return view('frontend.order_confirmed', compact('combined_order'));
     }
 
