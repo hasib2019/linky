@@ -12,7 +12,7 @@
     <!-- Email -->
     <div class="row">
         <div class="col-md-2 mt-md-2">
-            <label>{{ translate('Email')}} <span class="text-danger">*</span></label>
+            <label>{{ translate('Email')}} </label>
         </div>
         <div class="col-md-10">
             <input type="email" class="form-control mb-3 rounded-0" placeholder="{{ translate('Your Email')}}" name="email" value="">
