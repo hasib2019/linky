@@ -27,7 +27,7 @@
 
                         <div class="accordion" id="accordioncCheckoutInfo">
 
-                            <!-- Shipping Info -->
+                            <!-- Shipping Infxo -->
                             <div class="card rounded-0 border shadow-none" style="margin-bottom: 2rem;">
                                 <div class="card-header border-bottom-0 py-3 py-xl-4" id="headingShippingInfo" type="button" data-toggle="collapse" data-target="#collapseShippingInfo" aria-expanded="true" aria-controls="collapseShippingInfo">
                                     <div class="d-flex align-items-center">
