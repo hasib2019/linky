@@ -96,7 +96,7 @@ class CheckoutController extends Controller
                     $default_carrier_id = $carrier_list->toQuery()->first()->id;
                 }
             }
-
+            $status = true;
             foreach ($carts as $key => $cartItem) {
                 $product = Product::find($cartItem['product_id']);
                 $tax += cart_product_tax($cartItem, $product, false) * $cartItem['quantity'];
@@ -105,11 +105,17 @@ class CheckoutController extends Controller
                 if (get_setting('shipping_type') == 'carrier_wise_shipping') {
                     $cartItem['shipping_cost'] = $country_id != 0 ? getShippingCost($carts, $key, $shipping_info, $default_carrier_id) : 0;
                 } else {
-                    $cartItem['shipping_cost'] = getShippingCost($carts, $key, $shipping_info);
+                    if( $status){
+                        $cartItem['shipping_cost'] = getShippingCost($carts, $key, $shipping_info);
+                        $status = false;
+                    } else {
+                        $cartItem['shipping_cost'] = 0;
+                        $status = false;
+                    }
                 }
                 $cartItem['shipping_type'] = $default_shipping_type;
                 $cartItem['carrier_id'] = $default_carrier_id;
-                $shipping += $cartItem['shipping_cost'];
+                $shipping += $status? $cartItem['shipping_cost'] :0; 
                 $cartItem->save();
             }
             $total = $subtotal + $tax + $shipping;
@@ -706,12 +712,19 @@ class CheckoutController extends Controller
         }
 
         $carts = $carts->fresh();
-
+        // **************** change if need *******************
+        $status = true;
         foreach ($carts as $key => $cartItem) {
             if (get_setting('shipping_type') == 'carrier_wise_shipping') {
                 $cartItem['shipping_cost'] = getShippingCost($carts, $key, $shipping_info, $default_carrier_id);
             } else {
-                $cartItem['shipping_cost'] = getShippingCost($carts, $key, $shipping_info);
+                if ($status) {
+                    $cartItem['shipping_cost'] = getShippingCost($carts, $key, $shipping_info);
+                    $status = false;
+                } else {
+                    $cartItem['shipping_cost'] = 0;
+                    $status = false;
+                }
             }
             $cartItem['address_id'] = $user != null ? $request->address_id : 0;
             $cartItem['shipping_type'] = $default_shipping_type;
