@@ -937,7 +937,7 @@ function getShippingCost($carts, $index, $shipping_info = '', $carrier = '')
         if ($shipping_info['city_id'] == 100000001) {
             return 70;
         } else if ($shipping_info['city_id'] == 100000002) {
-            return 120;
+            return 140;
         } else {
             $city = City::where('id', $shipping_info['city_id'])->first();
 
