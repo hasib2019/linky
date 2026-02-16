@@ -114,7 +114,7 @@
                                     <span class="fs-12 text-secondary fw-400">{{ translate('(Best within 200 character)') }}</span>
                                 </label>
                                 <div class="col-md-8">
-                                    @if ($custom_alert->id == 1)
+                                    @if ($custom_alert->id == 1 || $custom_alert->id == 200)
         						        <textarea name="description" rows="4" 
                                             class="aiz-text-editor form-control" data-buttons='[["font", ["bold"]],["insert", ["link"]]]' required>{{ $custom_alert->description }}</textarea>
                                     @else

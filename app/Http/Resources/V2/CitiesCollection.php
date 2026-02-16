@@ -13,6 +13,7 @@ class CitiesCollection extends ResourceCollection
                 return [
                     'id'      =>(int) $data->id,
                     'state_id' => (int) $data->state_id,
+                    'country_id' => (int) $data->country_id,
                     'name' => $data->name,
                     'cost' => $data->cost,
                 ];

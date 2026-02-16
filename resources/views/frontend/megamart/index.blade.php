@@ -180,10 +180,16 @@
                                                     class="d-block py-md-2 overflow-hidden hov-scale-img"
                                                     title="{{ $flash_deal_product->product->getTranslation('name') }}">
                                                     <!-- Image -->
-                                                    <img src="{{ get_image($flash_deal_product->product->thumbnail) }}"
-                                                        class="lazyload h-100px h-md-120px h-lg-140px mw-100 mx-auto has-transition"
-                                                        alt="{{ $flash_deal_product->product->getTranslation('name') }}"
-                                                        onerror="this.onerror=null;this.src='{{ static_asset('assets/img/placeholder.jpg') }}';">
+                                                    <div class="d-block h-100 position-relative image-hover-effect">
+                                                        <img class="lazyload h-100px h-md-120px h-lg-140px mw-100 mx-auto has-transition product-main-image"
+                                                            src="{{ get_image($flash_deal_product->product->thumbnail) }}"
+                                                            alt="{{ $flash_deal_product->product->getTranslation('name') }}"
+                                                            onerror="this.onerror=null;this.src='{{ static_asset('assets/img/placeholder.jpg') }}';">
+                                                        <img class="lazyload h-100px h-md-120px h-lg-140px w-100 mx-auto has-transition product-hover-image position-absolute"
+                                                            src="{{ get_first_product_image($flash_deal_product->product->thumbnail, $flash_deal_product->product->photos) }}"
+                                                            alt="{{ $flash_deal_product->product->getTranslation('name') }}"
+                                                            onerror="this.onerror=null;this.src='{{ static_asset('assets/img/placeholder.jpg') }}';">
+                                                    </div>
                                                     <!-- Price -->
                                                     <div
                                                         class="fs-10 fs-md-14 mt-2 text-center h-md-48px has-transition overflow-hidden pt-md-4 flash-deal-price lh-1-5">

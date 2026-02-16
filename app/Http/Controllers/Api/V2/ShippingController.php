@@ -34,12 +34,14 @@ class ShippingController extends Controller
                 $address = Address::where('id', $carts[0]['address_id'])->first();
                 $shipping_info['country_id'] = $address->country_id;
                 $shipping_info['city_id'] = $address->city_id;
+                $shipping_info['area_id'] = $address->area_id;
             }
 
             // Guest User Shipping info
             elseif($tempUserId != null){
                 $shipping_info['country_id'] = $request->country_id;
                 $shipping_info['city_id'] = $request->city_id;
+                $shipping_info['area_id'] = $request->area_id;
             }
 
             foreach ($carts as $key => $cartItem) {
@@ -71,39 +73,45 @@ class ShippingController extends Controller
 
     public function getDeliveryInfo(Request $request)
     {
-        $userId        = $request->has('user_id') ? $request->user_id : null;
-        $tempUserId    = $request->has('temp_user_id') ? $request->temp_user_id : null;
+        $userId     = $request->user_id ?? null;
+        $tempUserId = $request->temp_user_id ?? null;
 
-        $cartItems  = ($userId != null) ? Cart::where('user_id', $userId)->active() : Cart::where('temp_user_id', $tempUserId)->active();
+        // Fetch all cart items once
+        $cartItems = ($userId) ? Cart::where('user_id', $userId)->active()->get(): Cart::where('temp_user_id', $tempUserId)->active()->get();
 
         // Logged In User shipping info
-        if($userId != null){
-            $cart =  Cart::where('user_id', $userId)->active()->first();
-            $address = Address::where('id', $cart->address_id)->first();
-            $shipping_info['country_id'] = $address->country_id;
-            $shipping_info['city_id'] = $address->city_id;
-        }
-
-        // Guest User Shipping info
-        elseif($tempUserId != null){
+        $shipping_info = [];
+        if ($userId) {
+            $cart = $cartItems->first();
+            if ($cart && $cart->address_id) {
+                $address = Address::find($cart->address_id);
+                $shipping_info['country_id'] = $address->country_id;
+                $shipping_info['city_id'] = $address->city_id;
+            }
+        } elseif ($tempUserId) {
             $shipping_info['country_id'] = $request->country_id;
             $shipping_info['city_id'] = $request->city_id;
         }
 
-        $owner_ids = ($userId != null) ? 
-                    Cart::where('user_id', $userId)->active()->select('owner_id')->groupBy('owner_id')->pluck('owner_id')->toArray() : 
-                    Cart::where('temp_user_id', $tempUserId)->active()->select('owner_id')->groupBy('owner_id')->pluck('owner_id')->toArray();
+        // Get unique owner_ids
+        $owner_ids = $cartItems->pluck('owner_id')->unique()->toArray();
+
         $shops = [];
+
         if (!empty($owner_ids)) {
             foreach ($owner_ids as $owner_id) {
-                $shop = array();
+                $shop = [];
 
-                $shop_items_raw_data = $cartItems->where('owner_id', $owner_id)->get()->toArray();
+                // Filter cart items for this owner (collection where, no get() needed)
+                $shop_items_raw_data = $cartItems->where('owner_id', $owner_id)->toArray();
 
-                $shop_items_data = array();
+                $shop_items_data = [];
                 if (!empty($shop_items_raw_data)) {
                     foreach ($shop_items_raw_data as $shop_items_raw_data_item) {
-                        $product = Product::where('id', $shop_items_raw_data_item["product_id"])->first();
+                        $product = Product::find($shop_items_raw_data_item["product_id"]);
+                        if (!$product) continue;
+                        $shop_items_data = [];
+                        $shop_items_data_item = [];
                         $shop_items_data_item["id"] = intval($shop_items_raw_data_item["id"]);
                         $shop_items_data_item["owner_id"] = intval($shop_items_raw_data_item["owner_id"]);
                         $shop_items_data_item["user_id"] = intval($shop_items_raw_data_item["user_id"]);
@@ -118,20 +126,14 @@ class ShippingController extends Controller
 
                 $shop_data = Shop::where('user_id', $owner_id)->first();
 
-                if ($shop_data) {
-                    $shop['name'] = $shop_data->name;
-                    $shop['owner_id'] = (int) $owner_id;
-                    $shop['cart_items'] = $shop_items_data;
-                } else {
-                    $shop['name'] = "Inhouse";
-                    $shop['owner_id'] = (int) $owner_id;
-                    $shop['cart_items'] = $shop_items_data;
-                }
+                $shop['name'] = $shop_data ? $shop_data->name : "Inhouse";
+                $shop['owner_id'] = (int) $owner_id;
+                $shop['cart_items'] = $shop_items_data;
                 $shop['carriers'] = seller_base_carrier_list($owner_id, $userId, $tempUserId, $shipping_info);
                 $shop['pickup_points'] = [];
                 if (get_setting('pickup_point') == 1) {
-                    $pickup_point_list = PickupPoint::where('pick_up_status', '=', 1)->get();
-                    $shop['pickup_points']  = PickupPointResource::collection($pickup_point_list);
+                    $pickup_point_list = PickupPoint::where('pick_up_status', 1)->get();
+                    $shop['pickup_points'] = PickupPointResource::collection($pickup_point_list);
                 }
                 $shops[] = $shop;
             }

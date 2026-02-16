@@ -63,7 +63,7 @@
             --soft-primary: {{ hex2rgba(get_setting('base_color', '#d43533'), 0.15) }};
         }
         body{
-            font-family: 'Public Sans', sans-serif;
+            font-family: {!! !empty(get_setting('system_font_family')) ? get_setting('system_font_family') : "'Public Sans', sans-serif" !!}, sans-serif;
             font-weight: 400;
         }
 

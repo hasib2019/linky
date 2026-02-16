@@ -5,6 +5,8 @@ namespace App\Http\Controllers;
 use App\Mail\ContactMailManager;
 use App\Models\Contact;
 use App\Models\User;
+use App\Rules\Recaptcha;
+use Illuminate\Validation\Rule;
 use Illuminate\Http\Request;
 use Mail;
 
@@ -62,6 +64,12 @@ class ContactController extends Controller
 
     public function contact(Request $request)
     {
+        // validate recaptcha
+        $request->validate([
+            'g-recaptcha-response' => [
+                Rule::when(get_setting('google_recaptcha') == 1 && get_setting('recaptcha_contact_form') == 1, ['required', new Recaptcha()], ['sometimes'])
+            ],
+        ]);
         $admin = get_admin();
 
         $array['name'] = $request->name;

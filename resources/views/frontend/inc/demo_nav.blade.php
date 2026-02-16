@@ -49,7 +49,7 @@
                             <img src="{{ static_asset('assets/img/demo/demo_thumb_main.png') }}">
                         </a>
                     </div>
-                    <p class="demo-title">{{ translate('Active eCommerce Main Demo') }}</p>
+                    <p class="demo-title">{{ translate('CreativeITbari E-Commerce Main Demo') }}</p>
                 </div>
                 <!-- Grocery Store -->
                 <div class="col-md-6 my-3">

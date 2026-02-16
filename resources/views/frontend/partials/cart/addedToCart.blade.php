@@ -1,30 +1,32 @@
 <div class="modal-body px-4 py-5 c-scrollbar-light">
     <!-- Item added to your cart -->
-    <div class="text-center text-success mb-4">
-        <svg xmlns="http://www.w3.org/2000/svg" width="36" height="36" viewBox="0 0 36 36">
-            <g id="Group_23957" data-name="Group 23957" transform="translate(-6269 7766)">
-              <path id="Path_28713" data-name="Path 28713" d="M12.8,32.8a3.6,3.6,0,1,0,3.6,3.6A3.584,3.584,0,0,0,12.8,32.8ZM2,4V7.6H5.6l6.471,13.653-2.43,4.41A3.659,3.659,0,0,0,9.2,27.4,3.6,3.6,0,0,0,12.8,31H34.4V27.4H13.565a.446.446,0,0,1-.45-.45.428.428,0,0,1,.054-.216L14.78,23.8H28.19a3.612,3.612,0,0,0,3.15-1.854l6.435-11.682A1.74,1.74,0,0,0,38,9.4a1.8,1.8,0,0,0-1.8-1.8H9.587L7.877,4H2ZM30.8,32.8a3.6,3.6,0,1,0,3.6,3.6A3.584,3.584,0,0,0,30.8,32.8Z" transform="translate(6267 -7770)" fill="#85b567"/>
-              <rect id="Rectangle_18068" data-name="Rectangle 18068" width="9" height="3" rx="1.5" transform="translate(6284.343 -7757.879) rotate(45)" fill="#fff"/>
-              <rect id="Rectangle_18069" data-name="Rectangle 18069" width="3" height="13" rx="1.5" transform="translate(6295.657 -7760.707) rotate(45)" fill="#fff"/>
-            </g>
-        </svg>
-        <h3 class="fs-28 fw-500">{{ translate('Item added to your cart!')}}</h3>
+    <div class="d-flex align-items-center justify-content-center mb-4 mt-3 py-3 px-3 rounded-1" style="background: #e8fff3;">
+        <span>
+        <svg xmlns="http://www.w3.org/2000/svg" height="20px" viewBox="0 -960 960 960" width="20px" fill="#50cd89"><path d="M480-62q-87 0-162.99-32.58-75.98-32.59-132.91-89.52-56.93-56.93-89.52-132.91Q62-393 62-480q0-88 32.58-163.49 32.59-75.48 89.52-132.41 56.93-56.93 132.91-89.52Q393-898 480-898q63 0 120 17t107 50l-87 87q-31-18-66.34-27-35.33-9-73.66-9-125.01 0-212.51 87Q180-606 180-480t87.49 213q87.49 87 212.5 87t212.51-87Q780-354 780-480q0-14.66-2-28.82-2-14.17-5-28.18l96-96q15 35 22 73.45 7 38.46 7 79.12 0 87.43-32.58 163.42-32.59 75.98-89.52 132.91-56.93 56.93-132.41 89.52Q568-62 480-62Zm-58-225L246-463l79-80 98 98 396-396 79 79-476 475Z"/></svg>
+    </span>
+        <span class="fs-16 fw-600 pl-2" style="color: #50cd89; margin-top: 3px;">{{ translate('Item successfully added to your cart!')}}</span>
     </div>
 
     <!-- Product Info -->
-    <div class="media mb-1">
+    <div class="media pb-4 border-bottom-dashed">
         <img src="{{ static_asset('assets/img/placeholder.jpg') }}" data-src="{{ uploaded_asset($product->thumbnail_img) }}"
-            class="mr-4 lazyload size-90px img-fit rounded-0" alt="Product Image" onerror="this.onerror=null;this.src='{{ static_asset('assets/img/placeholder.jpg') }}';">
-        <div class="media-body mt-2 text-left d-flex flex-column justify-content-between">
-            <h6 class="fs-14 fw-700 text-truncate-2">
+            class="mr-4 lazyload size-120px img-fit rounded-1" alt="Product Image" onerror="this.onerror=null;this.src='{{ static_asset('assets/img/placeholder.jpg') }}';">
+        <div class="media-body text-left d-flex flex-column justify-content-between">
+            <h6 class="fs-14 fw-400 text-truncate-2 lh-1-5 m-0">
                 {{  $product->getTranslation('name')  }}
             </h6>
-            <div class="row mt-2">
-                <div class="col-sm-3 fs-14 fw-400 text-secondary">
-                    <div>{{ translate('Price')}}</div>
+            <div class="row mt-1">
+                <div class="col-12">
+                    <p class="m-0 py-1">
+                        <span class="fs-14 fw-400 text-gray">{{ translate('Quantity') }}</span>
+                        <span class="fs-14 fw-600 text-dark">1</span>
+                    </p>
                 </div>
-                <div class="col-sm-9">
-                    <div class="fs-16 fw-700 text-primary">
+                <div class="col-sm-12">
+                    <span class="fs-14 text-gray fw-400">{{ translate('Price')}}</span>
+                </div>
+                <div class="col-sm-12">
+                    <div class="fs-16 fw-600 text-dark">
                         <strong>
                             {{ single_price(cart_product_price($cart, $product, false) * $cart->quantity) }}
                         </strong>
@@ -35,52 +37,45 @@
     </div>
 
     <!-- Related product -->
-    <div class="bg-white shadow-sm">
-        <div class="py-3">
-            <h3 class="fs-16 fw-700 mb-0 text-dark">
+    {{-- <div class="bg-white shadow-sm">
+        <div class="mt-3">
+            <h3 class="fs-14 fw-600 mb-0 text-gray">
                 <span class="mr-4">{{ translate('Frequently Bought Together')}}</span>
             </h3>
         </div>
-        <div class="p-3">
-            <div class="aiz-carousel gutters-5 half-outside-arrow" data-items="2" data-xl-items="3" data-lg-items="4"  data-md-items="3" data-sm-items="2" data-xs-items="2" data-arrows='true' data-infinite='true'>
+        <div class="py-2">
+            <div class="aiz-carousel gutters-5 half-outside-arrow" data-items="4" data-xl-items="4" data-lg-items="3"  data-md-items="3" data-sm-items="3" data-xs-items="2" data-arrows='true' data-infinite='true'>
                 @foreach (get_frequently_bought_products($product) as $key => $related_product)
                 <div class="carousel-box hov-scale-img hov-shadow-sm">
                     <div class="aiz-card-box my-2 has-transition">
                         <div class="">
-                            <a href="{{ route('product', $related_product->slug) }}" class="d-block">
-                                <img class="img-fit lazyload mx-auto h-140px h-md-200px has-transition"
+                            <a href="{{ route('product', $related_product->slug) }}" class="d-block h-140px h-md-110px rounded-1 overflow-hidden">
+                                <img class="img-fit object-fit-cover w-100 h-100 lazyload mx-auto has-transition"
                                     src="{{ static_asset('assets/img/placeholder.jpg') }}"
                                     data-src="{{ uploaded_asset($related_product->thumbnail_img) }}"
                                     alt="{{ $related_product->getTranslation('name') }}"
                                     onerror="this.onerror=null;this.src='{{ static_asset('assets/img/placeholder.jpg') }}';">
                             </a>
                         </div>
-                        <div class="p-md-3 p-2 text-center">
-                            <h3 class="fw-400 fs-14 text-dark text-truncate-2 lh-1-4 mb-0 h-35px">
-                                <a href="{{ route('product', $related_product->slug) }}" class="d-block text-reset hov-text-primary">{{ $related_product->getTranslation('name') }}</a>
-                            </h3>
-                            <div class="fs-14 mt-3">
-                                <span class="fw-700 text-primary">{{ home_discounted_base_price($related_product) }}</span>
-                                @if(home_base_price($related_product) != home_discounted_base_price($related_product))
-                                    <del class="fw-600 opacity-50 ml-1">{{ home_base_price($related_product) }}</del>
-                                @endif
-                            </div>
-                        </div>
                     </div>
                 </div>
                 @endforeach
             </div>
         </div>
-    </div>
+    </div> --}}
 
     <!-- Back to shopping & Checkout buttons -->
-    <div class="row gutters-5">
-        <div class="col-sm-6">
-            <button class="btn btn-secondary-base mb-3 mb-sm-0 btn-block rounded-0 text-white" data-dismiss="modal">{{ translate('Back to shopping')}}</button>
+    <div class="pt-4">
+        <div class="row gutters-5">
+            <div class="col-sm-6">
+                <button class="btn btn-secondary-base mb-2 mb-sm-0 btn-block rounded-1 text-white" data-dismiss="modal">{{ translate('View Cart')}}</button>
+            </div>
+            <div class="col-sm-6">
+                <a href="{{ route('cart') }}" class="btn btn-primary btn-block rounded-1">{{ translate('Proceed to Checkout')}}</a>
+            </div>
+            <div class="col-12">
+                <button class="btn border border-gray-300  mt-2 mb-sm-0 btn-block rounded-1 text-gray-dark hov-bg-light has-transition" data-dismiss="modal">{{ translate('Back to shopping')}}</button>
+            </div>
         </div>
-        <div class="col-sm-6">
-            <a href="{{ route('cart') }}" class="btn btn-primary mb-3 mb-sm-0 btn-block rounded-0">{{ translate('Proceed to Checkout')}}</a>
-        </div>
-
     </div>
 </div>

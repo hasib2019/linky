@@ -5,7 +5,7 @@
 <div class="aiz-titlebar text-left mt-2 mb-3">
     <div class="row align-items-center">
         <div class="col-md-6">
-            <h1 class="h3">{{translate('Set CategoryWise Product Discount')}}</h1>
+            <h1 class="h3">{{translate('Set Category Base Product Discount')}}</h1>
         </div>
     </div>
 </div>
@@ -35,6 +35,11 @@
             </thead>
             <tbody>
                 @foreach($categories as $key => $category)
+                    @php
+                        $discount = $category->sellerDiscount;
+                        $start_date = $discount && $discount->discount_start_date ? date('d-m-Y H:i:s', $discount->discount_start_date) : null;
+                        $end_date   = $discount && $discount->discount_end_date ? date('d-m-Y H:i:s', $discount->discount_end_date) : null;
+                    @endphp
                     <tr>
                         <td>{{ ($key+1) + ($categories->currentPage() - 1)*$categories->perPage() }}</td>
                         <td>
@@ -64,15 +69,16 @@
                         </td>
                         <td>
                             <div class="input-group">
-                                <input type="number" class="form-control" id="discount_{{ $category->id }}" step="0.01" value="0" min="0" placeholder="{{translate('Discount')}}"
+                                <input type="number" class="form-control" id="discount_{{ $category->id }}" step="0.01" value="{{$discount ? $discount->discount : '0' }}" min="0" placeholder="{{translate('Discount')}}"
                                     style="border-radius: 8px 0 0 8px;">
                                 <div class="input-group-prepend">
                                     <span class="input-group-text border-left-0" id="inputGroupPrepend" style="border-radius: 0 8px 8px 0;">%</span>
                                 </div>
                             </div>
                         </td>
+                       
                         <td>
-                            <input type="text" class="form-control aiz-date-range rounded-2" id="date_range_{{ $category->id }}" placeholder="{{translate('Select Date')}}" data-time-picker="true" data-format="DD-MM-Y HH:mm:ss" data-separator=" to " autocomplete="off">
+                            <input type="text" class="form-control aiz-date-range rounded-2" value="{{ $start_date && $end_date ? $start_date . ' to ' . $end_date : '' }}" placeholder="{{translate('Select Date')}}" id="date_range_{{ $category->id }}" placeholder="{{translate('Select Date')}}" data-time-picker="true" data-format="DD-MM-Y HH:mm:ss" data-separator=" to " autocomplete="off">
                         </td>
                         <td class="text-right">
                             <div class="form-group mb-0 text-right">

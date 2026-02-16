@@ -9,6 +9,7 @@
                 <textarea class="form-control mb-3" placeholder="{{ translate('Your Address')}}" rows="2" name="address" required>{{ $address_data->address }}</textarea>
             </div>
         </div>
+        @if (get_active_countries()->count() > 1)
         <div class="row">
             <div class="col-md-2">
                 <label>{{ translate('Country')}}</label>
@@ -26,7 +27,11 @@
                 </div>
             </div>
         </div>
+        @elseif(get_active_countries()->count() == 1)
+        <input type="hidden" name="country_id" value="{{get_active_countries()[0]->id }}">
+        @endif
 
+        @if (get_setting('has_state') == 1)
         <div class="row">
             <div class="col-md-2">
                 <label>{{ translate('State')}}</label>
@@ -41,6 +46,7 @@
                 </select>
             </div>
         </div>
+        @endif
 
         <div class="row">
             <div class="col-md-2">
@@ -51,6 +57,21 @@
                     @foreach ($cities as $key => $city)
                         <option value="{{ $city->id }}" @if($address_data->city_id == $city->id) selected @endif>
                             {{ $city->name }}
+                        </option>
+                    @endforeach
+                </select>
+            </div>
+        </div>
+
+        <div class="row area-field {{ ($areas->count() == 0) ? 'd-none' : '' }}">
+            <div class="col-md-2">
+                <label>{{ translate('Area')}}</label>
+            </div>
+            <div class="col-md-10">
+                <select class="form-control mb-3 aiz-selectpicker rounded-0" data-live-search="true" name="area_id">
+                    @foreach ($areas as $key => $area)
+                        <option value="{{ $area->id }}" @if($address_data->area_id == $area->id) selected @endif>
+                            {{ $area->name }}
                         </option>
                     @endforeach
                 </select>

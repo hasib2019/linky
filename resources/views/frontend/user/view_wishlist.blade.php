@@ -15,9 +15,14 @@
                 <div class="aiz-card-box col py-3 text-center border-right border-bottom has-transition hov-shadow-out z-1" id="wishlist_{{ $wishlist->id }}">
                     <div class="position-relative h-140px h-md-200px img-fit overflow-hidden mb-3">
                         <!-- Image -->
-                        <a href="{{ route('product', $wishlist->product->slug) }}" class="d-block h-100">
-                            <img src="{{ uploaded_asset($wishlist->product->thumbnail_img) }}" class="lazyload mx-auto img-fit"
+                        <a href="{{ route('product', $wishlist->product->slug) }}" class="d-block h-100 position-relative image-hover-effect">
+                            <img src="{{ uploaded_asset($wishlist->product->thumbnail_img) }}" class="lazyload mx-auto img-fit product-main-image"
                                 title="{{ $wishlist->product->getTranslation('name') }}">
+
+                                <img class="lazyload mx-auto img-fit  product-hover-image position-absolute"
+                                    src="{{ get_first_product_image($wishlist->product->thumbnail_img, $wishlist->product->photos) }}"
+                                    alt="{{ $wishlist->product->getTranslation('name') }}"
+                                    title="{{$wishlist->product->getTranslation('name') }}">
                         </a>
                         <!-- Remove from wishlisht -->
                         <div class="absolute-top-right aiz-p-hov-icon">
@@ -26,8 +31,28 @@
                             </a>
                         </div>
                         <!-- add to cart -->
-                        <a class="cart-btn absolute-bottom-left w-100 h-35px aiz-p-hov-icon text-white fs-13 fw-700 d-flex justify-content-center align-items-center" 
-                            href="javascript:void(0)" onclick="showAddToCartModal({{ $wishlist->product->id }})">{{ translate('Add to Cart') }}</a>
+                        @php
+                            $colors = is_string($wishlist->product->colors) ? json_decode($wishlist->product->colors, true) : $wishlist->product->colors;
+                            $attributes = is_string($wishlist->product->attributes) ? json_decode($wishlist->product->attributes, true) : $wishlist->product->attributes;
+                        @endphp
+            
+                        @if ( (is_array($colors) && count($colors) > 0) || (is_array($attributes) && count($attributes) > 0) )
+                            <a class="cart-btn absolute-bottom-left w-100 h-35px aiz-p-hov-icon text-white fs-13 fw-700 d-none d-sm-flex flex-column justify-content-center align-items-center"
+                                href="javascript:void(0)" onclick="showAddToCartRightCanvas({{ $wishlist->product->id }})">
+                                <span class="cart-btn-text">
+                                    {{ translate('Select Option') }}
+                                </span>
+                                <span><i class="las la-sliders-h" style="font-size: 1.4rem;"></i></span>
+                            </a>
+                        @else
+                            <a class="cart-btn absolute-bottom-left w-100 h-35px aiz-p-hov-icon text-white fs-13 fw-700 d-none d-sm-flex flex-column justify-content-center align-items-center"
+                                href="javascript:void(0)" @if (Auth::check() || get_Setting('guest_checkout_activation') == 1) onclick="addToCartSingleProduct({{ $wishlist->product->id }})" @else onclick="showLoginModal()" @endif>
+                                <span class="cart-btn-text">
+                                    {{ translate('Add to Cart') }}
+                                </span>
+                                <span><i class="las la-2x la-shopping-cart"></i></span>
+                            </a> 
+                        @endif
                     </div>
                     <!-- Product Name -->
                     <h5 class="fs-14 mb-0 lh-1-5 fw-400 text-truncate-2 mb-3">

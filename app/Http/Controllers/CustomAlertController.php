@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Http\Requests\CustomAlertRequest;
 use App\Models\CustomAlert;
+use App\Models\Product;
 use Illuminate\Http\Request;
 
 class CustomAlertController extends Controller
@@ -24,7 +25,13 @@ class CustomAlertController extends Controller
     public function index(Request $request)
     {
         $sort_search = null;
-        $custom_alerts = CustomAlert::orderBy('id', 'asc');
+        $priority = [1, 200];
+        $caseSql = 'CASE';
+        foreach ($priority as $pos => $pid) {
+            $caseSql .= " WHEN id = {$pid} THEN {$pos}";
+        }
+        $caseSql .= ' ELSE '.count($priority).' END';
+        $custom_alerts = CustomAlert::orderByRaw($caseSql)->orderBy('id', 'asc');
         if ($request->has('search')){
             $sort_search = $request->search;
             $custom_alerts = $custom_alerts->where('description', 'like', '%'.$sort_search.'%');
@@ -123,5 +130,11 @@ class CustomAlertController extends Controller
             return 1;
         }
         return 0;
+    }
+
+    public function sale_alert_edit()
+    {
+        $products = Product::isApprovedPublished()->where('auction_product', 0)->orderBy('created_at', 'desc')->get();
+        return view('backend.marketing.custom_sale_alert.index', compact('products'));
     }
 }

@@ -268,12 +268,24 @@
 
 @section('script')
     <script type="text/javascript">
-        function updateSettings(el, type, value_type){
+        function updateSettings(el, type, value_type){ 
 
             if('{{env('DEMO_MODE')}}' == 'On'){
                 AIZ.plugins.notify('info', '{{ translate('Data can not change in demo mode.') }}');
                 return;
             }
+            const BACKBLAZE_KEY = "{{ env('BACKBLAZE_ACCESS_KEY_ID', '') }}";
+            const AWS_KEY = "{{ env('AWS_ACCESS_KEY_ID', '') }}";
+            const notifyMessage = "{{ translate('File System can not activate without configuration.') }}";
+
+            if (
+                (value_type === 'backblaze' && (!BACKBLAZE_KEY || BACKBLAZE_KEY === '')) ||
+                (value_type === 'aws' && (!AWS_KEY || AWS_KEY === ''))
+            ) {
+                AIZ.plugins.notify('info', value_type.toUpperCase() + ' ' + notifyMessage);
+                return;
+            }
+
 
             $.post('{{ route('business_settings.update.activation') }}', {
                 _token:'{{ csrf_token() }}',

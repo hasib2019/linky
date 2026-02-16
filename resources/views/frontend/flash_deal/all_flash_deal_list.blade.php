@@ -24,6 +24,7 @@
                         </div>
                     </div>
             </section>
+            <input type="hidden" id="selected_homepage" value="{{get_setting('homepage_select')}}">
             <!-- Banner -->
             @if (get_setting('flash_deal_banner') != null || get_setting('flash_deal_banner_small') != null)
                 <div class="mb-3 overflow-hidden hov-scale-img d-none d-md-block">

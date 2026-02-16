@@ -2,6 +2,7 @@
 
 namespace App\Http\Requests;
 
+use App\Rules\Recaptcha;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 use Illuminate\Contracts\Validation\Validator;
@@ -30,11 +31,18 @@ class SellerRegistrationRequest extends FormRequest
         $rules = [];
         
         $rules['name']          = 'required|string|max:255';
+        $rules['l_name']        = 'sometimes|required|string|max:255';
         $rules['email']         = 'required|email|unique:users|max:255';
+        $rules['phone']         = 'required|string|max:20';
         $rules['password' ]     = 'required|string|min:6|confirmed';
         $rules['shop_name' ]    = 'required|max:255';
         $rules['address']       = 'required';
-
+        $rules['g-recaptcha-response'] = [
+                Rule::when(get_setting('google_recaptcha') == 1 && 
+                get_setting('recaptcha_seller_register') == 1 , 
+                ['required', new Recaptcha()], 
+                ['sometimes'])
+            ];
         return $rules;
     }
 
@@ -43,6 +51,7 @@ class SellerRegistrationRequest extends FormRequest
         return [
             'name.required'         => translate('Name is required'),
             'name.string'           => translate('Name should be string type'),
+            'l_name.required'       => translate('Last name is required'),
             'name.max'              => translate('Max 255 characters'),
             'email.required'        => translate('Email is required'),
             'email.email'           => translate('Please type a valid email'),

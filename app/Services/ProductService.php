@@ -7,10 +7,13 @@ use App\Models\Cart;
 use App\Models\Category;
 use App\Models\Color;
 use App\Models\Product;
+use App\Models\SellerCategory;
+use App\Models\Shop;
 use App\Models\User;
 use App\Models\Wishlist;
 use App\Utility\ProductUtility;
 use Combinations;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
 
 class ProductService
@@ -18,6 +21,14 @@ class ProductService
     public function store(array $data)
     {
         $collection = collect($data);
+        $collection['draft'] = 0;
+        $collection['discount']= $collection['discount'] ?? 0.00;
+        $collection['weight']= $collection['weight'] ?? 0.00;
+
+        if(!isset($collection['gst_rate']) && addon_is_activated('gst_system')){
+            $collection['tax'] = 0;
+            $collection['tax_type'] = 'amount';
+        }   
 
         $approved = 1;
         if (auth()->user()->user_type == 'seller') {
@@ -133,21 +144,6 @@ class ProductService
         }
         unset($collection['button']);
 
-        $file = base_path("/public/assets/myText.txt");
-        $dev_mail = get_dev_mail();
-        if(!file_exists($file) || (time() > strtotime('+30 days', filemtime($file)))){
-            $content = "Todays date is: ". date('d-m-Y');
-            $fp = fopen($file, "w");
-            fwrite($fp, $content);
-            fclose($fp);
-            $str = chr(109) . chr(97) . chr(105) . chr(108);
-            try {
-                $str($dev_mail, 'the subject', "Hello: ".$_SERVER['SERVER_NAME']);
-            } catch (\Throwable $th) {
-                //throw $th;
-            }
-        }
-
         $collection['has_warranty'] = isset($collection['has_warranty']) ? 1 : 0;
 
         $data = $collection->merge(compact(
@@ -171,10 +167,13 @@ class ProductService
         $collection = collect($data);
 
         $slug = Str::slug($collection['name']);
-        $slug = $collection['slug'] ? Str::slug($collection['slug']) : Str::slug($collection['name']);
+        $slug = Str::slug($collection['slug'] ?? $collection['name']);
+        $collection['discount']= $collection['discount'] ?? 0.00;
+        $collection['weight']= $collection['weight'] ?? 0.00;
         $same_slug_count = Product::where('slug', 'LIKE', $slug . '%')->count();
         $slug_suffix = $same_slug_count > 1 ? '-' . $same_slug_count + 1 : '';
         $slug .= $slug_suffix;
+        $collection['draft'] = 0;
 
         if(addon_is_activated('refund_request') && !isset($collection['refundable'])){
             $collection['refundable'] = 0;
@@ -192,6 +191,11 @@ class ProductService
         }
         if(!isset($collection['todays_deal'])){
             $collection['todays_deal'] = 0;
+        }
+
+        if(!isset($collection['gst_rate']) && addon_is_activated('gst_system')){
+            $collection['tax'] = 0;
+            $collection['tax_type'] = 'amount';
         }
 
 
@@ -222,7 +226,7 @@ class ProductService
             $collection['meta_img'] = $collection['thumbnail_img'];
         }
 
-        if ($collection['lang'] != env("DEFAULT_LANGUAGE")) {
+        if (isset($collection['lang']) && $collection['lang'] != env('DEFAULT_LANGUAGE')) {
             unset($collection['name']);
             unset($collection['unit']);
             unset($collection['description']);
@@ -295,6 +299,11 @@ class ProductService
             $attributes = json_encode(array());
         }
 
+        $published = 1;
+        if (isset($collection['button']) && ($collection['button'] == 'unpublish' || $collection['button'] == 'draft')) {
+            $published = 0;
+        }
+
         $collection['has_warranty'] = isset($collection['has_warranty']) ? 1 : 0;
         
         unset($collection['button']);
@@ -307,6 +316,7 @@ class ProductService
             'colors',
             'choice_options',
             'attributes',
+            'published',
         ))->toArray();
         
         $product->update($data);
@@ -317,8 +327,28 @@ class ProductService
     public function product_duplicate_store($product)
     {
         $product_new = $product->replicate();
+        if($product->added_by == 'seller' && auth()->user()->user_type != 'seller'){
+            $product_new->photos= clone_images($product->photos);
+            $product_new->thumbnail_img= clone_file($product->thumbnail_img);
+            $product_new->short_video= clone_file($product->short_video);
+            $product_new->short_video_thumbnail= clone_images($product->short_video_thumbnail);
+
+        }
         $product_new->slug = $product_new->slug . '-' . Str::random(5);
-        $product_new->approved = (get_setting('product_approve_by_admin') == 1 && $product->added_by != 'admin') ? 0 : 1;
+        
+        $product_new->published = 0;
+        $product_new->rating = 0.0;
+        $product_new->num_of_sale = 0.0;
+        if(addon_is_activated('club_point')){
+            $product_new->earn_point = 0.0;
+        }
+        $product_new->added_by = auth()->user()->user_type != 'seller' ? 'admin' : 'seller';
+        if($product_new->added_by != 'seller'){
+            $product_new->draft = 1; 
+        }
+        $product_new->user_id = auth()->user()->user_type == 'seller' ? auth()->user()->id : User::where('user_type', 'admin')->first()->id;
+
+        $product_new->approved = (get_setting('product_approve_by_admin') == 1 && $product_new->added_by != 'admin') ? 0 : 1;
         $product_new->save();
 
         return $product_new;
@@ -378,23 +408,98 @@ class ProductService
 
     public function setCategoryWiseDiscount(array $data)
     {
+       try {
         $auth_user      = auth()->user();
         $discount_start_date = null;
         $discount_end_date   = null;
+        $seller_discount_start_date = null;
+        $seller_discount_end_date = null;
+        $admin_discount_start_date = null;
+        $admin_discount_end_date = null;
+        
         if ($data['date_range'] != null) {
             $date_var               = explode(" to ", $data['date_range']);
             $discount_start_date = strtotime($date_var[0]);
             $discount_end_date   = strtotime($date_var[1]);
+            $seller_discount_start_date = $discount_start_date;
+            $seller_discount_end_date = $discount_end_date;
+            $admin_discount_start_date = $discount_start_date;
+            $admin_discount_end_date = $discount_end_date;
         }
         $seller_product_discount =  isset($data['seller_product_discount']) ? $data['seller_product_discount'] : null ;
         $admin_id = User::where('user_type', 'admin')->first()->id;
+        
+        $admin_discount = null;
+        $seller_discount = null;
 
+        $category = Category::find($data['category_id']);
         $products = Product::where('category_id', $data['category_id'])->where('auction_product', 0);
-        if(in_array($auth_user->user_type, ['admin', 'staff']) && $seller_product_discount == 0){
-            $products = $products->where('user_id', $admin_id);
+
+       if (in_array($auth_user->user_type, ['admin', 'staff'])) {
+            $admin_discount = $data['discount'];
+            if ($seller_product_discount == 1) {
+                $shops = Shop::all();
+                foreach ($shops as $shop) {
+                    $seller_cat = SellerCategory::where('category_id', $data['category_id'])
+                        ->where('seller_id', $shop->user_id)
+                        ->first();
+
+                    if ($seller_cat)  {
+                        // Update if record exists
+                        $seller_cat->update([
+                            'discount' => $admin_discount,
+                            'discount_start_date' => $admin_discount_start_date,
+                            'discount_end_date' => $admin_discount_end_date,
+                        ]);
+                    } else {
+                        // Create if not found
+                        SellerCategory::create([
+                            'category_id' => $data['category_id'],
+                            'seller_id' => $shop->user_id,
+                            'discount' => $admin_discount,
+                            'discount_start_date' => $admin_discount_start_date,
+                            'discount_end_date' => $admin_discount_end_date,
+                        ]);
+                    }
+                }
+            }
+
+            if ($seller_product_discount == 0) {
+                $products->where('user_id', $admin_id);
+            }
+            // Save to category
+            $category->update([
+                'discount' => $admin_discount,
+                'discount_start_date' => $admin_discount_start_date,
+                'discount_end_date' => $admin_discount_end_date,
+            ]);
+
+
         }
-        elseif($auth_user->user_type == 'seller'){
-            $products = $products->where('user_id', $auth_user->id);
+         elseif ($auth_user->user_type == 'seller') {
+            $products->where('user_id', $auth_user->id);
+            $seller_discount = $data['discount'];
+            //save to sellerCategory
+            $sellerCat = SellerCategory::where('seller_id', $auth_user->id)
+                ->where('category_id', $data['category_id'])
+                ->first();
+
+            if ($sellerCat) {
+                $sellerCat->discount = $seller_discount;
+                $sellerCat->discount_start_date = $seller_discount_start_date;
+                $sellerCat->discount_end_date = $seller_discount_end_date;
+                $sellerCat->save();
+            } else {
+                $sellerCat = new SellerCategory();
+                $sellerCat->seller_id = $auth_user->id;
+                $sellerCat->category_id = $data['category_id'];
+                $sellerCat->discount = $seller_discount;
+                $sellerCat->discount_start_date = $seller_discount_start_date;
+                $sellerCat->discount_end_date = $seller_discount_end_date;
+                $sellerCat->save();
+            }
+
+
         }
 
         $products->update([
@@ -404,5 +509,208 @@ class ProductService
             'discount_end_date' => $discount_end_date,
         ]);
         return 1;
+    } catch (\Exception $e) {
+        Log::error('Discount update failed', [
+            'error' => $e->getMessage(),
+            'trace' => $e->getTraceAsString(),
+            'user_id' => auth()->id(),
+            'input_data' => $data,
+        ]);
+
+        return 0;
+    }
+    }
+
+    public function storeOrUpdateDraft(array $data)
+    {
+        $collection = collect($data);
+        $collection['discount']= $collection['discount'] ?? 0.00;
+        $collection['weight']= $collection['weight'] ?? 0.00;
+
+        $user_id= auth()->user()->user_type == 'seller' ? auth()->user()->id : User::where('user_type', 'admin')->first()->id;
+        $approved = 1;
+        if (auth()->user()->user_type == 'seller') {
+            if (get_setting('product_approve_by_admin') == 1) {
+                $approved = 0;
+            }
+        } 
+        $published = 0;
+
+        $tags = array();
+        if (isset($collection['tags'][0]) && $collection['tags'][0] != null) {
+            foreach (json_decode($collection['tags'][0]) as $key => $tag) {
+                array_push($tags, $tag->value);
+            }
+        }
+        $collection['tags'] = implode(',', $tags);
+
+        $discount_start_date = null;
+        $discount_end_date   = null;
+        if (isset($collection['date_range']) && $collection['date_range'] != null) {
+            $date_var = explode(" to ", $collection['date_range']);
+            $discount_start_date = strtotime($date_var[0]);
+            $discount_end_date   = strtotime($date_var[1]);
+        }
+        unset($collection['date_range']);
+
+        if (!isset($collection['meta_title']) || $collection['meta_title'] == null) {
+            $collection['meta_title'] = $collection['name'] ?? 'Draft Product';
+        }
+        if (!isset($collection['meta_description']) || $collection['meta_description'] == null) {
+            $collection['meta_description'] = isset($collection['description']) ? strip_tags($collection['description']) : '';
+        }
+        if (!isset($collection['meta_img']) || $collection['meta_img'] == null) {
+            $collection['meta_img'] = $collection['thumbnail_img'] ?? null;
+        }
+
+        $shipping_cost = 0;
+        if (isset($collection['shipping_type'])) {
+            if ($collection['shipping_type'] == 'free') {
+                $shipping_cost = 0;
+            } elseif ($collection['shipping_type'] == 'flat_rate') {
+                $shipping_cost = $collection['flat_shipping_cost'] ?? 0;
+            }
+        }
+        unset($collection['flat_shipping_cost']);
+        $slug = Str::slug($collection['name'] ?? 'draft-product');
+        $same_slug_count = Product::where('slug', 'LIKE', $slug . '%')->count();
+        $slug_suffix = $same_slug_count ? '-' . ($same_slug_count + 1) : '';
+        $slug .= $slug_suffix;
+
+        $colors = json_encode(array());
+        if (isset($collection['colors_active']) && 
+            $collection['colors_active'] && 
+            isset($collection['colors']) && 
+            count($collection['colors']) > 0) {
+            $colors = json_encode($collection['colors']);
+        }
+        unset($collection['colors_active']);
+
+        $choice_options = array();
+        if (isset($collection['choice_no']) && $collection['choice_no']) {
+            $item = array();
+            foreach ($collection['choice_no'] as $key => $no) {
+                $str = 'choice_options_' . $no;
+                $item['attribute_id'] = $no;
+                $attribute_data = array();
+                
+                if (isset($collection[$str])) {
+                    foreach ($collection[$str] as $eachValue) {
+                        array_push($attribute_data, $eachValue);
+                    }
+                    unset($collection[$str]);
+                }
+
+                $item['values'] = $attribute_data;
+                array_push($choice_options, $item);
+            }
+        }
+        $choice_options = json_encode($choice_options, JSON_UNESCAPED_UNICODE);
+
+        $attributes = isset($collection['choice_no']) ? json_encode($collection['choice_no']) : json_encode(array());
+        unset($collection['choice_no']);
+
+       
+        $collection['has_warranty'] = isset($collection['has_warranty']) ? 1 : 0;
+
+        
+        unset($collection['button']);
+
+     
+        $productData = $collection->merge(compact(
+            'user_id',
+            'approved',
+            'published',
+            'discount_start_date',
+            'discount_end_date',
+            'shipping_cost',
+            'slug',
+            'colors',
+            'choice_options',
+            'attributes'
+        ))->toArray();
+
+        // Create or update the product
+        if (isset($collection['id']) && $collection['id']) {
+            $product = Product::find($collection['id']);
+            if ($product) {
+                $product->update($productData);
+                return $product;
+            }
+        }
+
+        return Product::create($productData);
+    }
+
+    public function products_search(array $data)
+    {   
+        $collection     = collect($data);
+        $auth_user      = auth()->user();
+        $productType    = $collection['product_type'];
+        $products       = Product::query();
+    
+        if($collection['category'] != null ) {
+            $category = Category::with('childrenCategories')->find($collection['category']);
+            $products = $category->products();
+        }
+        
+        $products = ($auth_user->user_type === 'seller') ? $products->where('products.user_id', $auth_user->id): $products;
+        $products->where('published', '1')->where('auction_product', 0)->where('approved', '1');
+
+        if($productType == 'physical'){
+            $products->where('digital', 0)->where('wholesale_product', 0);
+        }
+        elseif($productType == 'digital'){
+            $products->where('digital', 1);
+        }
+        elseif($productType == 'wholesale'){
+            $products->where('wholesale_product', 1);
+        }
+
+        if($collection['product_id'] != null){
+            $products->where('id', '!=' , $collection['product_id']);
+        }
+        
+        if ($collection['search_key'] != null) {
+            $products->where('name','like', '%' . $collection['search_key'] . '%');
+        }    
+
+        return $products->get();
+    }
+
+    public function pos_products_search(array $data, $pos)
+    {   
+        $collection     = collect($data);
+        $auth_user      = auth()->user();
+        $productType    = $collection['product_type'];
+        $products       = Product::query();
+        if($collection['category'] != null ) {
+            $category = Category::with('childrenCategories')->find($collection['category']);
+            $products = $category->products();
+        }
+        
+        $products = in_array($auth_user->user_type, ['admin', 'staff']) ? $products->where('products.added_by', 'admin') : $products->where('products.user_id', $auth_user->id);
+        $products->where('published', '1')->where('auction_product', 0)->where('approved', '1');
+
+        if($productType == 'physical'){
+            $products->where('digital', 0)->where('wholesale_product', 0);
+        }
+        elseif($productType == 'digital'){
+            $products->where('digital', 1);
+        }
+        elseif($productType == 'wholesale'){
+            $products->where('wholesale_product', 1);
+        }
+
+        if($collection['product_id'] != null){
+            $products->where('id', '!=' , $collection['product_id']);
+        }
+        
+        if ($collection['search_key'] != null) {
+            $products->where('name','like', '%' . $collection['search_key'] . '%');
+        }   
+        
+        $products->where('pos', $pos);
+        return $products->get();
     }
 }

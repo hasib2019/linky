@@ -74,6 +74,18 @@ class RouteServiceProvider extends ServiceProvider
 
     $this->mapPreorderRoutes();
 
+    $this->mapCybersourceRoutes();
+
+    $this->mapGstRoutes();
+
+    $this->mapShiprocketRoutes();
+
+    $this->mapSteadfastRoutes();
+
+    $this->mapPathaoRoutes();
+
+    $this->mapKnetRoutes();
+
     $this->mapWebRoutes();
 
     // $this->mapInstallRoutes();
@@ -364,6 +376,21 @@ class RouteServiceProvider extends ServiceProvider
        ->group(base_path('routes/api.php'));
   }
 
+
+  /**
+   * Define the "b2b" routes for the application.
+   *
+   * These routes all receive session state, CSRF protection, etc.
+   *
+   * @return void
+   */
+  protected function mapCybersourceRoutes()
+  {
+    Route::middleware('web')
+       ->namespace($this->namespace)
+       ->group(base_path('routes/cybersource.php'));
+  }
+
   /**
      * Configure the rate limiters for the application.
      *
@@ -375,5 +402,76 @@ class RouteServiceProvider extends ServiceProvider
             return Limit::perMinute(600)->by(optional($request->user())->id ?: $request->ip());
         });
     }
+
+  /**
+   * Define the "GST System" routes for the application.
+   *
+   * These routes all receive session state, CSRF protection, etc.
+   *
+   * @return void
+   */
+  protected function mapGstRoutes()
+  {
+    Route::middleware('web')
+       ->namespace($this->namespace)
+       ->group(base_path('routes/gst.php'));
+  }
+
+  /**
+   * Define the "Shiprocket System" routes for the application.
+   *
+   * These routes all receive session state, CSRF protection, etc.
+   *
+   * @return void
+   */
+  protected function mapShiprocketRoutes()
+  {
+    Route::middleware('web')
+       ->namespace($this->namespace)
+       ->group(base_path('routes/shiprocket.php'));
+  }
+
+  /**
+   * Define the "Steadfast System" routes for the application.
+   *
+   * These routes all receive session state, CSRF protection, etc.
+   *
+   * @return void
+   */
+  protected function mapSteadfastRoutes()
+  {
+    Route::middleware('web')
+       ->namespace($this->namespace)
+       ->group(base_path('routes/steadfast.php'));
+  }
+
+  /**
+   * Define the "Pathao System" routes for the application.
+   *
+   * These routes all receive session state, CSRF protection, etc.
+   *
+   * @return void
+   */
+  protected function mapPathaoRoutes()
+  {
+    Route::middleware('web')
+       ->namespace($this->namespace)
+       ->group(base_path('routes/pathao.php'));
+  }
+
+    /**
+   * Define the "Knet Payment Gateway" routes for the application.
+   *
+   * These routes all receive session state, CSRF protection, etc.
+   *
+   * @return void
+   */
+  protected function mapKnetRoutes()
+  {
+    Route::middleware('web')
+       ->namespace($this->namespace)
+       ->group(base_path('routes/knet.php'));
+  }
+
 
 }

@@ -15,4 +15,9 @@ class FlashDealProduct extends Model
     {
         return $this->belongsTo(Product::class);
     }
+
+    public function flash_deal()
+    {
+        return $this->belongsTo(FlashDeal::class);
+    }
 }

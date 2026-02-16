@@ -33,6 +33,7 @@ class SellerProfileRequest extends FormRequest
             'name'              => ['required', 'max:191'],
             'new_password'      => $newPasswordRule,
             'confirm_password'  => $confirmPasswordRule,
+            'phone'             => ['required','string','max:20'],
         ];
     }
 

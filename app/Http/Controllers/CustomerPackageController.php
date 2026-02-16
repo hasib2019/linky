@@ -191,6 +191,26 @@ class CustomerPackageController extends Controller
         return redirect()->route('dashboard');
     }
 
+    public function purchase_payment_done1($payment_data, $payment = null)
+    {
+        $customer_package_id = $payment_data['customer_package_id'];
+        $user = auth()->user();
+        $user->customer_package_id = $payment_data['customer_package_id'];
+        $customer_package = CustomerPackage::findOrFail($customer_package_id);
+        $user->remaining_uploads += $customer_package->product_upload;
+        $user->save();
+
+        $customer_package_payment = new CustomerPackagePayment;
+        $customer_package_payment->user_id = $user->id;
+        $customer_package_payment->customer_package_id = $customer_package_id;
+        $customer_package_payment->amount = $customer_package->amount;
+        $customer_package_payment->payment_method = $payment_data['payment_method'];
+        $customer_package_payment->payment_details = $payment;
+        $customer_package_payment->save();
+
+        flash(translate('Package purchasing successful'))->success();
+    }
+    
     public function purchase_package_offline(Request $request)
     {
         $customer_package = CustomerPackage::findOrFail($request->package_id);

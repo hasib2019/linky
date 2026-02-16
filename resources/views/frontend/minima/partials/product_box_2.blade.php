@@ -10,24 +10,52 @@
             }
         @endphp
         <!-- Image -->
-        <a href="{{ $product_url }}" class="d-block h-100">
-            <img class="lazyload mx-auto img-fit has-transition"
+        <a href="{{ $product_url }}" class="d-block h-100 position-relative image-hover-effect">
+            <img
+                class="lazyload mx-auto img-fit has-transition product-main-image"
                 src="{{ get_image($product->thumbnail) }}"
-                alt="{{ $product->getTranslation('name') }}" title="{{ $product->getTranslation('name') }}"
+                alt="{{ $product->getTranslation('name') }}"
+                title="{{ $product->getTranslation('name') }}"
+                onerror="this.onerror=null;this.src='{{ static_asset('assets/img/placeholder.jpg') }}';">
+            <img
+                class="lazyload mx-auto img-fit has-transition product-hover-image position-absolute"
+                src="{{ get_first_product_image($product->thumbnail, $product->photos) }}"
+                alt="{{ $product->getTranslation('name') }}"
+                title="{{ $product->getTranslation('name') }}"
                 onerror="this.onerror=null;this.src='{{ static_asset('assets/img/placeholder.jpg') }}';">
         </a>
+        @php
+            $badgeIndex = 0;
+        @endphp
         <!-- Discount percentage tag -->
         @if (discount_in_percentage($product) > 0)
-            <span class="absolute-top-left bg-primary ml-1 mt-1 fs-11 fw-700 text-white w-35px text-center"
-                style="padding-top:2px;padding-bottom:2px;">-{{ discount_in_percentage($product) }}%</span>
+            <span class="absolute-top-left rounded rounded-4 bg-primary ml-1 mt-1 fs-11 fw-700 text-white w-35px text-center"
+                style="padding-top:2px;padding-bottom:2px; top:{{ 25 * $badgeIndex }}px;">-{{ discount_in_percentage($product) }}%</span>
+            @php $badgeIndex++; @endphp
         @endif
         <!-- Wholesale tag -->
         @if ($product->wholesale_product)
-            <span class="absolute-top-left fs-11 text-white fw-700 px-2 lh-1-8 ml-1 mt-1"
-                style="background-color: #455a64; @if (discount_in_percentage($product) > 0) top:25px; @endif">
+            <span class="absolute-top-left rounded rounded-4 fs-11 text-white fw-700 px-2 lh-1-8 ml-1 mt-1"
+                style="background-color: #455a64; @if (discount_in_percentage($product) > 0) top:{{ 25 * $badgeIndex }}px; @endif">
                 {{ translate('Wholesale') }}
             </span>
+            @php $badgeIndex++; @endphp
         @endif
+        <!-- Custom Label -->
+        @php
+            $customLabels = get_custom_labels($product->custom_label_id);
+        @endphp
+        @if ($customLabels)
+            @foreach ($customLabels as $key => $customLabel)
+                <span class="absolute-top-left rounded rounded-4 fs-11 fw-700 px-2 lh-1-8 ml-1 mt-1"
+                    style="background-color:{{ $customLabel->background_color }};
+                        color:{{ $customLabel->text_color }};
+                        top:{{ 25 * $badgeIndex }}px;">
+                    {{ $customLabel->text }}
+                </span>
+                @php $badgeIndex++; @endphp
+            @endforeach
+        @endif      
         @if ($product->auction_product == 0)
             <!-- wishlisht & compare icons -->
             <div class="absolute-top-right aiz-p-hov-icon">
@@ -55,14 +83,28 @@
                 </a>
             </div>
             <!-- add to cart -->
-            <a class="cart-btn absolute-bottom-left w-100 h-35px aiz-p-hov-icon text-white fs-13 fw-700 d-flex flex-column justify-content-center align-items-center @if (in_array($product->id, $cart_added)) active @endif"
-                href="javascript:void(0)"
-                onclick="showAddToCartModal({{ $product->id }})">
-                <span class="cart-btn-text">
-                    {{ translate('Add to Cart') }}
-                </span>
-                <span><i class="las la-2x la-shopping-cart"></i></span>
-            </a>
+            @php
+                $colors = is_string($product->colors) ? json_decode($product->colors, true) : $product->colors;
+                $attributes = is_string($product->attributes) ? json_decode($product->attributes, true) : $product->attributes;
+            @endphp
+
+            @if ( (is_array($colors) && count($colors) > 0) || (is_array($attributes) && count($attributes) > 0) )
+                <a class="cart-btn absolute-bottom-left w-100 h-35px aiz-p-hov-icon text-white fs-13 fw-700 d-none d-sm-flex flex-column justify-content-center align-items-center @if (in_array($product->id, $cart_added)) active @endif"
+                    href="javascript:void(0)" onclick="showAddToCartRightCanvas({{ $product->id }})">
+                    <span class="cart-btn-text">
+                        {{ translate('Select Option') }}
+                    </span>
+                    <span><i class="las la-sliders-h" style="font-size: 1.4rem;"></i></span>
+                </a>
+            @else
+                <a class="cart-btn absolute-bottom-left w-100 h-35px aiz-p-hov-icon text-white fs-13 fw-700 d-none d-sm-flex flex-column justify-content-center align-items-center @if (in_array($product->id, $cart_added)) active @endif"
+                    href="javascript:void(0)" @if (Auth::check() || get_Setting('guest_checkout_activation') == 1) onclick="addToCartSingleProduct({{ $product->id }})" @else onclick="showLoginModal()" @endif>
+                    <span class="cart-btn-text">
+                        {{ translate('Add to Cart') }}
+                    </span>
+                    <span><i class="las la-2x la-shopping-cart"></i></span>
+                </a> 
+            @endif
         @endif
         @if (
             $product->auction_product == 1 &&
@@ -76,9 +118,10 @@
                 }
                 $highest_bid = $product->bids->max('amount');
                 $min_bid_amount = $highest_bid != null ? $highest_bid + 1 : $product->starting_bid;
+                $gst_rate = gst_applicable_product_rate($product->id);
             @endphp
             <a class="cart-btn absolute-bottom-left w-100 h-35px aiz-p-hov-icon text-white fs-13 fw-700 d-flex flex-column justify-content-center align-items-center @if (in_array($product->id, $cart_added)) active @endif"
-                href="javascript:void(0)" onclick="bid_single_modal({{ $product->id }}, {{ $min_bid_amount }})">
+                href="javascript:void(0)" onclick="bid_single_modal({{ $product->id }}, {{ $min_bid_amount }}, {{ $gst_rate }})">
                 <span class="cart-btn-text">{{ translate('Place Bid') }}</span>
                 <span><i class="las la-2x la-gavel"></i></span>
             </a>

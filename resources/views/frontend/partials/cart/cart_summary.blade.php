@@ -5,6 +5,7 @@
             $subtotal_for_min_order_amount = 0;
             $subtotal = 0;
             $tax = 0;
+            $gst= 0;
             $product_shipping_cost = 0;
             $shipping = 0;
             $coupon_code = null;
@@ -17,6 +18,9 @@
                 $subtotal_for_min_order_amount += cart_product_price($cartItem, $cartItem->product, false, false) * $cartItem['quantity'];
                 $subtotal += cart_product_price($cartItem, $product, false, false) * $cartItem['quantity'];
                 $tax += cart_product_tax($cartItem, $product, false) * $cartItem['quantity'];
+                if (addon_is_activated('gst_system')) {
+                $gst += cart_product_gst($cartItem, $product, false);
+                }
                 $product_shipping_cost = $cartItem['shipping_cost'];
                 $shipping += $product_shipping_cost;
                 if ((get_setting('coupon_system') == 1) && ($cartItem->coupon_applied == 1)) {
@@ -71,11 +75,14 @@
                         <th class="pl-0 fs-14 fw-400 pt-0 pb-2 text-dark border-top-0">{{ translate('Subtotal') }} ({{ sprintf("%02d", count($carts)) }} {{ translate('Products') }})</th>
                         <td class="text-right pr-0 fs-14 pt-0 pb-2 text-dark border-top-0">{{ single_price($subtotal) }}</td>
                     </tr>
+                    
                     <!-- Tax -->
+                     @if(!addon_is_activated('gst_system'))
                     <tr class="cart-tax">
                         <th class="pl-0 fs-14 fw-400 pt-0 pb-2 text-dark border-top-0">{{ translate('Tax') }}</th>
                         <td class="text-right pr-0 fs-14 pt-0 pb-2 text-dark border-top-0">{{ single_price($tax) }}</td>
                     </tr>
+                    @endif
                     @if ($proceed != 1)
                     <!-- Total Shipping -->
                     <tr class="cart-shipping">
@@ -98,8 +105,16 @@
                         </tr>
                     @endif
 
+                    @if(addon_is_activated('gst_system'))
+                    <!-- Gst -->
+                    <tr class="cart-gst">
+                        <th class="pl-0 fs-14 fw-400 pt-0 pb-2 text-dark border-top-0">{{ translate('GST') }}</th>
+                        <td class="text-right pr-0 fs-14 pt-0 pb-2 text-dark border-top-0">{{ single_price($gst) }}</td>
+                    </tr>
+                    @endif
+
                     @php
-                        $total = $subtotal + $tax + $shipping;
+                        $total = $subtotal + $tax + $shipping + $gst;
                         if (Session::has('club_point')) {
                             $total -= Session::get('club_point');
                         }

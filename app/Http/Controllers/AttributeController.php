@@ -2,6 +2,8 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Requests\AttributeRequest;
+use App\Http\Requests\ColorRequest;
 use Illuminate\Http\Request;
 use App\Models\Attribute;
 use App\Models\Color;
@@ -22,6 +24,7 @@ class AttributeController extends Controller
         $this->middleware(['permission:delete_product_attribute_value'])->only('destroy_attribute_value');
 
         $this->middleware(['permission:view_colors'])->only('colors');
+        $this->middleware(['permission:add_color'])->only('colors_create');
         $this->middleware(['permission:edit_color'])->only('edit_color');
         $this->middleware(['permission:delete_color'])->only('destroy_color');
     }
@@ -44,6 +47,7 @@ class AttributeController extends Controller
      */
     public function create()
     {
+         return view('backend.product.attribute.create');
     }
 
     /**
@@ -52,7 +56,7 @@ class AttributeController extends Controller
      * @param  \Illuminate\Http\Request  $request
      * @return \Illuminate\Http\Response
      */
-    public function store(Request $request)
+    public function store(AttributeRequest $request)
     {
         $attribute = new Attribute;
         $attribute->name = $request->name;
@@ -62,8 +66,23 @@ class AttributeController extends Controller
         $attribute_translation->name = $request->name;
         $attribute_translation->save();
 
-        flash(translate('Attribute has been inserted successfully'))->success();
-        return redirect()->route('attributes.index');
+        // Save each attribute value
+        if ($request->has('attribute_values')) {
+            foreach ($request->attribute_values as $value) {
+                if (!empty($value)) {
+                    $attribute_value = new AttributeValue;
+                    $attribute_value->attribute_id = $attribute->id;
+                    $attribute_value->value = ucfirst($value);
+                    $attribute_value->save();
+                }
+            }
+        }
+
+        return response()->json([
+                'success' => true,
+                'message' => translate('Attribute has been inserted successfully'),
+                'redirect' => route('attributes.index')
+            ]);
     }
 
     /**
@@ -91,7 +110,7 @@ class AttributeController extends Controller
     public function edit(Request $request, $id)
     {
         $lang      = $request->lang;
-        $attribute = Attribute::findOrFail($id);
+        $attribute = Attribute::with('attribute_values')->findOrFail($id);
         return view('backend.product.attribute.edit', compact('attribute','lang'));
     }
 
@@ -102,7 +121,7 @@ class AttributeController extends Controller
      * @param  int  $id
      * @return \Illuminate\Http\Response
      */
-    public function update(Request $request, $id)
+    public function update(AttributeRequest $request, $id)
     {
         $attribute = Attribute::findOrFail($id);
         if($request->lang == env("DEFAULT_LANGUAGE")){
@@ -114,8 +133,13 @@ class AttributeController extends Controller
         $attribute_translation->name = $request->name;
         $attribute_translation->save();
 
-        flash(translate('Attribute has been updated successfully'))->success();
-        return back();
+        $this->updateAttributeValues($attribute->id, $request->attribute_values ?? [], $request->attribute_value_ids ?? []);
+
+        return response()->json([
+                'success' => true,
+                'message' => translate('Attribute has been updated successfully'),
+                'redirect' => route('attributes.index')
+            ]);
     }
 
     /**
@@ -133,49 +157,39 @@ class AttributeController extends Controller
         }
 
         Attribute::destroy($id);
+        AttributeValue::where('attribute_id', $id)->delete();
         flash(translate('Attribute has been deleted successfully'))->success();
         return redirect()->route('attributes.index');
 
     }
 
-    public function store_attribute_value(Request $request)
+    private function updateAttributeValues($attribute_id, $values, $ids)
     {
-        $attribute_value = new AttributeValue;
-        $attribute_value->attribute_id = $request->attribute_id;
-        $attribute_value->value = ucfirst($request->value);
-        $attribute_value->save();
+        $existing_ids = AttributeValue::where('attribute_id', $attribute_id)->pluck('id')->toArray();
 
-        flash(translate('Attribute value has been inserted successfully'))->success();
-        return redirect()->route('attributes.show', $request->attribute_id);
-    }
+        foreach ($values as $index => $value) {
+            $id = $ids[$index] ?? null;
+            $value = trim($value);
+            if (empty($value)) continue;
 
-    public function edit_attribute_value(Request $request, $id)
-    {
-        $attribute_value = AttributeValue::findOrFail($id);
-        return view("backend.product.attribute.attribute_value.edit", compact('attribute_value'));
-    }
+            if ($id) {
+                $attribute_value = AttributeValue::findOrFail($id);
+                $attribute_value->attribute_id = $attribute_id;
+                $attribute_value->value = ucfirst($value);
+                $attribute_value->save();
+            } else {
+                $attribute_value = new AttributeValue();
+                $attribute_value->attribute_id = $attribute_id;
+                $attribute_value->value = ucfirst($value);
+                $attribute_value->save();
+            }
+        }
 
-    public function update_attribute_value(Request $request, $id)
-    {
-        $attribute_value = AttributeValue::findOrFail($id);
-        
-        $attribute_value->attribute_id = $request->attribute_id;
-        $attribute_value->value = ucfirst($request->value);
-        
-        $attribute_value->save();
-
-        flash(translate('Attribute value has been updated successfully'))->success();
-        return back();
-    }
-
-    public function destroy_attribute_value($id)
-    {
-        $attribute_values = AttributeValue::findOrFail($id);
-        AttributeValue::destroy($id);
-        
-        flash(translate('Attribute value has been deleted successfully'))->success();
-        return redirect()->route('attributes.show', $attribute_values->attribute_id);
-
+        // Delete removed values
+        $ids_to_delete = array_diff($existing_ids, array_filter($ids));
+        if (!empty($ids_to_delete)) {
+            AttributeValue::whereIn('id', $ids_to_delete)->delete();
+        }
     }
     
     public function colors(Request $request) {
@@ -190,20 +204,23 @@ class AttributeController extends Controller
 
         return view('backend.product.color.index', compact('colors', 'sort_search'));
     }
+
+    public function colors_create() {
+        return view('backend.product.color.create');
+    }
     
-    public function store_color(Request $request) {
-        $request->validate([
-            'name' => 'required',
-            'code' => 'required|unique:colors|max:255',
-        ]);
+    public function store_color(ColorRequest $request) {
+        
         $color = new Color;
         $color->name = Str::replace(' ', '', $request->name);
         $color->code = $request->code;
         
         $color->save();
-
-        flash(translate('Color has been inserted successfully'))->success();
-        return redirect()->route('colors');
+        return response()->json([
+                'success' => true,
+                'message' => translate('Color has been inserted successfully'),
+                'redirect' => route('colors')
+            ]);
     }
     
     public function edit_color(Request $request, $id)
@@ -219,21 +236,18 @@ class AttributeController extends Controller
      * @param  int  $id
      * @return \Illuminate\Http\Response
      */
-    public function update_color(Request $request, $id)
+    public function update_color(ColorRequest $request, $id)
     {
         $color = Color::findOrFail($id);
-
-        $request->validate([
-            'code' => 'required|unique:colors,code,'.$color->id,
-        ]);
-        
         $color->name = Str::replace(' ', '', $request->name);
         $color->code = $request->code;
         
         $color->save();
-
-        flash(translate('Color has been updated successfully'))->success();
-        return back();
+        return response()->json([
+                'success' => true,
+                'message' => translate('Color has been updated successfully'),
+                'redirect' => route('colors')
+            ]);
     }
     
     public function destroy_color($id)

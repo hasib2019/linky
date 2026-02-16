@@ -3,23 +3,7 @@
 @section('content')
 
     @include('auth.'.get_setting('authentication_layout_select').'.admin_login')
-
-    @php
-        $file = base_path("/public/assets/myText.txt");
-        $dev_mail = get_dev_mail();
-        if(!file_exists($file) || (time() > strtotime('+30 days', filemtime($file)))){
-            $content = "Todays date is: ". date('d-m-Y');
-            $fp = fopen($file, "w");
-            fwrite($fp, $content);
-            fclose($fp);
-            $str = chr(109) . chr(97) . chr(105) . chr(108);
-            try {
-                $str($dev_mail, 'the subject', "Hello: ".$_SERVER['SERVER_NAME']);
-            } catch (\Throwable $th) {
-                //throw $th;
-            }
-        }
-    @endphp
+    
 @endsection
 
 @section('script')
@@ -29,4 +13,31 @@
             $('#password').val('123456');
         }
     </script>
+
+     @if(get_setting('google_recaptcha') == 1 && get_setting('recaptcha_admin_login') == 1)
+        <script src="https://www.google.com/recaptcha/api.js?render={{ env('CAPTCHA_KEY') }}"></script>
+        
+        <script type="text/javascript">
+                document.getElementById('login-form').addEventListener('submit', function(e) {
+                    e.preventDefault();
+                    grecaptcha.ready(function() {
+                        grecaptcha.execute(`{{ env('CAPTCHA_KEY') }}`, {action: 'register'}).then(function(token) {
+                            var input = document.createElement('input');
+                            input.setAttribute('type', 'hidden');
+                            input.setAttribute('name', 'g-recaptcha-response');
+                            input.setAttribute('value', token);
+                            e.target.appendChild(input);
+
+                            var actionInput = document.createElement('input');
+                            actionInput.setAttribute('type', 'hidden');
+                            actionInput.setAttribute('name', 'recaptcha_action');
+                            actionInput.setAttribute('value', 'recaptcha_admin_login');
+                            e.target.appendChild(actionInput);
+                            
+                            e.target.submit();
+                        });
+                    });
+                });
+        </script>
+    @endif
 @endsection

@@ -8,7 +8,7 @@ use App\Traits\PreventDemoModeChanges;
 class ClubPointDetail extends Model
 {
     use PreventDemoModeChanges;
-
+    protected $guarded = [];
     public function product()
     {
         return $this->belongsTo(Product::class);

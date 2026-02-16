@@ -12,6 +12,7 @@
 		line-height: 1.5;
 		font-family: 'DejaVuSans', 'sans-serif';
 		color: #333542;
+        font-family: {!! !empty(get_setting('system_font_family')) ? get_setting('system_font_family') : "'Public Sans', sans-serif" !!}, sans-serif;
 	}
 	div{
 		font-size: 1rem;

@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Seller;
 
 use Illuminate\Http\Request;
 use App\Models\Address;
+use App\Models\Area;
 use App\Models\City;
 use App\Models\State;
 use Auth;
@@ -22,8 +23,9 @@ class AddressController extends Controller
         $address->user_id       = Auth::user()->id;
         $address->address       = $request->address;
         $address->country_id    = $request->country_id;
-        $address->state_id      = $request->state_id;
+        $address->state_id      = $request->state_id ?? null;
         $address->city_id       = $request->city_id;
+        $address->area_id       = $request->area_id ?? null;
         $address->longitude     = $request->longitude;
         $address->latitude      = $request->latitude;
         $address->postal_code   = $request->postal_code;
@@ -45,7 +47,8 @@ class AddressController extends Controller
         $data['address_data'] = Address::findOrFail($id);
         $data['states'] = State::where('status', 1)->where('country_id', $data['address_data']->country_id)->get();
         $data['cities'] = City::where('status', 1)->where('state_id', $data['address_data']->state_id)->get();
-        
+        $data['areas'] = Area::where('status', 1)->where('city_id', $data['address_data']->city_id)->get();
+
         $returnHTML = view('seller.profile.address_edit_modal', $data)->render();
         return response()->json(array('data' => $data, 'html'=>$returnHTML));
     }
@@ -63,8 +66,13 @@ class AddressController extends Controller
         
         $address->address       = $request->address;
         $address->country_id    = $request->country_id;
-        $address->state_id      = $request->state_id;
+        if ($request->country_id && !$request->state_id && $request->country_id != $address->country_id) {
+            $address->state_id = null;
+        } else {
+            $address->state_id = $request->state_id ?? $address->state_id;
+        }
         $address->city_id       = $request->city_id;
+        $address->area_id       = $request->area_id ?? null;
         $address->longitude     = $request->longitude;
         $address->latitude      = $request->latitude;
         $address->postal_code   = $request->postal_code;

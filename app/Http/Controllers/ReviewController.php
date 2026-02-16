@@ -3,11 +3,15 @@
 namespace App\Http\Controllers;
 
 use App\Models\Category;
+use App\Models\Order;
+use App\Models\OrderDetail;
 use Illuminate\Http\Request;
 use App\Models\Review;
 use App\Models\Product;
 use App\Models\User;
 use Auth;
+use App\Models\ClubPoint;
+use App\Models\ClubPointDetail;
 use Route;
 
 class ReviewController extends Controller
@@ -117,6 +121,12 @@ class ReviewController extends Controller
             $review->created_at_is_custom = 1;
         }
         $review->save();
+        if ($authUser->user_type == 'customer') {
+            $orderIds = Order::where('user_id', $authUser->id)->pluck('id');
+            OrderDetail::whereIn('order_id', $orderIds)
+                ->where('product_id', $request->product_id)
+                ->update(['reviewed' => 1]);
+        }
         
         $product = Product::findOrFail($request->product_id);
         $reviewCount = Review::whereProductId($product->id)->whereStatus(1)->count();
@@ -132,6 +142,45 @@ class ReviewController extends Controller
             $seller->rating = (($seller->rating * $seller->num_of_reviews) + $review->rating) / ($seller->num_of_reviews + 1);
             $seller->num_of_reviews += 1;
             $seller->save();
+        }
+
+        if (addon_is_activated('club_point')) {
+            $product = Product::findOrFail($request->product_id);
+            $getPoint = false;
+
+            if ($product->added_by == 'admin') {
+                $getPoint = true;
+            } elseif ($product->added_by == 'seller') {
+                $getPoint = get_setting('set_club_point_for_sellers_product_review') == 1;
+            }
+            if ($getPoint) {
+                $order = Order::where('id', $request->order_id)->first();
+                $reviewPoint = get_setting('set_point_for_product_review');
+                if($order){
+                    $orderDetail = $order->orderDetails
+                                ->where('product_id', $request->product_id)
+                                ->where('reviewed', 1)
+                                ->first();
+                   
+                    if($orderDetail){
+                        $orderDetail->earn_point += $reviewPoint;
+                        $orderDetail->save();
+
+                        $clubPoint = ClubPoint::create([
+                            'user_id' => Auth::id(),
+                            'points' => $reviewPoint,
+                            'order_id' => $request->order_id
+                        ]);
+                
+                        ClubPointDetail::create([
+                            'club_point_id' => $clubPoint->id,
+                            'product_id'    => $request->product_id,
+                            'point'         => $reviewPoint,
+                        ]);
+                       
+                    }
+                }
+            }
         }
 
         flash(translate('Review has been submitted successfully'))->success();
@@ -252,9 +301,10 @@ class ReviewController extends Controller
 
     public function product_review_modal(Request $request)
     {
+        $order_id = $request->order_id;
         $product = Product::where('id', $request->product_id)->first();
         $review = Review::where('user_id', Auth::user()->id)->where('product_id', $product->id)->first();
-        return view('frontend.user.product_review_modal', compact('product', 'review'));
+        return view('frontend.user.product_review_modal', compact('product', 'review', 'order_id'));
     }
 
     public function getProductByCategory(Request $request){

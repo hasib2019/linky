@@ -24,7 +24,7 @@
         </div>
     </div>
     <br>
-    <div class="tab-content">
+    <div class="tab-content filter-tab-content">
         <div class="tab-pane fade in active show" id="installed">
             <div class="row">
                 <div class="col-xl-10 col-xxl-8 mx-auto">
@@ -48,7 +48,7 @@
                                             @endif
                                             <div class="ml-auto mr-0">
                                                 <label class="aiz-switch mb-0">
-                                                    <input type="checkbox" onchange="updateStatus(this, {{ $addon->id }})" <?php if($addon->activated) echo "checked";?>>
+                                                    <input type="checkbox" data-identifier="{{ $addon->unique_identifier }}" onchange="updateStatus(this, {{ $addon->id }})" <?php if($addon->activated) echo "checked";?>>
                                                     <span></span>
                                                 </label>
                                             </div>
@@ -81,30 +81,67 @@
 @endsection
 
 @section('script')
-    <script type="text/javascript">
-        function updateStatus(el, id){
+   <script type="text/javascript">
+    var gstConfirmed = false;
+    var lastEl, lastId;
 
-            if('{{env('DEMO_MODE')}}' == 'On'){
-                AIZ.plugins.notify('info', '{{ translate('Data can not change in demo mode.') }}');
-                return;
-            }
-
-
-            if($(el).is(':checked')){
-                var status = 1;
-            }
-            else{
-                var status = 0;
-            }
-            $.post('{{ route('addons.activation') }}', {_token:'{{ csrf_token() }}', id:id, status:status}, function(data){
-                if(data == 1){
-                    AIZ.plugins.notify('success', '{{ translate('Status updated successfully') }}');
-                }
-                else{
-                    AIZ.plugins.notify('danger', '{{ translate('Something went wrong') }}');
-                }
-            });
+    function updateStatus(el, id) {
+        if ('{{env('DEMO_MODE')}}' == 'On') {
+            AIZ.plugins.notify('info', '{{ translate('Data can not change in demo mode.') }}');
+            $(el).prop('checked', !$(el).is(':checked')); 
+            return;
         }
+
+        if ($(el).is(':checked')) {
+            var status = 1;
+            if ($(el).data('identifier') == 'gst_system') {
+                if (!gstConfirmed) {
+                    showAlert(el, id); 
+                    return;
+                }
+            }
+        } else {
+            var status = 0;
+            gstConfirmed = false; 
+        }
+
+        // Perform AJAX
+        $.post('{{ route('addons.activation') }}', {_token:'{{ csrf_token() }}',id:id, status:status}, function(data){
+            if (data == 1){
+                AIZ.plugins.notify('success', '{{ translate('Status updated successfully') }}');
+            } else {
+                AIZ.plugins.notify('danger', '{{ translate('Something went wrong') }}');
+                $(el).prop('checked', !$(el).is(':checked')); // Reset on error
+            }
+            gstConfirmed = false; 
+        });
+    }
+
+    function showAlert(el, id) {
+        lastEl = el;
+        lastId = id;
+
+        showBulkActionModal();
+        $('#confirmation-title').text('{{ translate('GST Activation Confirmation') }}');
+        $('#confirmation-question').text('{{ translate('Are you sure you want to enable the GST system?') }}');
+        $('#impact-message').html('{{ translate('This action cannot be undone. All existing VAT taxes linked to products will be permanently removed. In addition, any products without an assigned HSN/GST code will be automatically unpublished.') }}');
+        $('.confirmation-icon').addClass('d-none');
+        $('#exclamation-icon').removeClass('d-none');
+        
+        $('#conform-yes-btn').attr("onclick", "activeGST()");
+    }
+
+    function activeGST() {
+        gstConfirmed = true;
+        hideBulkActionModal(); 
+        updateStatus(lastEl, lastId);
+    }
+    
+    $(document).on('click', '#back-btn, [data-dismiss="modal"]', function(){
+        if(!gstConfirmed && lastEl){
+             $(lastEl).prop('checked', false);
+        }
+    });
 
         $(document).ready(function(){
             $.post('https://activeitzone.com/addons/public/addons', {item: 'ecommerce'}, function(data){
@@ -151,5 +188,5 @@
                 $('#available-addons-content').html(html);
             });
         })
-    </script>
+</script>
 @endsection

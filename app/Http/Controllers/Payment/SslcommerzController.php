@@ -12,6 +12,7 @@ use App\Models\SellerPackage;
 use App\Http\Controllers\CustomerPackageController;
 use App\Http\Controllers\SellerPackageController;
 use App\Http\Controllers\SSLCommerz;
+use App\Models\Order;
 use App\Models\User;
 use Session;
 use Auth;
@@ -20,48 +21,38 @@ session_start();
 
 class SslcommerzController extends Controller
 {
-    public function pay(Request $request)
+   public function pay(Request $request)
     {
         # Here you have to receive all the order data to initate the payment.
         # Lets your oder trnsaction informations are saving in a table called "orders"
         # In orders table order uniq identity is "order_id","order_status" field contain status of the transaction, "grand_total" is the order amount to be paid and "currency" is for storing Site Currency which will be checked with paid currency.
         if (Session::has('payment_type')) {
-            $userID =Auth::user()->id;
+            $userID = Auth::user()->id;
             $paymentType = Session::get('payment_type');
             $paymentData = $request->session()->get('payment_data');
-
+            $post_data = array();
             $post_data['currency'] = "BDT";
             $post_data['tran_id'] = substr(md5($userID), 0, 10); // tran_id must be unique
             $post_data['value_a'] = $post_data['tran_id'];
-
             if ($paymentType == 'cart_payment') {
                 $combined_order = CombinedOrder::findOrFail($request->session()->get('combined_order_id'));
-                $post_data = array();
                 $post_data['total_amount'] = $combined_order->grand_total; # You cant not pay less than 10
                 $post_data['tran_id'] = substr(md5($request->session()->get('combined_order_id')), 0, 10); // tran_id must be unique
                 $post_data['value_a'] = $post_data['tran_id'];
                 $post_data['value_b'] = $request->session()->get('combined_order_id');
-
             } elseif ($paymentType == 'order_re_payment') {
-                $customer_package = CustomerPackage::findOrFail($paymentData['order_id']);
-                $post_data = array();
-                $post_data['total_amount'] = $customer_package->amount; # You cant not pay less than 10
+                $order = Order::findOrFail($paymentData['order_id']);
+                $post_data['total_amount'] = $order->grand_total; # You cant not pay less than 10
                 $post_data['value_b'] = $paymentData['order_id'];
-
             } elseif ($paymentType == 'wallet_payment') {
-                $post_data = array();
                 $post_data['total_amount'] = $paymentData['amount']; # You cant not pay less than 10
                 $post_data['value_b'] = $paymentData['amount'];
-
             } elseif ($paymentType == 'customer_package_payment') {
                 $customer_package = CustomerPackage::findOrFail($paymentData['customer_package_id']);
-                $post_data = array();
                 $post_data['total_amount'] = $customer_package->amount; # You cant not pay less than 10
                 $post_data['value_b'] = $paymentData['customer_package_id'];
-
             } elseif ($paymentType == 'seller_package_payment') {
                 $seller_package = SellerPackage::findOrFail($paymentData['seller_package_id']);
-                $post_data = array();
                 $post_data['total_amount'] = $seller_package->amount; # You cant not pay less than 10
                 $post_data['value_b'] = $paymentData['seller_package_id'];
             }
@@ -84,7 +75,7 @@ class SslcommerzController extends Controller
         $post_data['success_url'] = $server_name . "sslcommerz/success";
         $post_data['fail_url'] = $server_name . "sslcommerz/fail";
         $post_data['cancel_url'] = $server_name . "sslcommerz/cancel";
-        // dd($post_data);
+        //dd($post_data);
         # SHIPMENT INFORMATION
         // $post_data['ship_name'] = 'ship_name';
         // $post_data['ship_add1 '] = 'Ship_add1';

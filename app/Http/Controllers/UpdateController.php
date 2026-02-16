@@ -17,6 +17,7 @@ use App\Models\ProductTax;
 use Illuminate\Http\Request;
 use App\Models\SellerPackage;
 use App\Models\BusinessSetting;
+use App\Models\Permission;
 use App\Models\ProductCategory;
 use App\Models\SellerWithdrawRequest;
 
@@ -27,6 +28,11 @@ class UpdateController extends Controller
         if (env('DEMO_MODE') == 'On') {
             flash(translate('This action is disabled in demo mode'))->error();
             return back();
+        }
+        $current_version= get_setting('current_version');
+        if (version_compare($current_version, '9.9.5', '<')) {
+            flash(translate('Could not update. Please check the compatible version'))->error();
+            return redirect('/');
         }
         if ($request->has('update_zip')) {
             if (class_exists('ZipArchive')) {
@@ -94,16 +100,10 @@ class UpdateController extends Controller
 
     public function step2()
     {
-        $versions = ['7.1.0'=>'v710.sql', '7.2.0'=>'v720.sql', '7.3.0'=>'v730.sql', '7.4.0'=>'v740.sql', '7.5.0'=>'v750.sql',
-                    '7.6.0'=>'v760.sql', '7.7.0'=>'v770.sql', '7.8.0'=>'v780.sql', '7.9.0'=>'v790.sql', '7.9.1'=>'v791.sql',
-                    '7.9.2'=>'v792.sql', '7.9.3'=>'v793.sql', '8'=>'v800.sql', '8.1'=>'v810.sql', '8.2'=>'v820.sql',
-                    '8.3'=>'v830.sql', '8.4'=>'v840.sql', '8.5'=>'v850.sql', '8.6'=>'v860.sql', '8.7'=>'v870.sql',
-                    '8.8'=>'v880.sql', '8.9'=>'v890.sql', '9.0'=>'v900.sql', '9.1'=>'v910.sql', '9.2'=>'v920.sql', 
-                    '9.2.1'=>'v921.sql', '9.3'=>'v930.sql', '9.4'=>'v940.sql', '9.5'=>'v950.sql', '9.6'=>'v960.sql', 
-                    '9.6.1'=>'v961.sql', '9.7'=>'v970.sql','9.8'=>'v980.sql','9.8.1'=>'v981.sql' ];
+        $versions = ['9.9.5'=>'v995.sql', '9.9.6'=>'v996.sql','9.9.7'=>'v997.sql','9.9.8'=>'v998.sql','9.9.9'=>'v999.sql','10.0.0'=>'v1000.sql','10.1.0'=>'v1010.sql','10.2.0'=>'v1020.sql','10.2.1'=>'v1021.sql','10.2.2'=>'v1022.sql','10.3.0'=>'v1030.sql','10.4.0'=>'v1040.sql'];
 
         $keys = array_keys($versions);
-        $current_version = (get_setting('current_version') != null) ? get_setting('current_version') : '7.1.0';
+        $current_version = (get_setting('current_version') != null) ? get_setting('current_version') : '9.9.5';
 
         if(array_search($current_version, $keys) == false){
             Artisan::call('view:clear');
@@ -139,6 +139,7 @@ class UpdateController extends Controller
         // $this->convertSellerPackageIntoShop();
         // $this->convertTrasnalations();
         // $this->convertColorsName();
+        $this->updatePermission();
 
         $previousRouteServiceProvier = base_path('app/Providers/RouteServiceProvider.php');
         $newRouteServiceProvier      = base_path('app/Providers/RouteServiceProvider.txt');
@@ -363,5 +364,11 @@ class UpdateController extends Controller
                 file_put_contents($path, file_get_contents($path)."\r\n".$type.'='.$val);
             }
         }
+    }
+
+    public function updatePermission(){
+        $permission = Permission::where('name', 'product-bar')->first();
+        $permission->name = 'smart-bar';
+        $permission->save();
     }
 }

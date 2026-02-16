@@ -5,11 +5,13 @@ namespace App\Services;
 use AizPackages\CombinationGenerate\Services\CombinationService;
 use App\Models\ProductStock;
 use App\Utility\ProductUtility;
+use Illuminate\Support\Facades\Log;
 
 class ProductStockService
 {
     public function store(array $data, $product)
     {
+        //Log::info('Product Stock Request:', $data);
         $collection = collect($data);
 
         $options = ProductUtility::get_attribute_options($collection);
@@ -33,6 +35,8 @@ class ProductStockService
                 $product_stock->save();
             }
         } else {
+            $product->variant_product = 0;
+            $product->save();
             unset($collection['colors_active'], $collection['colors'], $collection['choice_no']);
             $qty = $collection['current_stock'];
             $price = $collection['unit_price'];
@@ -51,7 +55,7 @@ class ProductStockService
             $product_stock->product_id  = $product_new->id;
             $product_stock->variant     = $stock->variant;
             $product_stock->price       = $stock->price;
-            $product_stock->sku         = $stock->sku;
+            $product_stock->sku         = null;
             $product_stock->qty         = $stock->qty;
             $product_stock->save();
         }

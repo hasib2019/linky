@@ -30,7 +30,7 @@
                               </g>
                             </g>
                         </svg>
-                        <h1 class="fs-21 fw-700 text-uppercase mt-2" style="color: #3d3d3d;">ACTIVE ECOMMERCE CMS INSTALLATION</h1>
+                        <h1 class="fs-21 fw-700 text-uppercase mt-2" style="color: #3d3d3d;">Creative ECOMMERCE CMS INSTALLATION</h1>
                         <p class="fs-12 fw-500" style="color:  #fe2b25; line-height: 18px;">You will need to know the following items before proceeding</p>
                     </div>
                     <ol class="list-group rounded-2">

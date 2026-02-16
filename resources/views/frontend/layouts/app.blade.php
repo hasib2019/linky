@@ -66,13 +66,15 @@
     <link href="https://fonts.googleapis.com/css2?family=Public+Sans:ital,wght@0,100;0,200;0,300;0,400;0,500;0,600;0,700;0,800;0,900;1,100;1,200;1,300;1,400;1,500;1,600;1,700;1,800;1,900&display=swap" rel="stylesheet">
 
     <!-- CSS Files -->
-    <link rel="stylesheet" href="{{ static_asset('assets/css/vendors.css') }}">
+    <link rel="stylesheet" href="{{ static_asset('assets/css/vendors.css?v=') }}{{ get_setting('current_version') }}">
     @if ($rtl == 1)
         <link rel="stylesheet" href="{{ static_asset('assets/css/bootstrap-rtl.min.css') }}">
     @endif
     <link rel="stylesheet" href="{{ static_asset('assets/css/aiz-core.css?v=') }}{{ rand(1000, 9999) }}">
-    <link rel="stylesheet" href="{{ static_asset('assets/css/custom-style.css') }}">
-
+    <link rel="stylesheet" href="{{ static_asset('assets/css/custom-style.css?v=') }}{{ get_setting('current_version') }}">
+    @if(get_setting('homepage_select') == 'thecore')
+    <link rel="stylesheet" href="{{ static_asset('assets/css/thecore.css') }}">
+    @endif
 
     <script>
         var AIZ = AIZ || {};
@@ -126,7 +128,7 @@
             --soft-primary: {{ hex2rgba(get_setting('base_color', '#d43533'), 0.15) }};
         }
         body{
-            font-family: 'Public Sans', sans-serif;
+            font-family: {!! !empty(get_setting('system_font_family')) ? get_setting('system_font_family') : "'Public Sans', sans-serif" !!}, sans-serif;
             font-weight: 400;
         }
 
@@ -172,6 +174,10 @@
         }
 
         .pac-container { z-index: 100000; }
+
+        .home-category-banner::after {
+            content: "{{ translate('View All') }}";
+        }
     </style>
 
 @if (get_setting('google_analytics') == 1)
@@ -213,7 +219,7 @@
 </head>
 <body>
     <!-- aiz-main-wrapper -->
-    <div class="aiz-main-wrapper d-flex flex-column bg-white">
+    <div class="aiz-main-wrapper d-flex flex-column bg-white aiz-{{ get_setting('homepage_select') }}">
         @php
             $user = auth()->user();
             $user_avatar = null;
@@ -254,9 +260,15 @@
         $alert_location = get_setting('custom_alert_location');
         $order = in_array($alert_location, ['top-left', 'top-right']) ? 'asc' : 'desc';
         $custom_alerts = App\Models\CustomAlert::where('status', 1)->orderBy('id', $order)->get();
+        use App\Models\Order;
+        use App\Models\OrderDetail;
+        if(auth()->user()){
+        $userOrderIds = Order::where('user_id', auth()->user()->id)->pluck('id');
+        $hasUnreviewed = OrderDetail::whereIn('order_id', $userOrderIds)->where('delivery_status', 'delivered')->where('reviewed', 0)->exists();
+        }
     @endphp
 
-    <div class="aiz-custom-alert {{ get_setting('custom_alert_location') }}">
+    <div class="aiz-custom-alert {{ get_setting('custom_alert_location') }}" id="aiz-custom-sale-alert">
         @foreach ($custom_alerts as $custom_alert)
             @if($custom_alert->id == 1)
                 <div class="aiz-cookie-alert mb-3" style="box-shadow: 0px 6px 10px rgba(0, 0, 0, 0.24);">
@@ -269,6 +281,30 @@
                         </button>
                     </div>
                 </div>
+            @elseif($custom_alert->id == 200) 
+                @php
+                    $showalert = true;
+                    if(auth()->user()){
+                    $showalert = $hasUnreviewed;
+                    }else{
+                    $showalert= false;  
+                    }
+                @endphp
+                @if(addon_is_activated('club_point') && get_setting('set_point_for_product_review') != 0 && $showalert)
+                    <div class="aiz-cookie-alert mb-3 club-point-alert" style="box-shadow: 0px 6px 10px rgba(0, 0, 0, 0.24);">
+                        <div class="p-3 px-lg-2rem rounded-0" style="background: {{ $custom_alert->background_color }};">
+                            <div class="text-{{ $custom_alert->text_color }} mb-3 custom-alert-for-product-club-point">
+                                {!! $custom_alert->description !!}
+                                @if(get_setting('set_club_point_for_sellers_product_review') == 0)
+                                    Club points are awarded only for reviews on admin’s products.
+                                @endif
+                            </div>
+                            <button class="btn btn-block btn-primary rounded-0 aiz-cookie-accept-club-point">
+                                {{ translate('Ok. I Understood') }}
+                            </button>
+                        </div>
+                    </div>
+                @endif                  
             @else
                 <div class="mb-3 custom-alert-box removable-session d-none" data-key="custom-alert-box-{{ $custom_alert->id }}" data-value="removed" style="box-shadow: 0px 6px 10px rgba(0, 0, 0, 0.24);">
                     <div class="rounded-0 position-relative" style="background: {{ $custom_alert->background_color }};">
@@ -280,7 +316,7 @@
                                 </div>
                             </div>
                         </a>
-                        <button class="absolute-top-right bg-transparent btn btn-circle btn-icon d-flex align-items-center justify-content-center text-{{ $custom_alert->text_color }} hov-text-primary set-session" data-key="custom-alert-box-{{ $custom_alert->id }}" data-value="removed" data-toggle="remove-parent" data-parent=".custom-alert-box">
+                        <button class="absolute-top-right bg-transparent btn btn-circle btn-icon d-flex align-items-center justify-content-center text-{{ $custom_alert->text_color }} hov-text-primary set-session" data-key="custom-alert-box-{{ $custom_alert->id }}" data-value="removed" data-parent=".custom-alert-box">
                             <i class="la la-close fs-20"></i>
                         </button>
                     </div>
@@ -294,6 +330,17 @@
         $dynamic_popups = App\Models\DynamicPopup::where('status', 1)->orderBy('id', 'asc')->get();
     @endphp
     @foreach ($dynamic_popups as $key => $dynamic_popup)
+        @php
+        $showPopup = true;
+        if ($dynamic_popup->id == 100 ) {
+            if(auth()->user()){
+            $showPopup = $hasUnreviewed;
+            }else{
+              $showPopup= false;  
+            }
+        }
+        @endphp
+
         @if($dynamic_popup->id == 1)
             <div class="modal website-popup removable-session d-none" data-key="website-popup" data-value="removed">
                 <div class="absolute-full bg-black opacity-60"></div>
@@ -319,13 +366,14 @@
                                 </form>
                             @endif
                         </div>
-                        <button class="absolute-top-right bg-white shadow-lg btn btn-circle btn-icon mr-n3 mt-n3 set-session" data-key="website-popup" data-value="removed" data-toggle="remove-parent" data-parent=".website-popup">
+                        <button class="absolute-top-right bg-white shadow-lg btn btn-circle btn-icon mr-n3 mt-n3 set-session" data-key="website-popup" data-value="removed" data-parent=".website-popup">
                             <i class="la la-close fs-20"></i>
                         </button>
                     </div>
                 </div>
             </div>
         @else
+            @if($showPopup)
             <div class="modal website-popup removable-session d-none" data-key="website-popup-{{ $dynamic_popup->id }}" data-value="removed">
                 <div class="absolute-full bg-black opacity-60"></div>
                 <div class="modal-dialog modal-dialog-centered modal-dialog-zoom modal-md mx-4 mx-md-auto">
@@ -338,16 +386,17 @@
                         <div class="pb-5 pt-4 px-3 px-md-2rem">
                             <h1 class="fs-30 fw-700 text-dark">{{ $dynamic_popup->title }}</h1>
                             <p class="fs-14 fw-400 mt-3 mb-4">{{ $dynamic_popup->summary }}</p>
-                            <a href="{{ $dynamic_popup->btn_link }}" class="btn btn-block mt-3 rounded-0 text-{{ $dynamic_popup->btn_text_color }}" style="background: {{ $dynamic_popup->btn_background_color }};">
+                            <a href="{{ $dynamic_popup->btn_link }}" class="btn btn-block mt-3 rounded-0 text-{{ $dynamic_popup->btn_text_color }} set-session" style="background: {{ $dynamic_popup->btn_background_color }};"data-key="website-popup-{{ $dynamic_popup->id }}" data-value="removed" data-parent=".website-popup">
                                 {{ $dynamic_popup->btn_text }}
                             </a>
                         </div>
-                        <button class="absolute-top-right bg-white shadow-lg btn btn-circle btn-icon mr-n3 mt-n3 set-session" data-key="website-popup-{{ $dynamic_popup->id }}" data-value="removed" data-toggle="remove-parent" data-parent=".website-popup">
+                        <button class="absolute-top-right bg-white shadow-lg btn btn-circle btn-icon mr-n3 mt-n3 set-session" data-key="website-popup-{{ $dynamic_popup->id }}" data-value="removed" data-parent=".website-popup">
                             <i class="la la-close fs-20"></i>
                         </button>
                     </div>
                 </div>
             </div>
+            @endif
         @endif
     @endforeach
 
@@ -361,8 +410,8 @@
                 <div class="c-preloader text-center p-3">
                     <i class="las la-spinner la-spin la-3x"></i>
                 </div>
-                <button type="button" class="close absolute-top-right btn-icon close z-1 btn-circle bg-gray mr-2 mt-2 d-flex justify-content-center align-items-center" data-dismiss="modal" aria-label="Close" style="background: #ededf2; width: calc(2rem + 2px); height: calc(2rem + 2px);">
-                    <span aria-hidden="true" class="fs-24 fw-700" style="margin-left: 2px;">&times;</span>
+                <button type="button" class="close absolute-top-right btn-icon close z-1 btn-circle hov-text-blue bg-light hov-bg-gray has-transition mr-3 mt-3 d-flex justify-content-center align-items-center" data-dismiss="modal" aria-label="Close" style="background: #ededf2; width: calc(2rem + 2px); height: calc(2rem + 2px);">
+                     <i class="la la-close fs-20 text-gray hov-text-blue has-transition"></i>
                 </button>
                 <div id="addToCart-modal-body">
 
@@ -371,10 +420,26 @@
         </div>
     </div>
 
+
+    <!-- Offcanvas -->
+    <div id="rightOffcanvas" class="right-offcanvas-md position-fixed top-0 fullscreen bg-white  py-20px z-1045">
+        <!-- content will here -->
+    </div>
+    <!-- Overlay -->
+    <div id="rightOffcanvasOverlay" class="position-fixed top-0 left-0 h-100 w-100"></div>
+
+
     @yield('modal')
 
+    <div id="videoModal" class="video-modal">
+        <div class="modal-video-wrapper">
+            <video id="popupVideo" style="width: 100%; height: 100%" controls disablePictureInPicture></video>
+            <span id="closeModalBtn" class="close-modal">✖</span>
+        </div>
+    </div>
+
     <!-- SCRIPTS -->
-    <script src="{{ static_asset('assets/js/vendors.js') }}"></script>
+    <script src="{{ static_asset('assets/js/vendors.js?v=') }}{{ get_setting('current_version') }}"></script>
     <script src="{{ static_asset('assets/js/aiz-core.js?v=') }}{{ rand(1000, 9999) }}"></script>
 
     {{-- WhatsaApp Chat --}}
@@ -393,6 +458,17 @@
             })();
         </script>
     @endif
+
+    <style>
+    .sc-q8c6tt-3 {
+        bottom: 54px !important;
+    }
+
+    a[aria-label="Go to GetButton.io website"] {
+        display: none !important;
+    }
+    
+</style>
 
     <script>
         @foreach (session('flash_notification', collect())->toArray() as $message)
@@ -429,6 +505,9 @@
             }, function(data) {
                 $('#section_newest').html(data);
                 AIZ.plugins.slickCarousel();
+                @if (get_setting('homepage_select') == 'thecore')
+                 toggleViewMoreButton();
+                @endif
             });
 
             $.post('{{ route('home.section.auction_products') }}', {
@@ -565,7 +644,7 @@
             }, function(data){
                 updateNavCart(data.nav_cart_view,data.cart_count);
                 $('#cart-details').html(data.cart_view);
-                AIZ.plugins.notify('success', "{{ translate('Item has been removed from cart') }}");
+                AIZ.plugins.notify('danger', "{{ translate('Item has been removed from cart') }}");
                 $('#cart_items_sidenav').html(parseInt($('#cart_items_sidenav').html())-1);
             });
         }
@@ -605,7 +684,7 @@
                 $('#modal-size').addClass('modal-lg');
             }
             $('#addToCart-modal-body').html(null);
-            $('#addToCart').modal();
+                $('#addToCart').modal();
             $('.c-preloader').show();
             $.post('{{ route('cart.showCartModal') }}', {_token: AIZ.data.csrf, id:id}, function(data){
                 $('.c-preloader').hide();
@@ -617,7 +696,92 @@
             });
         }
 
+           // Right Offcanvas JS Start
+        const rightOffcanvas = document.getElementById('rightOffcanvas');
+        const overlay = document.getElementById('rightOffcanvasOverlay');
+
+        // Open function
+        function showAddToCartRightCanvas(id) {
+            const $social_chat = $('.sc-q8c6tt-3');
+            if ($social_chat.length) {
+                $social_chat.addClass('d-none');
+            }
+            rightOffcanvas.classList.add('active');
+            overlay.classList.add('active');
+            document.body.classList.add('body-no-scroll');
+            rightOffcanvas.innerHTML = '<div class="h-100 w-100 d-flex justify-content-center align-items-center"><div class="footable-loader" style="height: 100vh !important;"><span class="fooicon fooicon-loader"></span></div> </div>';
+
+            $.ajax({
+                url: '{{ route('cart.selectVariantCanvas') }}',
+                type: 'POST',
+                data: {
+                    _token: AIZ.data.csrf,
+                    id: id
+                },
+                success: function (data) {
+                    rightOffcanvas.innerHTML = data;
+                    AIZ.plugins.slickCarousel();
+                    AIZ.plugins.zoom();
+                    AIZ.extra.plusMinus();
+                    getVariantPrice();
+                },
+                error: function () {
+                    rightOffcanvas.innerHTML =
+                        '<p class="text-danger">{{ translate("Failed to load stock data") }}</p>';
+                }
+            });
+        }
+
+            // Close function
+            function closeRightcanvas() {
+                rightOffcanvas.classList.remove('active');
+                overlay.classList.remove('active');
+                document.body.classList.remove('body-no-scroll');
+                const $social_chat = $('.sc-q8c6tt-3');
+                if ($social_chat.length) {
+                    $social_chat.removeClass('d-none');
+                }
+            }
+            function closeOffcanvas() {
+                closeRightcanvas();
+            }
+
+            if (overlay) {
+                overlay.addEventListener('click', closeRightcanvas);
+            }
+            // Optional: close with ESC key
+            document.addEventListener('keydown', (e) => {
+                if (e.key === 'Escape') closeRightcanvas();
+            });
+        // Right Offcanvas JS End
+
+        function showReviewImageModal(imageUrl, imagesJson) {
+            try {
+                var images = JSON.parse(imagesJson);
+                var currentIndex = images.indexOf(imageUrl);
+
+                $('#modalReviewImage').attr('src', imageUrl);
+                $('#reviewImageModal').modal('show');
+
+                $('#prevImageBtn').off('click').on('click', function() {
+                    currentIndex = (currentIndex - 1 + images.length) % images.length;
+                    $('#modalReviewImage').attr('src', images[currentIndex]);
+                });
+
+                $('#nextImageBtn').off('click').on('click', function() {
+                    currentIndex = (currentIndex + 1) % images.length;
+                    $('#modalReviewImage').attr('src', images[currentIndex]);
+                });
+            } catch (error) {
+                console.error("Error parsing JSON:", error);
+            }
+        }
+
         $('#option-choice-form input').on('change', function(){
+            getVariantPrice();
+        });
+
+        $(document).on('change click', '#option-choice-form input', function () {
             getVariantPrice();
         });
 
@@ -628,14 +792,42 @@
                     url: '{{ route('products.variant_price') }}',
                     data: $('#option-choice-form').serializeArray(),
                     success: function(data){
-                        $('.product-gallery-thumb .carousel-box').each(function (i) {
-                            if($(this).data('variation') && data.variation == $(this).data('variation')){
-                                $('.product-gallery-thumb').slick('slickGoTo', i);
+                        const responseImage = data.image || null;
+
+                        if (responseImage) {
+                         const thumbEl = document.querySelector('.thumb-slider');
+                            const mainEl = document.querySelector('.main-slider');
+                            const thumbSwiper = thumbEl && thumbEl.swiper ? thumbEl.swiper : null;
+                            const mainSwiper = mainEl && mainEl.swiper ? mainEl.swiper : null;
+
+                            let found = false;
+                            $('.thumb-slider .swiper-slide').each(function (index) {
+                                const slideImage = $(this).data('variation-image');
+                                if (String(slideImage) === String(responseImage)) {
+                                    found = true;
+                                    if (thumbSwiper && typeof thumbSwiper.slideTo === 'function') {
+                                        thumbSwiper.slideTo(index);
+                                    }
+                                    if (mainSwiper && typeof mainSwiper.slideTo === 'function') {
+                                        mainSwiper.slideTo(index);
+                                    }
+                                    $(this).trigger('click');
+                                    return false;
+                                }
+                            });
+
+                            // if nothing matched, reset to first slide once
+                            if (!found) {
+                                if (thumbSwiper && typeof thumbSwiper.slideTo === 'function') thumbSwiper.slideTo(0);
+                                if (mainSwiper && typeof mainSwiper.slideTo === 'function') mainSwiper.slideTo(0);
                             }
-                        })
+
+                        }
 
                         $('#option-choice-form #chosen_price_div').removeClass('d-none');
                         $('#option-choice-form #chosen_price_div #chosen_price').html(data.price);
+                        $('#variant_sku_section #variant_sku').html(data.sku);
+                        $('#option-choice-form #selected_variant').html(data.variation);
                         $('#available-quantity').html(data.quantity);
                         $('.input-number').prop('max', data.max_limit);
                         if(parseInt(data.in_stock) == 0 && data.digital  == 0){
@@ -652,6 +844,7 @@
                         AIZ.extra.plusMinus();
                     }
                 });
+                $('#add_to_cart_count').text('(' + String($('#option-choice-form input[name=quantity]').val()).padStart(2, '0') + ')');
             }
         }
 
@@ -679,6 +872,7 @@
             @endif
 
             if(checkAddToCartValidity()) {
+                animateAddToCartButton('#added_to_cart_btn', 'loading');
                 $('#addToCart').modal();
                 $('.c-preloader').show();
                 $.ajax({
@@ -686,6 +880,7 @@
                     url: '{{ route('cart.addToCart') }}',
                     data: $('#option-choice-form').serializeArray(),
                     success: function(data){
+                        animateAddToCartButton('#added_to_cart_btn', 'success');
                        $('#addToCart-modal-body').html(null);
                        $('.c-preloader').hide();
                        $('#modal-size').removeClass('modal-lg');
@@ -700,6 +895,70 @@
                     // Facebook Pixel AddToCart Event
                     fbq('track', 'AddToCart', {content_type: 'product'});
                     // Facebook Pixel AddToCart Event
+                }
+            }
+            else{
+                animateAddToCartButton('#added_to_cart_btn', 'reset');
+                AIZ.plugins.notify('warning', "{{ translate('Please choose all the options') }}");
+            }
+        }
+
+        function addToCartSingleProduct(productId = null){
+            @if (Auth::check() && Auth::user()->user_type != 'customer')
+                AIZ.plugins.notify('warning', "{{ translate('Please Login as a customer to add products to the Cart.') }}");
+                return false;
+            @endif
+
+            if(!productId){
+                AIZ.plugins.notify('warning', "{{ translate('Product not found') }}");
+                return false;
+            }
+
+            var formData = {
+                id: productId,
+                quantity: 1,
+                _token: '{{ csrf_token() }}'
+            };
+
+            if(checkAddToCartValidity()) {
+                $('.c-preloader').show();
+                $('#addToCart-modal-body').html('<div class="text-center p-5"><div class="c-preloader"></div></div>');
+                $('#modal-size').removeClass('modal-lg');
+                $('#addToCart').modal('show'); 
+
+                $.ajax({
+                    type: "POST",
+                    url: '{{ route('cart.addToCart') }}',
+                    data: formData,
+                    success: function(data){
+                        $('#addToCart .c-preloader').hide(); 
+
+                        if (data && data.modal_view) {
+                            $('#addToCart-modal-body').html(data.modal_view);
+
+                            try {
+                                AIZ.extra.plusMinus();
+                                AIZ.plugins.slickCarousel();
+                                if (typeof updateNavCart === 'function') {
+                                    updateNavCart(data.nav_cart_view, data.cart_count);
+                                }
+                            } catch (e) {
+                                console.warn("JS init error:", e);
+                            }
+
+                            $('#addToCart .modal-body').scrollTop(0);
+                        } else {
+                            $('#addToCart-modal-body').html('<div class="text-center p-5 text-danger">Product details not available.</div>');
+                        }
+                    },
+                    error: function() {
+                        AIZ.plugins.notify('danger', "{{ translate('Something went wrong') }}");
+                        $('.c-preloader').hide();
+                    }
+                });
+
+                if ("{{ get_setting('facebook_pixel') }}" == 1){
+                    fbq('track', 'AddToCart', {content_type: 'product'});
                 }
             }
             else{
@@ -741,9 +1000,12 @@
             }
         }
 
-        function bid_single_modal(bid_product_id, min_bid_amount){
+        function bid_single_modal(bid_product_id, min_bid_amount, gst_rate = null){
             @if (Auth::check() && (isCustomer() || isSeller()))
                 var min_bid_amount_text = "({{ translate('Min Bid Amount: ') }}"+min_bid_amount+")";
+                if (gst_rate !== null){
+                $('#gst_applicable_alert').text("{{ translate('An') }} "+gst_rate+"%" + " {{ translate('GST will be applied if you win the bid and proceed with the purchase') }}");
+                }
                 $('#min_bid_amount').text(min_bid_amount_text);
                 $('#bid_product_id').val(bid_product_id);
                 $('#bid_amount').attr('min', min_bid_amount);
@@ -796,7 +1058,48 @@
                 $('.unread-notification-count').html(data);
             });
         }
+
+        function animateAddToCartButton(btnSelector, state = 'loading') {
+            const $btn = $(btnSelector);
+
+            if (!$btn.length) return;
+
+            // store original text once
+            if (!$btn.data('original-html')) {
+                $btn.data('original-html', $btn.html());
+            }
+
+            if (state === 'loading') {
+                $btn
+                    .addClass('adding')
+                    .prop('disabled', true)
+                    .html('<span class="spinner-border spinner-border-sm mr-2"></span>');
+            }
+
+            if (state === 'success') {
+                $btn
+                    .removeClass('adding')
+                    .addClass('added-success')
+                    .html('<i class="las la-check"></i>');
+
+                setTimeout(() => {
+                    $btn
+                        .removeClass('added-success')
+                        .prop('disabled', false)
+                        .html($btn.data('original-html'));
+                }, 1500);
+            }
+
+            if (state === 'reset') {
+                $btn
+                    .removeClass('adding added-success')
+                    .prop('disabled', false)
+                    .html($btn.data('original-html'));
+            }
+        }
+
     </script>
+
 
 
     <script type="text/javascript">
@@ -923,7 +1226,115 @@
                 }
             }
         </script>
+        
     @endif
+
+    @if (get_setting('header_element') == 5 || get_setting('header_element') == 6)
+        <script>
+            // Language switcher
+            function changeLanguage(code) {
+                $.post('{{ route('language.change') }}', {
+                    _token: '{{ csrf_token() }}',
+                    locale: code
+                }, function () {
+                    location.reload();
+                });
+            }
+
+            // Currency switcher
+            function changeCurrency(code) {
+                $.post('{{ route('currency.change') }}', {
+                    _token: '{{ csrf_token() }}',
+                    currency_code: code
+                }, function () {
+                    location.reload();
+                });
+            }
+        </script>
+    @endif
+
+    <script>
+    function fixSlickVisibility() {
+        $('.slick-slide').css('visibility', 'visible');
+        $('.slick-track').css('opacity', '1');
+    }
+
+    // Call after fullscreen exit
+    $(window).on('resize', function() {
+        setTimeout(function() {
+            $('.product-gallery').slick('setPosition');
+            $('.product-gallery-thumb').slick('setPosition');
+            fixSlickVisibility();
+        }, 300);
+    });
+    </script>
+    @if(get_setting('show_custom_product_sale_alert')==1)
+    <script>
+    const saleAlertProducts = @json(get_all_sale_alert_products());
+
+        function showSaleAlert() {
+            if (!saleAlertProducts || saleAlertProducts.length === 0) return;
+            const randomProduct = saleAlertProducts[Math.floor(Math.random() * saleAlertProducts.length)];
+            const html = `
+                <div class="alert  bg-white alert-dismissible rounded-0" role="alert" style="display: none; box-shadow: 0px 6px 10px rgba(0, 0, 0, 0.24);">
+                    <div class="d-flex align-items-center">
+                        <img src="${randomProduct.image}" class="h-50px w-50px img-fit mr-2 rounded" alt="${randomProduct.title}">
+                        <div>
+                            <span class="text-truncate-2">
+                                <a href="${randomProduct.url}" class="text-dark font-weight-bold">${randomProduct.title}</a>
+                            </span>
+                             — {{ translate('ordered just now') }}!
+                        </div>
+                        <button type="button" class="close ml-auto hov-text-primary set-session" data-parent=".alert">
+                            <i class="la la-close fs-20"></i>
+                        </button>
+                    </div>
+                </div>
+            `;
+            const $container = $('#aiz-custom-sale-alert');
+            const $alert = $(html).appendTo($container);
+            $alert.stop(true, true).fadeIn(600);
+
+            const displayMs = 4000;
+            const fadeOutTimeout = setTimeout(() => {
+                $alert.fadeOut(600, function() { $(this).remove(); });
+            }, displayMs);
+
+            $alert.find('.close').on('click', function () {
+                const $parent = $(this).closest('.alert');
+                $parent.fadeOut(600, function () { $(this).remove(); });
+            });
+        }
+
+
+        function startRandomAlerts() {
+            const min = parseInt(`{{ get_setting('sale_alert_min_time') }}`)  * 1000; 
+            const max = parseInt(`{{ get_setting('sale_alert_max_time') }}`)  * 1000;
+            const randomDelay = Math.random() * (max - min) + min;
+
+            setTimeout(() => {
+                showSaleAlert();
+                startRandomAlerts();
+            }, randomDelay);
+        }
+
+        // start only if there are products
+        if (Array.isArray(saleAlertProducts) && saleAlertProducts.length) {
+            startRandomAlerts();
+        }
+    </script>
+    @endif
+
+   <script>
+    $(document).ready(function() {
+        // Smooth close button
+        $('.set-session').on('click', function(e) {
+            e.preventDefault();
+            const parent = $(this).data('parent');
+            $(this).closest(parent).fadeOut(600);
+        });
+    });
+    </script>
 
     @yield('script')
 

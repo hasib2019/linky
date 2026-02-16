@@ -262,9 +262,9 @@ class CustomerProductController extends Controller
         if(get_setting('classified_product') != 1){
             return redirect('/');
         }
-        $customer_product  = CustomerProduct::where('slug', $slug)->first();
-        if($customer_product!=null){
-            return view('frontend.customer_product_details', compact('customer_product'));
+        $detailedProduct  = CustomerProduct::where('slug', $slug)->first();
+        if($detailedProduct!=null){
+            return view('frontend.customer_product_details', compact('detailedProduct'));
         }
         abort(404);
     }

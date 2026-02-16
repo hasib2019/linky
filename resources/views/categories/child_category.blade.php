@@ -4,7 +4,7 @@
         $value .= '--';
     }
 @endphp
-<option value="{{ $child_category->id }}">{{ $value." ".$child_category->getTranslation('name') }}</option>
+<option class="hov-text-white" value="{{ $child_category->id }}">{{ $value." ".$child_category->getTranslation('name') }}</option>
 @if ($child_category->categories)
     @foreach ($child_category->categories as $childCategory)
         @include('categories.child_category', ['child_category' => $childCategory])

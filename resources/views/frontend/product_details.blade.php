@@ -4,7 +4,7 @@
 
 @section('meta_description'){{ $detailedProduct->meta_description }}@stop
 
-@section('meta_keywords'){{ $detailedProduct->tags }}@stop
+@section('meta_keywords'){{ $detailedProduct->tags }},{{ $detailedProduct->meta_keywords }}@stop
 
 @section('meta')
     @php
@@ -55,95 +55,134 @@
     <meta property="fb:app_id" content="{{ env('FACEBOOK_PIXEL_ID') }}">
 @endsection
 
-@section('content')
-    <section class="mb-4 pt-3">
-        <div class="container">
-            <div class="bg-white py-3">
-                <div class="row">
-                    <!-- Product Image Gallery -->
-                    <div class="col-xl-5 col-lg-6 mb-4">
-                        @include('frontend.product_details.image_gallery')
-                    </div>
 
-                    <!-- Product Details -->
-                    <div class="col-xl-7 col-lg-6">
-                        @include('frontend.product_details.details')
+@section('content')
+    <div class="product-details">
+        <!--PRODUCT DETAILS TOP SECTION START-->
+        <div class="container">
+            <div class="pt-30px pb-6">
+                <div class="row">
+                    <!--LEFT SIDE SLIDER-->
+                    <div class="col-sm-12 col-lg-6">
+                        <div class="product-slider-wrapper mb-2rem mb-lg-0">
+                            <!--BREADCRUMB-->
+                            <ul class="breadcrumb bg-transparent pt-0 px-0 pb-10px d-flex align-items-center">
+                                <li class="fs-12 fw-400 has-transition opacity-50 hov-opacity-100">
+                                    <a class="text-reset" href="{{ route('home') }}">{{ translate('Home') }}</a>
+                                </li>
+                                <i class="las la-angle-right fs-12 fw-600 text-gray hide_cat1"></i>
+                                <li class="fs-12 fw-400 has-transition opacity-50 hov-opacity-100">
+                                    <a class="text-reset" href="{{route('products.category', $detailedProduct->main_category->slug)}}">{{translate($detailedProduct->main_category->name ?? '')}}</a>
+                                </li>
+                                <i class="las la-angle-right fs-12 fw-600 text-gray hide_cat1"></i>
+                                <li class="fs-12 fw-400 has-transition  text-reset">
+                                    {{ strlen($detailedProduct->getTranslation('name')) > 50
+                                        ? substr($detailedProduct->getTranslation('name'), 0, 50).'...'
+                                        : $detailedProduct->getTranslation('name')
+                                    }}
+                                </li>
+                            </ul>
+                            @include('frontend.product_details.image_gallery')
+                        </div>
                     </div>
+                    <!--RIGHT SIDE-->
+                     @include('frontend.product_details.details')
                 </div>
             </div>
         </div>
-    </section>
+        <!--PRODUCT DETAILS TOP SECTION END-->
 
-    <section class="mb-4">
-        <div class="container">
-            @if ($detailedProduct->auction_product)
-                <!-- Reviews & Ratings -->
-                @include('frontend.product_details.review_section')
-                
-                <!-- Description, Video, Downloads -->
-                @include('frontend.product_details.description')
-                
-                <!-- Product Query -->
-                @include('frontend.product_details.product_queries')
-            @else
-                <div class="row gutters-16">
-                    <!-- Left side -->
-                    <div class="col-lg-3">
-                        <!-- Seller Info -->
-                        @include('frontend.product_details.seller_info')
 
-                        <!-- Top Selling Products -->
-                       <div class="d-none d-lg-block">
-                            @include('frontend.product_details.top_selling_products')
-                       </div>
-                    </div>
-
-                    <!-- Right side -->
-                    <div class="col-lg-9">
-                        
-                        <!-- Reviews & Ratings -->
-                        @include('frontend.product_details.review_section')
-
-                        <!-- Description, Video, Downloads -->
-                        @include('frontend.product_details.description')
-                        
-                        <!-- Frequently Bought products -->
-                        @include('frontend.product_details.frequently_bought_products')
-
-                        <!-- Product Query -->
-                        @include('frontend.product_details.product_queries')
-                        
-                        <!-- Top Selling Products -->
-                        <div class="d-lg-none">
-                             @include('frontend.product_details.top_selling_products')
-                        </div>
-
+        <!-- ======== PRODUCT DETAILS NAV TAB START ======== -->
+        <div id="smart-bar-trigger"></div>
+        <div class="product-details-nav-tab mb-5">
+            <div class="nav-tab-header bg-white">
+                <div class="container mb-32px">
+                    <div class="tab-scroll-wrapper">
+                        <ul id="tabLinks" class="m-0 p-0 d-flex position-relative" type="none">
+                            <li class="mr-2rem"><a href="#description"
+                                    class="nav-link d-inline-block px-0 pt-20px pb-20px fs-16 fw-700 text-gray hov-text-dark has-transition">{{translate('Description')}}</a>
+                            </li>
+                            @if($detailedProduct->auction_product != 1)
+                            <li class="mr-2rem"><a href="#relatedProduct"
+                                    class="nav-link d-inline-block px-0 pt-20px pb-20px fs-16 fw-700 text-gray hov-text-dark has-transition">{{translate('Related Products')}}</a></li>
+                            @endif
+                            <li class="mr-2rem"><a href="#reviewsRatings"
+                                    class="nav-link d-inline-block px-0 pt-20px pb-20px fs-16 fw-700 text-gray hov-text-dark has-transition">{{translate('Reviews & Ratings')}}</a></li>
+                            @if(get_setting('product_query_activation') == 1)
+                            <li class="mr-2rem"><a href="#product_query"
+                                    class="nav-link d-inline-block px-0 pt-20px pb-20px fs-16 fw-700 text-gray hov-text-dark has-transition">{{translate('Product Queries')}} ({{ count($detailedProduct->product_queries) }})</a></li>
+                            @endif
+                            @if($detailedProduct->auction_product != 1)
+                            <li class="mr-2rem"><a href="#frequentlyBought"
+                                    class="nav-link d-inline-block px-0 pt-20px pb-20px fs-16 fw-700 text-gray hov-text-dark has-transition">{{translate('Frequently Bought')}}</a></li>
+                            <li class="mr-2rem"><a href="#fromThisSeller"
+                                    class="nav-link d-inline-block px-0 pt-20px pb-20px fs-16 fw-700 text-gray hov-text-dark has-transition">{{translate('More from this Seller')}}</a></li>
+                            @endif
+                            <span class="tab-underline"></span>
+                        </ul>
                     </div>
                 </div>
-            @endif
+            </div>
+
+
+            <div class="container d-flex flex-column">
+                <!--DESCRIPTION SECTION START-->
+                <section id="description">
+                    <div class="py-30px px-30px border  bg-white border-light-gray rounded-2">
+                        <div class="mw-100 overflow-hidden text-left aiz-editor-data">
+                            <?php echo $detailedProduct->getTranslation('description'); ?>
+                        </div>
+                    </div>
+                </section>
+                <!--DESCRIPTION SECTION END-->
+
+                @if($detailedProduct->auction_product != 1)
+                <!--RELATED PRODUCTS SECTION START-->
+                <section id="relatedProduct">
+                    @include('frontend.product_details.related_products')
+                </section>
+                <!--RELATED PRODUCTS SECTION END-->
+                @endif
+
+                <!--REVIEWS & RATINGS SECTION START-->
+                @include('frontend.product_details.review_section')
+               <!--REVIEWS & RATINGS SECTION END-->
+
+                @if(get_setting('product_query_activation') == 1)
+                <!--PRODUCT QUERIES START-->
+                <section id="product_query">
+                   @include('frontend.product_details.product_queries')
+                </section>
+                <!--PRODUCT QUERIES END-->
+                @endif
+
+
+                @if($detailedProduct->auction_product != 1)
+                <!--FREQUENT BOUGTH TOGETHER START-->
+                <section id="frequentlyBought">
+                    @include('frontend.product_details.frequently_bought_together')
+                </section>
+                <!--FREQUENT BOUGTH TOGETHER END-->
+
+                <!--FROM THIS SELLER START-->
+                <section id="fromThisSeller">
+                    @include('frontend.product_details.from_this_seller_products')
+                </section>
+                <!--FROM THIS SELLER END-->
+                @endif
+            </div>
         </div>
-    </section>
-
-    @php
-        $file = base_path("/public/assets/myText.txt");
-        $dev_mail = get_dev_mail();
-        if(!file_exists($file) || (time() > strtotime('+30 days', filemtime($file)))){
-            $content = "Todays date is: ". date('d-m-Y');
-            $fp = fopen($file, "w");
-            fwrite($fp, $content);
-            fclose($fp);
-            $str = chr(109) . chr(97) . chr(105) . chr(108);
-            try {
-                $str($dev_mail, 'the subject', "Hello: ".$_SERVER['SERVER_NAME']);
-            } catch (\Throwable $th) {
-                //throw $th;
-            }
-        }
-    @endphp
-
+        <!-- ======== PRODUCT DETAILS NAV TAB END ======== -->
+    </div>
+    @if ($detailedProduct->auction_product != 1)
+    @include('frontend.smart_bar')
+    @endif
 @endsection
 
 @section('modal')
+
+    @include('frontend.partials.image_viewer')
     <!-- Image Modal -->
     <div class="modal fade" id="image_modal" tabindex="-1" role="dialog" aria-labelledby="exampleModalLabel"
         aria-hidden="true">
@@ -183,19 +222,19 @@
                     <input type="hidden" name="product_id" value="{{ $detailedProduct->id }}">
                     <div class="modal-body gry-bg px-3 pt-3">
                         <div class="form-group">
-                            <input type="text" class="form-control mb-3 rounded-0" name="title"
+                            <input type="text" class="form-control mb-3 rounded-1" name="title"
                                 value="{{ $detailedProduct->name }}" placeholder="{{ translate('Product Name') }}"
                                 required>
                         </div>
                         <div class="form-group">
-                            <textarea class="form-control rounded-0" rows="8" name="message" required
+                            <textarea class="form-control rounded-1" rows="8" name="message" required
                                 placeholder="{{ translate('Your Question') }}">{{ route('product', $detailedProduct->slug) }}</textarea>
                         </div>
                     </div>
                     <div class="modal-footer">
-                        <button type="button" class="btn btn-outline-primary fw-600 rounded-0"
+                        <button type="button" class="btn btn-outline-primary fw-600 rounded-1"
                             data-dismiss="modal">{{ translate('Cancel') }}</button>
-                        <button type="submit" class="btn btn-primary fw-600 rounded-0 w-100px">{{ translate('Send') }}</button>
+                        <button type="submit" class="btn btn-primary fw-600 rounded-1 w-100px">{{ translate('Send') }}</button>
                     </div>
                 </form>
             </div>
@@ -206,7 +245,8 @@
     @if($detailedProduct->auction_product == 1)
         @php 
             $highest_bid = $detailedProduct->bids->max('amount');
-            $min_bid_amount = $highest_bid != null ? $highest_bid+1 : $detailedProduct->starting_bid; 
+            $min_bid_amount = $highest_bid != null ? $highest_bid+1 : $detailedProduct->starting_bid;
+            $gst_rate = gst_applicable_product_rate($detailedProduct->id);
         @endphp
         <div class="modal fade" id="bid_for_detail_product" tabindex="-1" role="dialog" aria-labelledby="exampleModalLabel" aria-hidden="true">
             <div class="modal-dialog modal-dialog-centered" role="document">
@@ -227,6 +267,9 @@
                                 </label>
                                 <div class="form-group">
                                     <input type="number" step="0.01" class="form-control form-control-sm" name="amount" min="{{ $min_bid_amount }}" placeholder="{{ translate('Enter Amount') }}" required>
+                                    @if($gst_rate != null)
+                                        <small class="text-danger">{{ translate('An') }} {{ $gst_rate }}% {{ translate('GST will be applied if you win the bid and proceed with the purchase') }}</small>
+                                    @endif
                                 </div>
                             </div>
                             <div class="form-group text-right">
@@ -284,10 +327,299 @@
             </div>
         </div>
     </div>
+
+   <!-- Product Share Modal -->
+    <div class="modal fade" id="social-share-modal">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header flex-column pb-0 border-0">
+                    <div class="w-80px h-80px rounded-circle bg-light border border-white border-width-3 link-circle-box d-flex align-items-center justify-content-center"> 
+                        <i class="las la-link fs-28"></i>
+                    </div>
+                    <button type="button" class="close fs-10 w-25px h-25px rounded-circle bg-white hov-bg-soft-light has-transition d-flex align-items-center justify-content-center mr-1 mb-1" data-dismiss="modal" aria-hidden="true"></button>
+                </div>
+                <div class="modal-body c-scrollbar-light">
+                    <div class="col-12 col-lg-10 col-xl-8 mx-auto text-center">
+                        <h4 class="fs-20 fw-700 text-dark">{{translate('Share with Friends')}}</h4>
+                        <span class="fs-14 text-gray fw-400">{{translate('Trading is more effective when you share products with friends!')}}</span>
+                    </div>
+                    <div class="my-4 my-lg-5">
+                        <h5 class="fs-16 fw-600 text-dark">{{translate('Share you link')}}</h5>
+                        <div class="py-3 px-3 bg-light rounded-2 border-0 d-flex align-items-center justify-content-between share-link">
+                            <span class="fs-14 text-gray fw-400 flex-grow-1 text-truncate-1 has-transition">{{route('product', $detailedProduct->slug)}}</span>
+                            <button type="button" id="link-cpurl-btn" data-attrcpy="{{ translate('Copied') }}" data-url="{{route('product', $detailedProduct->slug)}}" onclick="CopyToClipboard(this)" class="border-0 bg-transparent flex-shrink-0 copy-link-btn">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="13.6" height="16" viewBox="0 0 13.6 16">
+                                    <path id="Path_45213" data-name="Path 45213" d="M124.8-867.2a1.541,1.541,0,0,1-1.13-.47,1.541,1.541,0,0,1-.47-1.13v-9.6a1.541,1.541,0,0,1,.47-1.13,1.541,1.541,0,0,1,1.13-.47H132a1.541,1.541,0,0,1,1.13.47,1.541,1.541,0,0,1,.47,1.13v9.6a1.541,1.541,0,0,1-.47,1.13,1.541,1.541,0,0,1-1.13.47Zm0-1.6H132v-9.6h-7.2Zm-3.2,4.8a1.541,1.541,0,0,1-1.13-.47,1.541,1.541,0,0,1-.47-1.13v-11.2h1.6v11.2h8.8v1.6Zm3.2-4.8v0Z" transform="translate(-120 880)" fill="#919199"></path>
+                                </svg>
+                            </button>
+                        </div>
+                    </div>
+                     <div class="pb-3">
+                        <h5 class="fs-16 fw-600 text-dark">{{translate('Share to')}}</h5>
+                        <div class="aiz-share text-center"></div>
+                     </div>
+                </div>
+            </div>
+        </div>
+    </div>
 @endsection
 
+
+
+
 @section('script')
+   <!-- ======================== Message Seller Start ================== -->
+    <script>
+
+        function show_chat_modal() {
+            @if (Auth::check())
+                $('#chat_modal').modal('show');
+            @else
+                $('#login_modal').modal('show');
+            @endif
+        }
+    </script>
+    
+   <!-- ======================== Message Seller End ================== -->
+
+   <!-- ======================== Product Variant Height Controll Start ================== -->
     <script type="text/javascript">
+        $(document).on('click', '#toggleHeight', function () {
+
+            var $btn = $(this);
+            var $variant = $btn.closest('.product-variant');
+            var $text = $btn.find('.toggle-text');
+            var isCollapsed = $variant.hasClass('collapsed');
+
+            // Toggle state
+            $variant.toggleClass('collapsed');
+
+            // Change text (HTML allowed)
+            $text.html(
+                isCollapsed
+                    ? $btn.data('less') + ' <i class="las la-angle-up ms-1"></i>'
+                    : $btn.data('more') + ' <i class="las la-angle-down ms-1"></i>'
+            );
+
+        });
+    </script>
+
+    <!-- ======================== Product Variant Height Controll End ================== -->
+
+    <!-- ======================== Product Swipper Slide Start ================== -->
+    <script type="text/javascript">
+        document.addEventListener("DOMContentLoaded", function () {
+            /*------ Thumbnails Swiper ------*/
+            var thumbSwiper = new Swiper(".thumb-slider", {
+                direction: "vertical",
+                slidesPerView: 5,
+                spaceBetween: 16,
+                watchSlidesProgress: true,
+
+                breakpoints: {
+                    0: {
+                        direction: "horizontal",
+                        slidesPerView: 3,
+                        spaceBetween: 10,
+                    },
+                    768: {
+                        direction: "vertical",
+                        slidesPerView: 5,
+                    }
+                }
+            });
+
+            /*------ Product Main Swiper Slide ------ */
+            var mainSwiper = new Swiper(".main-slider", {
+                spaceBetween: 10,
+                thumbs: {
+                    swiper: thumbSwiper
+                },
+                navigation: {
+                    nextEl: ".swiper-button-next",
+                    prevEl: ".swiper-button-prev",
+                }
+            });
+
+            /*------ Manual Scroll Thumbnail Slider Buttons ------ */
+           const thumbBtnUp = document.querySelector(".thumb-btn-up");
+            const thumbBtnDown = document.querySelector(".thumb-btn-down");
+
+            if (thumbBtnUp && thumbBtnDown) {
+
+                thumbBtnUp.addEventListener("click", function(e) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    thumbSwiper.slidePrev();
+                });
+
+                thumbBtnDown.addEventListener("click", function(e) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    thumbSwiper.slideNext();
+                });
+
+                function updateThumbButtons(swiper) {
+                    thumbBtnUp.classList.toggle("disabled", swiper.isBeginning);
+                    thumbBtnDown.classList.toggle("disabled", swiper.isEnd);
+                }
+
+                updateThumbButtons(thumbSwiper);
+
+                thumbSwiper.on("slideChange", function () {
+                    updateThumbButtons(this);
+                });
+
+                thumbSwiper.on("reachBeginning", function () {
+                    updateThumbButtons(this);
+                });
+
+                thumbSwiper.on("reachEnd", function () {
+                    updateThumbButtons(this);
+                });
+            }
+
+        });
+    </script>
+    <!-- ======================== Product Swipper Slide End ================== -->
+
+
+    <!-- ======================== Flash Sale Timer Start ================== -->
+    <script type="text/javascript">
+        
+
+        function startSimpleCountdown(endDate, countdownEl) {
+            // Select flashBox once here so the update function can see it
+            const flashBox = document.getElementById("flashSaleBox");
+
+            function update() {
+                const now = new Date();
+                const diff = endDate - now;
+
+                if (diff > 0) {
+                    const totalSeconds = Math.floor(diff / 1000);
+                    const days = Math.floor(totalSeconds / (60 * 60 * 24));
+                    const hours = Math.floor((totalSeconds % (60 * 60 * 24)) / (60 * 60));
+                    const mins = Math.floor((totalSeconds % (60 * 60)) / 60);
+                    const secs = totalSeconds % 60;
+                    countdownEl.innerHTML = `${days}D : ${hours}H : ${mins}M : ${secs}S`;
+                } else {
+                    countdownEl.innerHTML = "Expired";
+                    if (flashBox) {
+                        flashBox.classList.add("expired");
+                        flashBox.style.animation = "none";
+                    }
+                    clearInterval(timer);
+                }
+            }
+
+            update();
+            const timer = setInterval(update, 1000);
+        }
+
+        document.addEventListener("DOMContentLoaded", function() {
+            const countdownEl = document.querySelector('.flashSaleCountdown');
+            
+            if (countdownEl && countdownEl.dataset.endDate) {
+                const endDateStr = countdownEl.dataset.endDate;
+                const parsedEndDate = isNaN(endDateStr) 
+                    ? new Date(endDateStr.replace(/-/g, '/')) 
+                    : new Date(parseInt(endDateStr) * 1000);
+
+                startSimpleCountdown(parsedEndDate, countdownEl);
+            }
+        });
+                </script>
+    <!-- ======================== Flash Sale Timer End ================== -->
+
+    <!-- ======================== Product Details Nav Tab Start ================== -->
+    <script type="text/javascript">
+    document.addEventListener("DOMContentLoaded", function () {
+        const navLinks = document.querySelectorAll("#tabLinks .nav-link");
+        const underline = document.querySelector(".tab-underline");
+        const tabWrapper = document.querySelector(".tab-scroll-wrapper");
+        const sections = document.querySelectorAll("section");
+
+        function moveUnderline(activeLink) {
+            const rect = activeLink.getBoundingClientRect();
+            const parentRect = activeLink.parentElement.parentElement.getBoundingClientRect();
+
+            underline.style.width = rect.width + "px";
+            underline.style.left = (rect.left - parentRect.left) + "px";
+
+            // Auto scroll to keep active tab in view
+            tabWrapper.scrollTo({
+                left: activeLink.offsetLeft - 50,
+                behavior: "smooth"
+            });
+        }
+
+        // Smooth scroll on click
+        navLinks.forEach(function(link) {
+            link.addEventListener("click", function(e) {
+                e.preventDefault();
+
+                const href = this.getAttribute("href");
+                const target = document.querySelector(href);
+
+                if (!target) return;
+
+                const targetOffset =
+                    target.getBoundingClientRect().top + window.pageYOffset - 150;
+
+                window.scrollTo({
+                    top: targetOffset,
+                    behavior: "smooth"
+                });
+
+                moveUnderline(this);
+            });
+        });
+
+
+        // Scrollspy
+        window.addEventListener("scroll", () => {
+            const scrollPos = window.scrollY + 120;
+
+            sections.forEach(sec => {
+                const top = sec.offsetTop;
+                const bottom = top + sec.offsetHeight;
+
+                // if current scroll inside this section
+                if (scrollPos >= top && scrollPos < bottom) {
+                    const activeLink = document.querySelector(`a[href="#${sec.id}"]`);
+                    if (activeLink) moveUnderline(activeLink);
+                }
+            });
+        });
+
+
+        // initial underline
+        window.addEventListener("load", () => {
+            moveUnderline(navLinks[0]);
+        });
+     });
+    </script>
+
+    <!-- ======================== Product Details Nav Tab End ================== -->
+
+    <!-- ======================== Filter Rating Selector Start ================== -->
+    <script type="text/javascript">
+       $(document).on('click', '.rating-point', function (e) {
+            if ($(e.target).is('input')) {
+                return;
+            }
+            $('.rating-point').removeClass('active');
+            $(this).addClass('active');
+            let val = $(this).find('input').val();
+            $(this).find('input').prop('checked', true);
+            getReviews(0, val);
+        });
+        
+    </script>
+    <!-- ======================== Filter Rating Selector End ================== -->
+
+   <script type="text/javascript">
         $(document).ready(function() {
             getVariantPrice();
         });
@@ -300,26 +632,35 @@
             try {
                 document.execCommand("copy");
                 AIZ.plugins.notify('success', '{{ translate('Link copied to clipboard') }}');
+                //reset temp input value
             } catch (err) {
                 AIZ.plugins.notify('danger', '{{ translate('Oops, unable to copy') }}');
             }
             $temp.remove();
-            // if (document.selection) {
-            //     var range = document.body.createTextRange();
-            //     range.moveToElementText(document.getElementById(containerid));
-            //     range.select().createTextRange();
-            //     document.execCommand("Copy");
+        }
 
-            // } else if (window.getSelection) {
-            //     var range = document.createRange();
-            //     document.getElementById(containerid).style.display = "block";
-            //     range.selectNode(document.getElementById(containerid));
-            //     window.getSelection().addRange(range);
-            //     document.execCommand("Copy");
-            //     document.getElementById(containerid).style.display = "none";
 
-            // }
-            // AIZ.plugins.notify('success', 'Copied');
+        function SKUCopyToClipboard() {
+            // Directly get the text currently shown in the SKU span
+            var skuText = $('#variant_sku').text().trim();
+
+            if (skuText === "") {
+                AIZ.plugins.notify('warning', 'No SKU to copy');
+                return;
+            }
+
+            var $temp = $("<input>");
+            $("body").append($temp);
+            $temp.val(skuText).select();
+
+            try {
+                document.execCommand("copy");
+                AIZ.plugins.notify('success', '{{ translate('SKU copied to clipboard') }}');
+            } catch (err) {
+                AIZ.plugins.notify('danger', '{{ translate('Oops, unable to copy') }}');
+            }
+            
+            $temp.remove();
         }
 
         function show_chat_modal() {
@@ -365,7 +706,60 @@
                 alert('Something went worng! Data could not be loaded.');
             });
         }
+
+
+        $(document).on('click', '.see-more-btn', function () {
+            getReviews(1, null);
+        });
         // Pagination end
+
+        function reviewBySort() {
+            getReviews();
+        }
+
+
+        function getReviews(seemore= false, rating = null) {
+            let sortBy = $('#sortBy').val();
+            let limit = parseInt($('.see-more-btn').attr('data-limit')) || 0;
+            if (seemore) {
+                limit += 3;
+            }
+            if (rating == null) {
+                $('.rating-point').removeClass('active');
+            }
+            //alert(limit);
+            $('.reviews-area').html('');
+            $.ajax({
+                url: `{{ route('products.reviews' ) }}`,
+                method: 'GET',
+                data: { slug: '{{ $detailedProduct->slug }}', limit: limit, sort_by: sortBy, rating: rating },
+                success: function (res) {
+                    if (res.html.trim() !== '') {
+                        $('.reviews-area').append(res.html);
+                        $('#see-more-btn').attr('data-limit', limit);
+                    }
+                    
+                    // Hide button if no more reviews
+                    if (!res.has_more) {
+                        $('#seeMoreReviews').hide();
+                    }
+                }
+            });
+        }
+
+
+    //    document.addEventListener('click', function(e) {
+    //         const label = e.target.closest('.rating-point-select');
+    //         if (!label) return;
+    //         if (label.dataset.listenerAdded === 'true') return;
+    //         label.dataset.listenerAdded = 'true';
+    //         document.querySelectorAll('.rating-point-select')
+    //             .forEach(l => l.classList.remove('active', 'border-primary'));
+    //         label.classList.add('active', 'border-primary');
+    //         const rating = label.dataset.value;
+    //         getReviews(0, rating);
+    //     });
+
 
         function showImage(photo) {
             $('#image_modal img').attr('src', photo);
@@ -383,12 +777,13 @@
             @endif
         }
 
-        function product_review(product_id) {
+        function product_review(product_id,order_id) {
             @if (isCustomer())
                 @if ($review_status == 1)
                     $.post('{{ route('product_review_modal') }}', {
                         _token: '{{ @csrf_token() }}',
-                        product_id: product_id
+                        product_id: product_id,
+                        order_id: order_id
                     }, function(data) {
                         $('#product-review-modal-content').html(data);
                         $('#product-review-modal').modal('show', {
@@ -424,5 +819,29 @@
                 }
             });
         }
+
+        function getRandomNumber(min, max) {
+            return Math.floor(Math.random() * (max - min + 1)) + min;
+        }
+
+        function updateViewerCount() {
+            const countElement = document.querySelector('#live-product-viewing-visitors .count');
+            const min = parseInt(`{{ get_setting('min_custom_product_visitors') }}`);
+            const max = parseInt(`{{ get_setting('max_custom_product_visitors') }}`);
+            const randomNumber = getRandomNumber(min, max);
+            countElement.textContent = randomNumber;
+            const randomTime = getRandomNumber(5000, 10000);
+            setTimeout(updateViewerCount, randomTime);
+        }
+        
     </script>
+    @if(get_setting('show_custom_product_visitors')==1)
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            updateViewerCount();
+            getReviews();
+        });
+    </script>
+    @endif
+    <!-- ======================== Custom Viewer End  ================== -->
 @endsection

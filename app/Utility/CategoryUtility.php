@@ -77,6 +77,7 @@ class CategoryUtility
 
     public static function create_initial_category($key)
     {
+        $key = preg_replace('/\s+/', '', $key);
         if ($key == "") {
             return false;
         }

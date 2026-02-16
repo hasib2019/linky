@@ -98,14 +98,14 @@
                                     <span>{{ translate('New Product') }}</span>
                                 </a>
                             @endcan
-                            @can('add_brand')
+                            @can('add_product_category')
                                 <a href="{{ route('categories.create') }}" class="dropdown-item">
                                     <i class="las la-plus"></i>
                                     <span>{{ translate('New Category') }}</span>
                                 </a>
                             @endcan
-                            @can('add_product_category')
-                                <a href="{{ route('brands.index') }}" class="dropdown-item">
+                            @can('add_brand')
+                                <a href="{{ route('brands.create') }}" class="dropdown-item">
                                     <i class="las la-plus"></i>
                                     <span>{{ translate('New Brand') }}</span>
                                 </a>

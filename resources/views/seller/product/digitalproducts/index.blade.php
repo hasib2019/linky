@@ -168,6 +168,13 @@
                     AIZ.plugins.notify('danger', '{{ translate('Please upgrade your package.') }}');
                     location.reload();
                 }
+                else if(data == 3){
+                    AIZ.plugins.notify('danger', '{{ translate('GST verification is pending for your account.') }}');
+                    location.reload();
+                }
+                else if(data == 4){
+                    AIZ.plugins.notify('warning', '{{ translate('Please assign GST details') }}');
+                }
                 else{
                     AIZ.plugins.notify('danger', '{{ translate('Something went wrong') }}');
                     location.reload();

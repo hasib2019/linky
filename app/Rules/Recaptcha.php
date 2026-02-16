@@ -3,6 +3,7 @@
 namespace App\Rules;
 
 use Illuminate\Contracts\Validation\Rule;
+use Illuminate\Support\Facades\Http;
 
 class Recaptcha implements Rule
 {
@@ -25,29 +26,18 @@ class Recaptcha implements Rule
      */
     public function passes($attribute, $value)
     {
+        // return false;
         $data = array(
             'secret' => env('RECAPTCHA_SECRET_KEY'),
             'response' => $value
         );
 
         try {
-            $verify = curl_init();
-            curl_setopt(
-                $verify,
-                CURLOPT_URL,
-                "https://www.google.com/recaptcha/api/siteverify"
-            );
-            curl_setopt($verify, CURLOPT_POST, true);
-            curl_setopt(
-                $verify,
-                CURLOPT_POSTFIELDS,
-                http_build_query($data)
-            );
-            curl_setopt($verify, CURLOPT_SSL_VERIFYPEER, false);
-            curl_setopt($verify, CURLOPT_RETURNTRANSFER, true);
-            $response = curl_exec($verify);
+            $response = Http::asForm()->post('https://www.google.com/recaptcha/api/siteverify', $data);
 
-            return json_decode($response)->success;
+            $recaptchaData = $response->json();
+            //dd($recaptchaData);
+            return ($recaptchaData['success'] ?? false) && ($recaptchaData['score'] ?? 0) >= (float) env('RECAPTCHA_SCORE_THRESHOLD', 0.5);
         } catch (\Exception $e) {
             return false;
         }
@@ -60,6 +50,6 @@ class Recaptcha implements Rule
      */
     public function message()
     {
-        return 'reCAPTCHA verification failed.';
+        return (translate('Verification failed. Please try again.'));
     }
 }

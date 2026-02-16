@@ -87,7 +87,7 @@
                     <tr>
                         @can('delete_dynamic_popups')
                             <td>
-                                @if($dynamic_popup->id != 1)
+                                @if($dynamic_popup->id != 1 && $dynamic_popup->id != 100)
                                     <div class="form-group">
                                         <div class="aiz-checkbox-inline">
                                             <label class="aiz-checkbox">
@@ -130,7 +130,7 @@
                                             {{translate('Edit')}}
                                         </a>
                                     @endcan
-                                    @if($dynamic_popup->id != 1)
+                                    @if($dynamic_popup->id != 1 && $dynamic_popup->id != 100)
                                         @can('delete_dynamic_popups')
                                             <a class="dropdown-item confirm-delete" href="javascript:void(0)" data-href="{{route('dynamic-popups.destroy', $dynamic_popup->id)}}">
                                                 {{translate('Delete')}}

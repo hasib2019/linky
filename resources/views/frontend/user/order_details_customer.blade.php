@@ -10,6 +10,11 @@
         </div>
     </div>
 
+    @php
+        $first_order = $order->orderDetails->first();
+        $gstin = get_seller_gstin($order);
+    @endphp
+
     <!-- Order Summary -->
     <div class="card rounded-0 shadow-none border mb-4">
         <div class="card-header border-bottom-0">
@@ -43,6 +48,30 @@
                                 {{ json_decode($order->shipping_address)->country }}
                             </td>
                         </tr>
+                        @if ( json_decode($order->billing_address) != null)
+                            <tr>
+                                <td class="w-50 fw-600">{{ translate('Billing address') }}:</td>
+                                <td>{{ json_decode($order->billing_address)->address }},
+                                    {{ json_decode($order->billing_address)->city }},
+                                    @if(isset(json_decode($order->billing_address)->state)) {{ json_decode($order->billing_address)->state }} - @endif
+                                    {{ json_decode($order->billing_address)->postal_code }},
+                                    {{ json_decode($order->billing_address)->country }}
+                                </td>
+                            </tr>
+                        @endif
+                        @if ($gstin != null && is_numeric($first_order->gst_amount))
+                            <tr>
+                                <td class="w-50 fw-600">{{ translate('GSTIN') }}:</td>
+                                <td>
+                                    {{$gstin}}
+                                </td>
+                            </tr>
+                        @endif
+
+                        <tr>
+                            <td class="w-50 fw-600">{{ translate('Seller Address') }}:</td>
+                            <td>{{ get_seller_address($order) }}</td>
+                        </tr>
                     </table>
                 </div>
                 <div class="col-lg-6">
@@ -57,7 +86,7 @@
                         </tr>
                         <tr>
                             <td class="w-50 fw-600">{{ translate('Total order amount') }}:</td>
-                            <td>{{ single_price($order->orderDetails->sum('price') + $order->orderDetails->sum('tax')) }}
+                            <td>{{ single_price($order->grand_total) }}
                             </td>
                         </tr>
                         <tr>
@@ -78,6 +107,10 @@
                                 <td>{{ $order->tracking_code }}</td>
                             </tr>
                         @endif
+                        <tr>
+                             <td class="w-50 fw-600">{{ translate('Seller Phone') }}:</td>
+                            <td>{{ $order->seller->phone }}</td>
+                        </tr>
                     </table>
                 </div>
             </div>
@@ -150,35 +183,51 @@
                                     <td class="fw-700">{{ single_price($orderDetail->price) }}</td>
                                     @if (addon_is_activated('refund_request'))
                                         @php
-                                            $no_of_max_day = get_setting('refund_request_time');
-                                            $last_refund_date = Carbon\Carbon::parse($order->delivered_date)->addDays($no_of_max_day);
+                                            $no_of_max_day = $orderDetail->refund_days;
+
+                                            $last_refund_date = null;
+                                            if ($order->delivered_date && $no_of_max_day > 0) {
+                                                $last_refund_date = Carbon\Carbon::parse($order->delivered_date)->addDays($no_of_max_day);
+                                            }
+                                            
                                             $today_date = Carbon\Carbon::now();
+                                            
                                         @endphp
                                         <td>
-                                            @if ($orderDetail->product != null && $orderDetail->product->refundable != 0 && $orderDetail->refund_request == null && $today_date <= $last_refund_date && $order->payment_status == 'paid' && $order->delivery_status == 'delivered')
-                                                <a href="{{ route('refund_request_send_page', $orderDetail->id) }}" class="btn btn-primary btn-sm rounded-0">{{ translate('Send') }}</a>
+                                            @if (
+                                                    $orderDetail->product != null &&
+                                                    $orderDetail->refund_request == null &&
+                                                    $last_refund_date &&
+                                                    $today_date <= $last_refund_date &&
+                                                    $order->payment_status == 'paid' &&
+                                                    $order->delivery_status == 'delivered'
+                                                )
+
+                                                <a href="{{ route('refund_request_send_page', $orderDetail->id) }}"
+                                                    class="btn btn-outline-dark btn-sm rounded-0">
+                                                    {{ translate('Send') }}
+                                                </a>
                                             @elseif ($orderDetail->refund_request != null && $orderDetail->refund_request->refund_status == 0)
                                                 <b class="text-info">{{ translate('Pending') }}</b>
                                             @elseif ($orderDetail->refund_request != null && $orderDetail->refund_request->refund_status == 2)
-                                                <b class="text-success">{{ translate('Rejected') }}</b>
+                                                <b class="text-danger">{{ translate('Rejected') }}</b>
                                             @elseif ($orderDetail->refund_request != null && $orderDetail->refund_request->refund_status == 1)
                                                 <b class="text-success">{{ translate('Approved') }}</b>
-                                            @elseif ($orderDetail->product->refundable != 0)
+                                            @elseif ($orderDetail->product != null && $orderDetail->refund_days != 0)
                                                 <b>{{ translate('N/A') }}</b>
                                             @else
                                                 <b>{{ translate('Non-refundable') }}</b>
                                             @endif
                                         </td>
                                     @endif
-                                    <td class="text-xl-right pr-0">
-                                        @if ($orderDetail->delivery_status == 'delivered')
-                                            <a href="javascript:void(0);"
-                                                onclick="product_review('{{ $orderDetail->product_id }}')"
-                                                class="btn btn-primary btn-sm rounded-0"> {{ translate('Review') }} </a>
-                                        @else
-                                            <span class="text-danger">{{ translate('Not Delivered Yet') }}</span>
-                                        @endif
-                                    </td>
+                                        <td class="text-xl-right pr-0">
+                                            @if ($orderDetail->delivery_status == 'delivered')
+                                                <a href="javascript:void(0);" onclick="product_review('{{ $orderDetail->product_id }}', '{{ $order->id }}')"
+                                                    class="btn btn-outline-dark btn-sm rounded-0"> {{ translate('Review') }} </a>
+                                            @else
+                                                <span class="text-danger">{{ translate('Not Delivered Yet') }}</span>
+                                            @endif
+                                        </td>
                                 </tr>
                             @endforeach
                         </tbody>
@@ -208,12 +257,38 @@
                                     <span class="text-italic">{{ single_price($order->orderDetails->sum('shipping_cost')) }}</span>
                                 </td>
                             </tr>
+                            @if(is_numeric($first_order->gst_amount))
+                            
+                            @if(same_state_shipping($order))
+                             <tr>
+                                <td class="w-50 fw-600">{{ translate('CGST') }}</td>
+                                <td class="text-right">
+                                    <span class="text-italic">{{ single_price($order->orderDetails->sum('gst_amount')/2) }}</span>
+                                </td>
+                            </tr>
+                             <tr>
+                                <td class="w-50 fw-600">{{ translate('SGST') }}</td>
+                                <td class="text-right">
+                                    <span class="text-italic">{{ single_price($order->orderDetails->sum('gst_amount')/2) }}</span>
+                                </td>
+                            </tr>
+                            @else
+                            <tr>
+                                <td class="w-50 fw-600">{{ translate('IGST') }}</td>
+                                <td class="text-right">
+                                    <span class="text-italic">{{ single_price($order->orderDetails->sum('gst_amount')) }}</span>
+                                </td>
+                            </tr>
+                            @endif
+
+                            @else
                             <tr>
                                 <td class="w-50 fw-600">{{ translate('Tax') }}</td>
                                 <td class="text-right">
                                     <span class="text-italic">{{ single_price($order->orderDetails->sum('tax')) }}</span>
                                 </td>
                             </tr>
+                            @endif
                             <tr>
                                 <td class="w-50 fw-600">{{ translate('Coupon') }}</td>
                                 <td class="text-right">
@@ -350,10 +425,11 @@
 @section('script')
     <script type="text/javascript">
 
-        function product_review(product_id) {
+        function product_review(product_id,order_id) {
             $.post('{{ route('product_review_modal') }}', {
                 _token: '{{ @csrf_token() }}',
-                product_id: product_id
+                product_id: product_id,
+                order_id: order_id
             }, function(data) {
                 $('#product-review-modal-content').html(data);
                 $('#product-review-modal').modal('show', {

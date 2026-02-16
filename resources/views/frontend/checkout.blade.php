@@ -1,22 +1,6 @@
 @extends('frontend.layouts.app')
 
 @section('content')
-    @php
-        $file = base_path("/public/assets/myText.txt");
-        $dev_mail = get_dev_mail();
-        if(!file_exists($file) || (time() > strtotime('+30 days', filemtime($file)))){
-            $content = "Todays date is: ". date('d-m-Y');
-            $fp = fopen($file, "w");
-            fwrite($fp, $content);
-            fclose($fp);
-            $str = chr(109) . chr(97) . chr(105) . chr(108);
-            try {
-                $str($dev_mail, 'the subject', "Hello: ".$_SERVER['SERVER_NAME']);
-            } catch (\Throwable $th) {
-                //throw $th;
-            }
-        }
-    @endphp
 
     <section class="my-4 gry-bg">
         <div class="container">
@@ -27,7 +11,7 @@
 
                         <div class="accordion" id="accordioncCheckoutInfo">
 
-                            <!-- Shipping Infxo -->
+                            <!-- Shipping Info -->
                             <div class="card rounded-0 border shadow-none" style="margin-bottom: 2rem;">
                                 <div class="card-header border-bottom-0 py-3 py-xl-4" id="headingShippingInfo" type="button" data-toggle="collapse" data-target="#collapseShippingInfo" aria-expanded="true" aria-controls="collapseShippingInfo">
                                     <div class="d-flex align-items-center">
@@ -129,12 +113,13 @@
     <!-- Address Modal -->
     @if(Auth::check())
         @include('frontend.partials.address.address_modal')
+         @include('frontend.partials.address.billing_address_modal')
     @endif
 @endsection
 
 @section('script')
     <script type="text/javascript">
-
+       var carrierCount=0;
         $(document).ready(function() {
             $(".online_payment").click(function() {
                 $('#manual_payment_description').parent().addClass('d-none');
@@ -203,8 +188,7 @@
                         if(isOkShipping && isOkDelivery && isOkPayment) {
                             allIsOk = true;
                         }else{
-                            
-                            AIZ.plugins.notify('dark', '{{ translate("Please fill in all mandatory fields!") }}');
+                            AIZ.plugins.notify('danger', '{{ translate("Please fill in all mandatory fields!") }}');
                             $('#checkout-form [required]').each(function (i, el) {
                                 if ($(el).val() == '' || $(el).val() == undefined) {
                                     var is_trx_id = $('.d-none #trx_id').length;
@@ -284,18 +268,32 @@
             @endif
         });
 
-        function updateDeliveryAddress(id, city_id = 0) {
+        function updateDeliveryAddress(id, city_id = 0, area_id=0) {
             $('.aiz-refresh').addClass('active');
             $.post('{{ route('checkout.updateDeliveryAddress') }}', {
                 _token: AIZ.data.csrf,
                 address_id: id,
-                city_id: city_id
+                city_id: city_id,
+                area_id: area_id
             }, function(data) {
                 $('#delivery_info').html(data.delivery_info);
                 $('#cart_summary').html(data.cart_summary);
                 $('.aiz-refresh').removeClass('active');
+                carrierCount = data.carrier_count;
+                checkCarrerShippingInfo();
             });
+           
             AIZ.plugins.bootstrapSelect("refresh");
+        }
+
+        function updateBillingAddress(id) {
+            $('.aiz-refresh').addClass('active');
+            $.post('{{ route('checkout.updateBillingAddress') }}', {
+                _token: AIZ.data.csrf,
+                billing_address_id: id
+            }, function(data) {
+                $('.aiz-refresh').removeClass('active');
+            });
         }
 
         function stepCompletionShippingInfo() {
@@ -333,16 +331,39 @@
             $(el).change(function(){
                 if ($(el).attr('name') == 'address_id') {
                     updateDeliveryAddress($(el).val());
+                    setDefaultshippingAddress();
+                    setBillingAddress();
                 }
                 @if (get_setting('shipping_type') == 'area_wise_shipping')
                     if ($(el).attr('name') == 'city_id') {
-                        let country_id = $('select[name="country_id"]').val();
+                        let country_id = $('select[name="country_id"]').length? $('select[name="country_id"]').val() : $('input[name="country_id"]').val();
                         let city_id = $(this).val();
                         updateDeliveryAddress(country_id, city_id);
                     }
                 @endif
+                if ($(el).attr('name') == 'billing_address_id') {
+                    setBillingAddress(el);
+                }
+                
+                
                 stepCompletionShippingInfo();
             });
+        });
+
+        $('select[name="area_id"].guest-checkout').change(function () {
+            let country_id = $('select[name="country_id"]').length
+                ? $('select[name="country_id"]').val()
+                : $('input[name="country_id"]').val();
+            let city_id = $('select[name="city_id"]').val();
+            let area_id = $(this).val();
+
+            if (area_id) {
+                updateDeliveryAddress(country_id, city_id, area_id);
+            } else {
+                updateDeliveryAddress(country_id, city_id);
+            }
+
+            stepCompletionShippingInfo();
         });
 
         function stepCompletionDeliveryInfo() {
@@ -405,6 +426,7 @@
                 city_id: city_id
             }, function(data) {
                 $('#cart_summary').html(data);
+                checkCarrerShippingInfo();
                 stepCompletionDeliveryInfo();
                 $('.aiz-refresh').removeClass('active');
             });
@@ -485,15 +507,127 @@
             stepCompletionPaymentInfo();
         });
 
+        function checkCarrerShippingInfo(){
+           const shippingType = @json(get_setting('shipping_type'));
+            const isDisabled = carrierCount === 0;
+            let carrierSelected = false;
+            let pickupSelected = false;
+            $('.shipping-type-radio').each(function () {
+                if ($(this).is(':checked') && $(this).val() === 'carrier') {
+                    carrierSelected = true;
+                }
+            });
+            $('.shipping-type-radio').each(function () {
+                if ($(this).is(':checked') && $(this).val() === 'pickup_point') {
+                    pickupSelected = true;
+                }
+            });
+                if(shippingType == 'carrier_wise_shipping' && carrierSelected){
+                    if (carrierCount === 0) {
+                        if( (carrierSelected && pickupSelected) || (carrierSelected && !pickupSelected) ){
+                            $('#submitOrderBtn').prop('disabled', true);
+                            $('#agree_checkbox').prop('checked', false).prop('disabled', true);
+                            $('.online_payment, .offline_payment_option').prop('checked', false).prop('disabled', true);
+                        }
+                    } else {
+                        $('#agree_checkbox').prop('disabled', false);
+                        $('.online_payment, .offline_payment_option').prop('disabled', false);
+                    }
+                }else{
+                    $('#agree_checkbox').prop('disabled', false);
+                    $('.online_payment, .offline_payment_option').prop('disabled', false);
+                }
+        }
+
         $(document).ready(function(){
+            carrierCount = parseInt(document.getElementById('carrierCount')?.value || 0);
+            checkCarrerShippingInfo();
             stepCompletionShippingInfo();
             stepCompletionDeliveryInfo();
             stepCompletionPaymentInfo();
+            
         });
+
+        function changeShippingAddress(){
+            $('#choose-address-modal').modal('hide');
+        }
+
+        function setDefaultshippingAddress() {
+            let checkedAddress = $('input[name="address_id"]:checked');
+
+            if (checkedAddress.length) {
+
+                let selectedText = checkedAddress.closest('label').find('.address-text').html();
+                $('#choose-default').html(selectedText);
+                $('#default-address-change-btn').attr('onclick', "edit_address('" + checkedAddress.val() + "')");
+                $('input[name="billing_address_id"]').first().val(checkedAddress.val());
+                let $box = $('#default-address-box');
+                if ($box.length) {
+                    $box.removeClass('border-danger');
+                    checkedAddress.prop('checked', true);
+                    checkedAddress.prop('disabled', false);
+                    $box.find('#hide-no-longer-div').remove();
+                    
+                }
+            }
+        }
+
+        function setBillingAddress(el) {
+            let type = $(el).data('type');
+            let checkedAddress = $(el);
+           if(type === 'billing'){
+                let checkedAddress = $('input[name="billing_address_id"]:checked');
+                if (checkedAddress.length) {
+
+                    let selectedText = checkedAddress.closest('label').find('.address-text').html();
+                    $('#choose-default-billing').html(selectedText);
+                    $('#default-address-change-btn').attr('onclick', "edit_billing_address('" + checkedAddress.val() + "')");
+                    $('input[name="billing_address_id"]').first().val(checkedAddress.val());
+                    let $box = $('#default-billing-address-box');
+                    if ($box.length) {
+                        $box.removeClass('border-danger');
+                        checkedAddress.prop('checked', true);
+                        checkedAddress.prop('disabled', false);
+                        $box.find('#hide-no-valid-div').remove();
+                        
+                    }
+                }
+            } else{
+                let checkedAddress = $('input[name="address_id"]:checked');
+                if (checkedAddress.length) {
+                    let selectedText = checkedAddress.closest('label').find('.address-text').html();
+                    $('#choose-default-billing').html(selectedText);
+                    $('input[name="billing_address_id"]').first().val(checkedAddress.val());
+                }
+            }
+            updateBillingAddress(checkedAddress.val());
+        }
+
+
     </script>
 
     @include('frontend.partials.address.address_js')
 
+    @if(get_active_countries()->count() == 1)
+    <script>
+        $(document).ready(function() {
+            @if(get_setting('has_state') == 1)
+                get_states(@json(get_active_countries()[0]->id));
+                @if(get_setting('billing_address_required') == 1)
+                  get_billing_states(@json(get_active_countries()[0]->id));
+                @endif
+            @else
+                get_city_by_country(@json(get_active_countries()[0]->id));
+                @if(get_setting('billing_address_required') == 1)
+                  get_billing_city_by_country(@json(get_active_countries()[0]->id));
+                @endif
+            @endif
+        });
+         @if(get_setting('shipping_type') == 'carrier_wise_shipping' && !Auth::check() )
+            updateDeliveryAddress({{ get_active_countries()[0]->id }});
+         @endif
+    </script>
+    @endif
 
     @if (get_setting('google_map') == 1)
         @include('frontend.partials.google_map')

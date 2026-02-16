@@ -31,10 +31,14 @@
                     @endphp
                     <p class="fs-14 fw-400 text-gray mb-1">{{ translate('Last Recharge') }} <strong>{{ $last_recharge ? date('d.m.Y', strtotime($last_recharge->created_at)) : '' }}</strong></p>
                     <h3 class="fs-20 fw-700 text-white ">{{ $last_recharge ? single_price($last_recharge->amount) : 0 }}</h3>
-                    <button class="btn btn-block border border-soft-light hov-bg-dark text-white mt-5 py-3" onclick="show_wallet_modal()" style="border-radius: 30px; background: rgba(255, 255, 255, 0.1);">
+                    <button class="btn btn-block border border-soft-light hov-bg-dark text-white mt-4 mb-2 py-3" onclick="show_wallet_modal()" style="border-radius: 30px; background: rgba(255, 255, 255, 0.1);">
                         <i class="la la-plus fs-18 fw-700 mr-2"></i>
                         {{ translate('Recharge Wallet') }}
                     </button>
+                    <a href="javascript:void(0);" class="fs-14 fw-400 text-white mb-3" onclick="show_make_wallet_recharge_modal()">
+                        {{ translate('Offline Recharge Wallet') }}
+                    </a>
+
                 </div>
             </div>
         </div>
@@ -166,7 +170,58 @@
             </div>
         </div>
 
-        <!-- Purchased Package -->
+       
+
+        <!-- Default Shipping Address -->
+        <div class="col-xl-4 col-md-6 mb-4">
+            <div class="p-4 border h-100">
+                <h6 class="fw-700 mb-3 text-dark">{{ translate('Default Shipping Address') }}</h6>
+                @if(Auth::user()->addresses != null)
+                    @php
+                        $address = Auth::user()->addresses->where('set_default', 1)->first();
+                    @endphp
+                    @if($address != null)
+                        <ul class="list-unstyled mb-5">
+                            <li class="fs-14 fw-400 text-derk pb-1"><span>{{ $address->address }},</span></li>
+                            <li class="fs-14 fw-400 text-derk pb-1"><span> {{ $address->area ? $address->area->name . ',' : '' }}</span></li>
+                            <li class="fs-14 fw-400 text-derk pb-1"><span>{{ $address->postal_code }} - {{ $address->city->name }},</span></li>
+                            <li class="fs-14 fw-400 text-derk pb-1"><span>{{ $address->state ? $address->state->name : '' }}</span></li>
+                            <li class="fs-14 fw-400 text-derk pb-1"><span>{{ $address->country->name }}.</span></li>
+                            <li class="fs-14 fw-400 text-derk pb-1"><span>{{ $address->phone }}</span></li>
+                        </ul>
+                    @endif
+                @endif
+                <button class="btn btn-dark btn-block fs-14 fw-500" onclick="add_new_address()" style="border-radius: 25px;">
+                    <i class="la la-plus fs-18 fw-700 mr-2"></i>
+                    {{ translate('Add New Address') }}
+                </button>
+            </div>
+        </div>
+
+        <!--Billing Address -->
+        <div class="col-xl-4 col-md-6 mb-4">
+            <div class="p-4 border h-100">
+                <h6 class="fw-700 mb-3 text-dark">{{ translate('Default Billing Address') }}</h6>
+                @if(Auth::user()->addresses != null)
+                    @php
+                        $address = Auth::user()->addresses->where('set_billing', 1)->first();
+                    @endphp
+                    @if($address != null)
+                        <ul class="list-unstyled mb-5">
+                            <li class="fs-14 fw-400 text-derk pb-1"><span>{{ $address->address }},</span></li>
+                            <li class="fs-14 fw-400 text-derk pb-1"><span> {{ $address->area ? $address->area->name . ',' : '' }}</span></li>
+                            <li class="fs-14 fw-400 text-derk pb-1"><span>{{ $address->postal_code }} - {{ $address->city->name }},</span></li>
+                            <li class="fs-14 fw-400 text-derk pb-1"><span>{{ $address->state ? $address->state->name : '' }}</span></li>
+                            <li class="fs-14 fw-400 text-derk pb-1"><span>{{ $address->country->name }}.</span></li>
+                            <li class="fs-14 fw-400 text-derk pb-1"><span>{{ $address->phone }}</span></li>
+                        </ul>
+                    @endif
+                @endif
+                
+            </div>
+        </div>
+
+         <!-- Purchased Package -->
         @if (get_setting('classified_product'))
         <div class="col-xl-4 col-md-6 mb-4">
             <div class="p-4 border h-100">
@@ -194,31 +249,6 @@
         </div>
         @endif
 
-        <!-- Default Shipping Address -->
-        <div class="col-xl-4 col-md-6 mb-4">
-            <div class="p-4 border h-100">
-                <h6 class="fw-700 mb-3 text-dark">{{ translate('Default Shipping Address') }}</h6>
-                @if(Auth::user()->addresses != null)
-                    @php
-                        $address = Auth::user()->addresses->where('set_default', 1)->first();
-                    @endphp
-                    @if($address != null)
-                        <ul class="list-unstyled mb-5">
-                            <li class="fs-14 fw-400 text-derk pb-1"><span>{{ $address->address }},</span></li>
-                            <li class="fs-14 fw-400 text-derk pb-1"><span>{{ $address->postal_code }} - {{ $address->city->name }},</span></li>
-                            <li class="fs-14 fw-400 text-derk pb-1"><span>{{ $address->state->name }},</span></li>
-                            <li class="fs-14 fw-400 text-derk pb-1"><span>{{ $address->country->name }}.</span></li>
-                            <li class="fs-14 fw-400 text-derk pb-1"><span>{{ $address->phone }}</span></li>
-                        </ul>
-                    @endif
-                @endif
-                <button class="btn btn-dark btn-block fs-14 fw-500" onclick="add_new_address()" style="border-radius: 25px;">
-                    <i class="la la-plus fs-18 fw-700 mr-2"></i>
-                    {{ translate('Add New Address') }}
-                </button>
-            </div>
-        </div>
-
     </div>
 
     <div class="row align-items-center mb-2 mt-1">
@@ -239,8 +269,13 @@
                     <div class="aiz-card-box col py-3 text-center border-right border-bottom has-transition hov-shadow-out z-1" id="wishlist_{{ $wishlist->id }}">
                         <div class="position-relative h-140px h-md-200px img-fit overflow-hidden mb-3">
                             <!-- Image -->
-                            <a href="{{ route('product', $wishlist->product->slug) }}" class="d-block h-100">
-                                <img src="{{ uploaded_asset($wishlist->product->thumbnail_img) }}" class="lazyload mx-auto img-fit"
+                            <a href="{{ route('product', $wishlist->product->slug) }}" class="d-block h-100 position-relative image-hover-effect">
+                                <img src="{{ uploaded_asset($wishlist->product->thumbnail_img) }}" class="lazyload mx-auto img-fit product-main-image"
+                                    title="{{ $wishlist->product->getTranslation('name') }}">
+
+                                <img class="lazyload mx-auto img-fit product-hover-image position-absolute"
+                                    src="{{ get_first_product_image($wishlist->product->thumbnail_img, $wishlist->product->photos) }}"
+                                    alt="{{ $wishlist->product->getTranslation('name') }}"
                                     title="{{ $wishlist->product->getTranslation('name') }}">
                             </a>
                             <!-- Remove from wishlisht -->
@@ -250,8 +285,28 @@
                                 </a>
                             </div>
                             <!-- add to cart -->
-                            <a class="cart-btn absolute-bottom-left w-100 h-35px aiz-p-hov-icon text-white fs-13 fw-700 d-flex justify-content-center align-items-center"
-                                href="javascript:void(0)" onclick="showAddToCartModal({{ $wishlist->product->id }})">{{ translate('Add to Cart') }}</a>
+                            @php
+                                $colors = is_string($wishlist->product->colors) ? json_decode($wishlist->product->colors, true) : $wishlist->product->colors;
+                                $attributes = is_string($wishlist->product->attributes) ? json_decode($wishlist->product->attributes, true) : $wishlist->product->attributes;
+                            @endphp
+                
+                            @if ( (is_array($colors) && count($colors) > 0) || (is_array($attributes) && count($attributes) > 0) )
+                                <a class="cart-btn absolute-bottom-left w-100 h-35px aiz-p-hov-icon text-white fs-13 fw-700 d-none d-sm-flex flex-column justify-content-center align-items-center"
+                                    href="javascript:void(0)" onclick="showAddToCartRightCanvas({{ $wishlist->product->id }})">
+                                    <span class="cart-btn-text">
+                                        {{ translate('Select Option') }}
+                                    </span>
+                                    <span><i class="las la-sliders-h" style="font-size: 1.4rem;"></i></span>
+                                </a>
+                            @else
+                                <a class="cart-btn absolute-bottom-left w-100 h-35px aiz-p-hov-icon text-white fs-13 fw-700 d-none d-sm-flex flex-column justify-content-center align-items-center"
+                                    href="javascript:void(0)" @if (Auth::check() || get_Setting('guest_checkout_activation') == 1) onclick="addToCartSingleProduct({{ $wishlist->product->id }})" @else onclick="showLoginModal()" @endif>
+                                    <span class="cart-btn-text">
+                                        {{ translate('Add to Cart') }}
+                                    </span>
+                                    <span><i class="las la-2x la-shopping-cart"></i></span>
+                                </a> 
+                            @endif
                         </div>
                         <!-- Product Name -->
                         <h5 class="fs-14 mb-0 lh-1-5 fw-400 text-truncate-2 mb-3">
@@ -284,20 +339,347 @@
 @section('modal')
     <!-- Wallet Recharge Modal -->
     @include('frontend.partials.wallet_modal')
-    <script type="text/javascript">
-        function show_wallet_modal() {
-            $('#wallet_modal').modal('show');
-        }
-    </script>
 
+    <!-- Offline Wallet Recharge Modal -->
+    <div class="modal fade" id="offline_wallet_recharge_modal" tabindex="-1" role="dialog"
+        aria-labelledby="exampleModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered modal-lg" role="document">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="exampleModalLabel">{{ translate('Offline Recharge Wallet') }}</h5>
+                    <button type="button" class="close" data-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div id="offline_wallet_recharge_modal_body"></div>
+            </div>
+        </div>
+    </div>
     <!-- Address modal Modal -->
     @include('frontend.partials.address.address_modal')
+
+    <div class="modal fade" id="varification_pending_modal" tabindex="-1" role="dialog"
+        aria-hidden="true"  data-bs-backdrop="static" data-bs-keyboard="false">
+
+        <div class="modal-dialog modal-dialog-centered modal-lg" role="document">
+            <div class="modal-content text-center p-4">
+
+                @if(addon_is_activated('portfolio_system') && auth()->user()->verification_status == 0 && get_setting('customer_verification') == 1)
+                <h4 class="mb-3">{{ translate('Complete your verification') }}</h4>
+
+                <p class="text-muted">
+                    {{ translate('Your account is pending verification. Please complete verification to continue.') }}
+                </p>
+
+                <a href="javascript:void(0)"
+                    class="btn btn-primary"
+                    id="openCustomerVerification">
+                        {{ translate('Click here to verify') }}
+                </a>
+                 @else
+                <h4 class="mb-3">{{ translate('Verification is under review') }}</h4>
+                <p class="text-muted">
+                    {{ translate('Your submitted verification documents are under review. We will notify you once the review is complete.') }}
+                </p>
+                @endif
+
+                <!--  go to home or contact us page -->
+                <div class="mt-3 d-flex justify-content-center gap-2">
+                    <a href="{{ route('home') }}" class="mr-2">
+                        {{ translate('Go to Home') }}
+                    </a> |
+                    <a href="{{ route('custom-pages.show_custom_page', 'contact-us') }}" class="ml-2">
+                        {{ translate('Contact Us') }}
+                    </a>
+                </div>
+
+            </div>
+        </div>
+    </div>
+
+    <!-- Verification Modal -->
+    <div id="customer_verification_modal" class="modal fade">
+        <div class="modal-dialog modal-md modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h4 class="modal-title fw-bold h6">{{translate('Customer Verification')}}</h4>
+                    <button type="button" class="close" data-dismiss="modal" aria-hidden="true"></button>
+                </div>
+                <div class="modal-body c-scrollbar-light customer-verification-form">
+
+                    <form action="{{ route('user.verify.update') }}" method="POST" enctype="multipart/form-data" id="customer_verification_modal">
+                        @csrf
+                        <div class="form-group">
+                            <label for="valid-id-card" class="fs-13 fw-bold">{{translate('Valid ID Card')}}</label>
+                            <div class="input-group rounded-2 bg-soft-light overflow-hidden">
+                                <div class="input-group-prepend rounded-2 bg-soft-light">
+                                    <span class="input-group-text  bg-soft-light">{{translate('Browse')}}</span>
+                                </div>
+                                <div class="custom-file">
+                                    <label class="custom-file-label  cursor-pointer">
+                                        <input type="file" class="custom-file-input preview-input " data-preview="#id_card_preview" name="id_card" id="id_card"  accept=".jpg,.jpeg,.png,.bmp,application/pdf" >
+                                        <span class="custom-file-name  cursor-pointer">{{ translate('Choose file') }}</span>
+                                    </label>
+                                </div>
+                            </div>
+                           
+                        </div>
+                        
+                        <div id="id_card_preview" class="mb-2"></div>
+
+                        
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="form-group">
+                                    <label for="valid-id-card" class="fs-13 fw-bold">{{translate('Photo')}}</label>
+                                    <div class="input-group rounded-2 bg-soft-light overflow-hidden">
+                                        <div class="input-group-prepend rounded-2 bg-soft-light">
+                                            <span class="input-group-text  bg-soft-light">{{translate('Browse')}}</span>
+                                        </div>
+                                        <div class="custom-file">
+                                            <label class="custom-file-label  cursor-pointer">
+                                                <input type="file" class="custom-file-input preview-input " data-preview="#customer_photo_preview" name="customer_photo" id="customer_photo"  accept=".jpg,.jpeg,.png,.bmp,application/pdf" >
+                                                <span class="custom-file-name  cursor-pointer">{{ translate('Choose file') }}</span>
+                                            </label>
+                                        </div>
+                                    </div>
+                                
+                                </div>
+
+                                <div id="customer_photo_preview" class="mb-2"></div>
+                            </div>
+
+                            <div class="col-md-6">
+
+                                <div class="form-group">
+                                    <label class="fs-13 fw-bold">{{translate('Live Selfie Photo')}}</label>
+
+                                    <!-- Camera Preview -->
+                                    <video id="selfieVideo" class="w-100 rounded d-none" autoplay playsinline></video>
+
+                                    <!-- Captured Image -->
+                                    <canvas id="selfieCanvas" class="w-100 rounded d-none mt-2"></canvas>
+
+                                    <!-- Hidden input to send selfie -->
+                                    <input type="hidden" name="live_selfie" id="liveSelfieInput">
+
+                                    <div class="text-center">
+                                        <button type="button" id="openCameraBtn" class="btn btn-outline-primary w-100">
+                                            {{translate('Take Selfie')}}
+                                        </button>
+
+                                        <button type="button" id="captureSelfieBtn"
+                                            class="btn btn-success d-none mt-2">
+                                            {{translate('Capture')}}
+                                        </button>
+
+                                        <button type="button" id="retakeSelfieBtn"
+                                            class="btn btn-warning d-none mt-2">
+                                            {{translate('Retake')}}
+                                        </button>
+                                    </div>
+                                </div>
+                                
+                            </div>
+                        </div>
+
+                        <div class="form-group mt-5">
+                            <button type="submit" value="Create Account"
+                                class="d-block w-100 border-0 fs-13 fw-bold btn btn-primary rounded-2 py-3">
+                            {{ translate('Submit') }}
+                            </button>
+                        </div>
+                    </form>
+                    
+                </div>
+            </div>
+        </div>
+    </div>
+
 @endsection
 
 @section('script')
     @include('frontend.partials.address.address_js')
 
+     @if(get_active_countries()->count() == 1)
+    <script>
+        $(document).ready(function() {
+            get_states(@json(get_active_countries()[0]->id))
+        });
+    </script>
+    @endif
+
+    <script type="text/javascript">
+        function removeFromWishlist(id){
+            $.post('{{ route('wishlists.remove') }}',{_token:'{{ csrf_token() }}', id:id}, function(data){
+                $('#wishlist').html(data);
+                $('#wishlist_'+id).hide();
+                AIZ.plugins.notify('success', '{{ translate("Item has been renoved from wishlist") }}');
+            })
+        }
+    </script>
+
     @if (get_setting('google_map') == 1)
         @include('frontend.partials.google_map')
     @endif
+
+    <script type="text/javascript">
+        function show_wallet_modal() {
+            $('#wallet_modal').modal('show');
+        }
+
+        function show_make_wallet_recharge_modal() {
+            $.post('{{ route('offline_wallet_recharge_modal') }}', {
+                _token: '{{ csrf_token() }}'
+            }, function(data) {
+                $('#offline_wallet_recharge_modal_body').html(data);
+                $('#offline_wallet_recharge_modal').modal('show');
+            });
+        }
+    </script>
+
+@if(addon_is_activated('portfolio_system') && auth()->user()->verification_status == 0 && get_setting('customer_verification') == 1)
+    <script>
+        $(document).ready(function () {
+            $('body').addClass('verification-lock');
+
+            $('#varification_pending_modal').modal({
+                backdrop: 'static',
+                keyboard: false
+            });
+
+            $('#varification_pending_modal').modal('show');
+        });
+    </script>
+@endif
+
+
+<script>
+     $(document).ready(function () {
+
+        $('#openCustomerVerification').on('click', function () {
+            // Hide first modal
+            //$('#varification_pending_modal').modal('hide');
+            // Show verification form modal
+            $('#customer_verification_modal').modal({
+                backdrop: 'static',
+                keyboard: false
+            });
+
+            $('#customer_verification_modal').modal('show');
+        });
+
+    });
+</script>
+
+<script>
+    let selfieStream;
+    const video = document.getElementById('selfieVideo');
+    const canvas = document.getElementById('selfieCanvas');
+    const ctx = canvas.getContext('2d');
+
+    $('#openCameraBtn').on('click', function () {
+        takeSelfie();
+    });
+
+    $('#captureSelfieBtn').on('click', function () {
+        canvas.width = video.videoWidth;
+        canvas.height = video.videoHeight;
+        ctx.drawImage(video, 0, 0);
+
+        // Stop camera
+        if (selfieStream) {
+            selfieStream.getTracks().forEach(track => track.stop());
+        }
+
+        const imageData = canvas.toDataURL('image/png');
+        $('#liveSelfieInput').val(imageData);
+
+        video.classList.add('d-none');
+        canvas.classList.remove('d-none');
+
+        $('#captureSelfieBtn').addClass('d-none');
+        $('#retakeSelfieBtn').removeClass('d-none');
+    });
+
+    $('#retakeSelfieBtn').on('click', function () {
+        //canvas.classList.add('d-none');
+        $('#retakeSelfieBtn').addClass('d-none');
+        $('#openCameraBtn').removeClass('d-none');
+        $('#liveSelfieInput').val('');
+        
+        takeSelfie();
+    });
+
+    async function takeSelfie() {
+        try {
+            selfieStream = await navigator.mediaDevices.getUserMedia({
+                video: { facingMode: "user" },
+                audio: false
+            });
+
+            video.srcObject = selfieStream;
+            
+            // Ensure video is visible and canvas is hidden
+            video.classList.remove('d-none');
+            canvas.classList.add('d-none'); 
+
+            $('#openCameraBtn').addClass('d-none');
+            $('#captureSelfieBtn').removeClass('d-none');
+            $('#retakeSelfieBtn').addClass('d-none'); // Ensure retake is hidden
+
+        } catch (e) {
+            alert('Camera access denied or not supported!');
+        }
+    }
+
+
+ $(document).on('change', '.preview-input', function () {
+        let input = this;
+        let previewBox = $($(this).data('preview'));
+        let fileName = input.files[0]?.name || '';
+
+        $(this).next('.custom-file-label').html(fileName);
+
+        previewBox.html('');
+
+        if (input.files && input.files[0]) {
+            let file = input.files[0];
+            let fileType = file.type;
+            if (fileType.startsWith('image/')) {
+                let reader = new FileReader();
+                reader.onload = function (e) {
+                    previewBox.html(
+                        '<img src="' + e.target.result + '" class="preview-img img-fluid h-100px w-100-px">'
+                    );
+                };
+                reader.readAsDataURL(file);
+            }
+            else if (fileType === 'application/pdf') {
+                previewBox.html(`
+                    <div class="pdf-preview d-flex align-items-end justify-content-center border rounded text-center" 
+                        style="width:100px; height:100px; background-color:#f8f9fa; position:relative; font-size:40px; color:#e74c3c;">
+                        <i class="las la-file-pdf" style="position:absolute; top:50%; left:50%; transform:translate(-50%, -50%); opacity:0.2; font-size:50px;"></i>
+                        <small class="text-truncate-1 fs-10" style="position:absolute; bottom:5px; left:0;" title="${fileName}">${fileName}</small>
+                    </div>
+                `);
+            }
+        }
+    });
+
+     $('#customer_verification_modal').on('hide.bs.modal', function (e) {
+        // This runs BEFORE modal starts closing
+
+        // Force stop camera immediately
+        if (selfieStream) {
+            selfieStream.getTracks().forEach(track => track.stop());
+            selfieStream = null;
+        }
+
+        // Clear video source right away
+        const video = document.getElementById('selfieVideo');
+        if (video && video.srcObject) {
+            video.srcObject = null;
+        }
+    });
+</script>
+
 @endsection

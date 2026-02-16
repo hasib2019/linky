@@ -26,11 +26,12 @@
     <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Public+Sans:ital,wght@0,100;0,200;0,300;0,400;0,500;0,600;0,700;0,800;0,900;1,100;1,200;1,300;1,400;1,500;1,600;1,700;1,800;1,900&display=swap">
 
     <!-- aiz core css -->
-    <link rel="stylesheet" href="{{ static_asset('assets/css/vendors.css') }}">
+    <link rel="stylesheet" href="{{ static_asset('assets/css/vendors.css?v=') }}{{ get_setting('current_version') }}">
     @if (\App\Models\Language::where('code', Session::get('locale', Config::get('app.locale')))->first()->rtl == 1)
         <link rel="stylesheet" href="{{ static_asset('assets/css/bootstrap-rtl.min.css') }}">
     @endif
     <link rel="stylesheet" href="{{ static_asset('assets/css/aiz-core.css?v=') }}{{ rand(1000,9999) }}">
+    <link rel="stylesheet" href="{{ static_asset('assets/css/custom-style.css?v=') }}{{ rand(1000,9999) }}">
 
     <style>
         :root {
@@ -62,7 +63,7 @@
         }
         body {
             font-size: 12px;
-            font-family: 'Public Sans', sans-serif;
+            font-family: {!! !empty(get_setting('system_font_family')) ? get_setting('system_font_family') : "'Public Sans', sans-serif" !!}, sans-serif;
         }
         /* .bootstrap-select .btn,
         .btn:not(.btn-circle),
@@ -115,6 +116,10 @@
             complete: '{{ translate('Complete') }}',
             file: '{{ translate('File') }}',
             files: '{{ translate('Files') }}',
+            saving: '{{ translate('Saving') }}',
+            something_went_wrong: '{{translate('Something went wrong!')}}',
+            error_occured_while_processing: '{{translate('An error occurred while processing')}}',
+            saving_as_draft: '{{translate('Saving As Draft')}}',
         }
     </script>
 
@@ -137,11 +142,15 @@
         </div><!-- .aiz-content-wrapper -->
     </div><!-- .aiz-main-wrapper -->
 
+    
+    <!-- Bulk Action modal -->
+    @include('modals.bulk_action_modal')
     @yield('modal')
 
 
-    <script src="{{ static_asset('assets/js/vendors.js') }}"></script>
+    <script src="{{ static_asset('assets/js/vendors.js?v=') }}{{ get_setting('current_version') }}"></script>
     <script src="{{ static_asset('assets/js/aiz-core.js?v=') }}{{ rand(1000,9999) }}"></script>
+    <script src="{{ static_asset('assets/js/aiz-form-submission.js?v=') }}{{ rand(1000,9999) }}"></script>
 
     @yield('script')
 
@@ -212,7 +221,6 @@
             }
         }
     </script>
-
 </body>
 
 </html>

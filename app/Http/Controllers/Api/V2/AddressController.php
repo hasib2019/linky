@@ -5,10 +5,12 @@ namespace App\Http\Controllers\Api\V2;
 use App\Models\City;
 use App\Models\Country;
 use App\Http\Resources\V2\AddressCollection;
+use App\Http\Resources\V2\AreasCollection;
 use App\Models\Address;
 use App\Http\Resources\V2\CitiesCollection;
 use App\Http\Resources\V2\StatesCollection;
 use App\Http\Resources\V2\CountriesCollection;
+use App\Models\Area;
 use Illuminate\Http\Request;
 use App\Models\Cart;
 use App\Models\State;
@@ -28,6 +30,7 @@ class AddressController extends Controller
         $address->country_id = $request->country_id;
         $address->state_id = $request->state_id;
         $address->city_id = $request->city_id;
+        $address->area_id = $request->area_id;
         $address->postal_code = $request->postal_code;
         $address->phone = $request->phone;
         $address->save();
@@ -43,8 +46,13 @@ class AddressController extends Controller
         $address = Address::find($request->id);
         $address->address = $request->address;
         $address->country_id = $request->country_id;
-        $address->state_id = $request->state_id;
+        if ($request->country_id && !$request->state_id && $request->country_id != $address->country_id) {
+            $address->state_id = null;
+        } else {
+            $address->state_id = $request->state_id ?? $address->state_id;
+        }
         $address->city_id = $request->city_id;
+        $address->area_id = $request->area_id;
         $address->postal_code = $request->postal_code;
         $address->phone = $request->phone;
         $address->save();
@@ -247,6 +255,16 @@ class AddressController extends Controller
         return new CitiesCollection($cities);
     }
 
+    public function getCitiesByCountry($country_id,Request $request)
+    {
+        $city_query = City::where('status', 1)->where('country_id',$country_id);
+        if ($request->name != "" || $request->name != null) {
+            $city_query->where('name', 'like', '%' . $request->name . '%');
+        }
+        $cities = $city_query->get();
+        return new CitiesCollection($cities);
+    }
+
     public function getStatesByCountry($country_id,Request $request)
     {
         $state_query = State::where('status', 1)->where('country_id',$country_id);
@@ -255,5 +273,15 @@ class AddressController extends Controller
         }
         $states = $state_query->get();
         return new StatesCollection($states);
+    }
+
+     public function getAreasByCity($city_id,Request $request)
+    {
+        $area_query = Area::where('status', 1)->where('city_id',$city_id);
+        if ($request->name != "" || $request->name != null) {
+            $area_query->where('name', 'like', '%' . $request->name . '%');
+        }
+        $areas = $area_query->get();
+        return new AreasCollection($areas);
     }
 }

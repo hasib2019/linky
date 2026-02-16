@@ -5,6 +5,8 @@ namespace App\Models;
 use App;
 use Illuminate\Database\Eloquent\Model;
 use App\Traits\PreventDemoModeChanges;
+use Illuminate\Database\Eloquent\Casts\Attribute;
+
 
 class Product extends Model
 {
@@ -140,5 +142,51 @@ class Product extends Model
     {
         return $this->belongsTo(Note::class, 'refund_note_id');
     }
+
+    public function customSaleAlerts()
+    {
+        return $this->hasMany(CustomSaleAlert::class, 'product_id');
+    }
+
+    // add gallery image to thumb
+
+   public function thumbnailImg(): Attribute
+    {
+        return Attribute::get(function ($value, $attributes) {
+            $photos = $attributes['photos'] ?? null;
+
+            if ($photos) {
+                $photosArray = explode(',', $photos);
+                $count = count($photosArray);
+
+                return $value ?: ($count > 0 ? $photosArray[0] : null);
+            }
+
+            return $value;
+        });
+    }
+
+
+    protected function videoLink(): Attribute
+    {
+        return Attribute::make(
+           
+            get: fn($value) => json_decode($value, true), 
+
+         
+             set: function ($value) {
+                if (!is_array($value)) {
+                    return null;
+                }
+            
+                $filtered = array_filter($value, function ($item) {
+                    return trim($item) !== '';
+                });
+
+                return empty($filtered) ? null : json_encode($filtered);
+            },
+        );
+    }
+
 
 }

@@ -44,7 +44,7 @@ class AuthController extends Controller
                 Rule::when($request->register_by === 'phone', ['numeric', 'unique:users,phone']),
             ],
             'g-recaptcha-response' => [
-                Rule::when(get_setting('google_recaptcha') == 1, ['required', new Recaptcha()], ['sometimes'])
+                Rule::when(get_setting('google_recaptcha') == 1 && get_setting('recaptcha_customer_register') == 1 , ['required', new Recaptcha()], ['sometimes'])
             ]
         ], $messages);
 
@@ -154,6 +154,9 @@ class AuthController extends Controller
                 'required',
                 Rule::when($request->login_by === 'email', ['email', 'required']),
                 Rule::when($request->login_by === 'phone', ['numeric', 'required']),
+            ],
+            'g-recaptcha-response' => [
+                Rule::when(get_setting('google_recaptcha') == 1 && get_setting($request['recaptcha_action']) == 1, ['required', new Recaptcha()], ['sometimes'])
             ]
         ], $messages);
 
@@ -200,8 +203,12 @@ class AuthController extends Controller
         if ($user != null) {
             if (!$user->banned) {
                 if (Hash::check($request->password, $user->password)) {
-                    $tempUserId = $request->has('temp_user_id') ? $request->temp_user_id : null;
-                    return $this->loginSuccess($user,'', $tempUserId);
+                    if($user->user_type=='seller' && $user->shop->registration_approval  == 0){
+                        return response()->json(['result' => false, 'message' => translate('Your seller account is under review. We will notify you once approved.'), 'user' => null], 401);
+                    }else{
+                        $tempUserId = $request->has('temp_user_id') ? $request->temp_user_id : null;
+                        return $this->loginSuccess($user,'', $tempUserId);
+                    }
 
                 } else {
                     return response()->json(['result' => false, 'message' => translate('Unauthorized'), 'user' => null], 401);
@@ -392,6 +399,14 @@ class AuthController extends Controller
                     'user_id' => $user->id,
                     'temp_user_id' => null
                 ]);
+        }
+
+         if($user->user_type == 'seller'){
+            \Log::channel('seller_login')->info('Seller Logged In', [
+                'user_id' => $user->id,
+                'email' => $user->email,
+                'time' => now()->toDateTimeString()
+            ]);
         }
 
         return response()->json([

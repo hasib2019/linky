@@ -143,23 +143,98 @@
                             <h5 class="mb-0 h6">{{ translate('Product Videos') }}</h5>
                         </div>
                         <div class="card-body">
+                           
+
+                            <!--  Video Upload -->
                             <div class="form-group row">
-                                <label class="col-md-3 col-from-label">{{ translate('Video Provider') }}</label>
-                                <div class="col-md-8">
-                                    <select class="form-control aiz-selectpicker" name="video_provider" id="video_provider">
-                                        <option value="youtube">{{ translate('Youtube') }}</option>
-                                        <option value="dailymotion">{{ translate('Dailymotion') }}</option>
-                                        <option value="vimeo">{{ translate('Vimeo') }}</option>
-                                    </select>
+                                <label class="col-md-3 col-form-label"
+                                    for="signinSrEmail">{{ translate('Videos') }}</label>
+                                <div class="col-md-9">
+                                    <div class="input-group" data-toggle="aizuploader" data-type="video"
+                                        data-multiple="true">
+                                        <div class="input-group-prepend">
+                                            <div class="input-group-text bg-soft-secondary font-weight-medium">
+                                                {{ translate('Browse') }}</div>
+                                        </div>
+                                        <div class="form-control file-amount">{{ translate('Choose File') }}</div>
+                                        <input type="hidden" name="short_video" class="selected-files">
+                                    </div>
+                                    <div class="file-preview box sm">
+                                    </div>
+                                    <small class="text-muted">{{ translate('Try to upload videos under 30 seconds for better performance.') }}</small>
                                 </div>
                             </div>
+
+                            <!-- short_video_thumbnail Upload -->
                             <div class="form-group row">
-                                <label class="col-md-3 col-from-label">{{ translate('Video Link') }}</label>
-                                <div class="col-md-8">
-                                    <input type="text" class="form-control" name="video_link"
-                                        placeholder="{{ translate('Video Link') }}">
+                                <label class="col-md-3 col-form-label"
+                                    for="signinSrEmail">{{ translate('Video Thumbnails') }}</label>
+                                <div class="col-md-9">
+                                    <div class="input-group" data-toggle="aizuploader" data-type="image"
+                                        data-multiple="true">
+                                        <div class="input-group-prepend">
+                                            <div class="input-group-text bg-soft-secondary font-weight-medium">
+                                                {{ translate('Browse') }}</div>
+                                        </div>
+                                        <div class="form-control file-amount">{{ translate('Choose File') }}</div>
+                                        <input type="hidden" name="short_video_thumbnail" class="selected-files">
+                                    </div>
+                                    <div class="file-preview box sm">
+                                    </div>
+                                   <small class="text-muted">
+                                    {{ translate('Add thumbnails in the same order as your videos. If you upload only one image, it will be used for all videos.') }}
+                                    </small>
                                 </div>
                             </div>
+
+
+                            <!-- Youtube Video Link -->
+                            <div class="form-group row mb-5">
+                                <label
+                                    class="col-md-3 col-from-label">{{ translate('Youtube video / shorts link') }}</label>
+                                <div class="video-provider-link col-md-9">
+                                    {{-- @if (!$product->video_link) --}}
+                                    @if (empty($product->video_link))
+                                        <div class="row">
+                                            <div class="col-md-12">
+                                                <input type="text" class="form-control" name="video_link[]"
+                                                    value=""
+                                                    placeholder="{{ translate('Youtube video / shorts url') }}">
+                                                <small
+                                                    class="text-muted">{{ translate("Use proper link without extra parameter. Don't use short share link/embeded iframe code.") }}</small>
+                                            </div>
+
+                                        </div>
+                                    @endif
+
+
+                                    {{-- @endif --}}
+                                </div>
+                                <div class="form-group row mb-5 d-flex justify-content-end " style="width: 100%">
+
+                                    <button type="button" class="btn btn-secondary btn-sm" data-toggle="add-more"
+                                        data-content='<div class="row">
+                                                    <div class="col-md-11">
+                                                        <input type="text" class="form-control" name="video_link[]" value="" placeholder="{{ translate('Youtube video or short link') }}">
+                                                        <small class="text-muted">{{ translate("Use proper link without extra parameter. Don't use short share link/embeded iframe code.") }}</small>
+                                                    </div>
+                                                    <div class="col-1 d-flex justify-content-end">
+                                                            <button type="button" class="mt-1 btn btn-icon  btn-sm btn-soft-danger" data-toggle="remove-parent" data-parent=".row">
+                                                                <i class="las la-times"></i>
+                                                            </button>
+                                                    </div>
+                                                </div>'
+                                        data-target=".video-provider-link">
+                                        {{ translate('Add Another') }} 
+                                    </button>
+                                </div>
+
+
+
+
+
+                            </div>
+
                         </div>
                     </div>
                     <div class="card">
@@ -361,6 +436,13 @@
                                 </div>
                             </div>
                             <div class="form-group row">
+                                <label class="col-md-3 col-from-label">{{ translate('Keywords') }}</label>
+                                <div class="col-md-8">
+                                    <textarea class="resize-off form-control" name="meta_keywords" placeholder="{{translate('Keyword, Keyword')}}"></textarea>
+                                    <small class="text-muted">{{ translate('Separate with coma') }}</small>                                   
+                                </div>
+                            </div>
+                            <div class="form-group row">
                                 <label class="col-md-3 col-form-label"
                                     for="signinSrEmail">{{ translate('Meta Image') }}</label>
                                 <div class="col-md-8">
@@ -389,10 +471,12 @@
                                 <div class="form-group row">
                                     <label class="col-md-2 col-from-label">{{translate('Refundable')}}?</label>
                                     <div class="col-md-10">
-                                        <label class="aiz-switch aiz-switch-success mb-0">
-                                            <input type="checkbox" name="refundable" checked value="1" onchange="isRefundable()">
+                                        <label class="aiz-switch aiz-switch-success mb-0 d-block">
+                                            <input type="checkbox" name="refundable" checked value="1"
+                                                onchange="isRefundable()">
                                             <span></span>
                                         </label>
+                                        <small id="refundable-note" class="text-muted d-none"></small>
                                     </div>
                                 </div>
 
@@ -713,6 +797,26 @@
                     </div>
 
                     <div class="card">
+                        @if (addon_is_activated('gst_system'))
+                        <div class="card-header">
+                            <h5 class="mb-0 h6">{{ translate('HSN & GST') }}</h5>
+                        </div>
+                        <div class="card-body">
+                            <div class="form-group mb-2">
+                                <label class="col-from-label">{{ translate('HSN Code') }} <span class="text-danger">*</span></label>
+                                <input type="text" lang="en"
+                                    placeholder="{{ translate('HSN Code') }}" name="hsn_code" class="form-control"
+                                    required>
+                            </div>
+                            <div class="form-group mb-2">
+                                <label class="col-from-label">{{ translate('GST Rate') }} <span class="text-danger">*</span></label>
+                                <input type="number" lang="en" min="0" value="0" step="0.01"
+                                    placeholder="{{ translate('GST Rate') }}" name="gst_rate" class="form-control"
+                                    required>
+                            </div>
+                        </div>
+                        
+                        @else
                         <div class="card-header">
                             <h5 class="mb-0 h6">{{ translate('VAT & Tax') }}</h5>
                         </div>
@@ -738,6 +842,7 @@
                                 </div>
                             @endforeach
                         </div>
+                        @endif
                     </div>
                 </div>
                 <div class="col-12">
@@ -941,15 +1046,68 @@
     }
 
     // Refundable
-    function isRefundable(){
-        if($('input[name="refundable"]').is(':checked')) {
-            $('.refund-block').removeClass('d-none');
+    function isRefundable() {
+        const refundType = "{{ get_setting('refund_type') }}";
+        const $refundable = $('input[name="refundable"]');
+        const $mainCategoryRadio = $('input[name="category_id"]:checked');
+        const $note = $('#refundable-note');
+
+        $refundable.off('change.isRefundableLock');
+
+        if (refundType !== 'category_based_refund') {
+            $refundable.prop('disabled', false);
+            $note.addClass('d-none');
+            $('.refund-block').toggleClass('d-none', !$refundable.is(':checked'));
+            return;
         }
-        else {
+
+        if (!$mainCategoryRadio.length) {
+            $refundable.prop('checked', false);
+            $refundable.prop('disabled', true);
             $('.refund-block').addClass('d-none');
+            $note.text('{{ translate("Your refund type is category based. At first select the main category.") }}')
+                .removeClass('d-none');
+            return;
         }
+
+        const categoryId = $mainCategoryRadio.val();
+        $.ajax({
+            type: 'POST',
+            url: '{{ route("seller.products.check_refundable_category") }}',
+            data: {
+                _token: '{{ csrf_token() }}',
+                category_id: categoryId
+            },
+            success: function (response) {
+                if (response.status === 'success' && response.is_refundable) {
+                    $refundable.prop('disabled', false);
+                    $note.text('{{ translate("This product allows refunds.") }}')
+                        .removeClass('d-none');
+                    $refundable.on('change.isRefundableLock', function () {
+                        if (!$refundable.is(':checked')) {
+                            $('.refund-block').addClass('d-none');
+                        } else {
+                            $('.refund-block').removeClass('d-none');
+                        }
+                    });
+                } else {
+                    $refundable.prop('checked', false);
+                    $refundable.prop('disabled', true);
+                    $('.refund-block').addClass('d-none');
+                    $note.text('{{ translate("Selected main category has no refund. Select a refundable category.") }}')
+                        .removeClass('d-none');
+                }
+            },
+            error: function () {
+                $refundable.prop('checked', false);
+                $refundable.prop('disabled', true);
+                $('.refund-block').addClass('d-none');
+                $note.text('{{ translate("Could not verify category refund status.") }}')
+                    .removeClass('d-none');
+            }
+        });
     }
-    
+
     function noteModal(noteType){
         $.post('{{ route('get_notes') }}',{_token:'{{ @csrf_token() }}', note_type: noteType}, function(data){
             $('#note_modal #note_modal_content').html(data);
@@ -967,12 +1125,38 @@
 
 
 </script>
+<script>
+    $(document).ready(function () {
+        var hash = document.location.hash;
+        if (hash) {
+            $('.nav-tabs a[href="' + hash + '"]').tab('show');
+        } else {
+            $('.nav-tabs a[href="#general"]').tab('show');
+        }
+
+        $('.nav-tabs a').on('shown.bs.tab', function (e) {
+            window.location.hash = e.target.hash;
+        });
+    });
+
+</script>
 
 @include('partials.product.product_temp_data')
+
 <script type="text/javascript">
-    $(document).ready(function() {
+    $(document).ready(function () {
         warrantySelection();
         isRefundable();
+
+        $(document).on('change', 'input[name="category_id"]', function () {
+            isRefundable();
+        });
+
+        $('input[name="refundable"]').on('change', function () {
+            if (!$('input[name="refundable"]').prop('disabled')) {
+                $('.refund-block').toggleClass('d-none', !$(this).is(':checked'));
+            }
+        });
     });
 </script>
 @endsection

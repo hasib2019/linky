@@ -22,7 +22,7 @@ Route::controller(InstallController::class)->group(function () {
 
     Route::post('/database_installation', 'database_installation')->name('install.db');
     Route::get('import_sql', 'import_sql')->name('import_sql');
+    Route::get('import_sql_with_demo', 'import_sql_with_demo')->name('import_sql_with_demo');
     Route::post('system_settings', 'system_settings')->name('system_settings');
     Route::post('purchase_code', 'purchase_code')->name('purchase.code');
 });
-

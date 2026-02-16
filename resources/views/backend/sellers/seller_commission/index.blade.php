@@ -1,9 +1,8 @@
 @extends('backend.layouts.app')
 
 @section('content')
-
     <div class="row">
-        <div class="col-lg-6">
+        <div class="col-lg-8 mx-auto ">
             <div class="card">
                 <div class="card-header">
                     <h3 class="mb-0 h6 text-center">{{translate('Seller Commission Activatation')}}</h3>
@@ -17,28 +16,9 @@
             </div>
         </div>
 
-        <div class="col-lg-6">
-            <div class="card">
-                <div class="card-header">
-                    <h5 class="mb-0 h6">{{translate('Note')}}</h5>
-                </div>
-                <div class="card-body">
-                    <ul class="list-group">
-                        <li class="list-group-item text-muted">
-                            1. {{ translate('If the Commission Type is Fixed Rate') }}, {{ get_setting('vendor_commission') }}% {{translate('of seller product price will be deducted from seller earnings') }}.
-                        </li>
-                        <li class="list-group-item text-muted">
-                            2. {{ translate('If the Commission Type is Seller Based, set commission percentage ') }} <a href="{{ route('sellers.index') }}">{{ translate('Here') }}</a>
-                        </li>
-                        <li class="list-group-item text-muted">
-                            3. {{ translate('If the Commission Type is Category Based, set commission percentage ') }} <a href="{{ route('categories.index') }}">{{ translate('Here') }}</a>
-                        </li>
-                    </ul>
-                </div>
-            </div>
-        </div>
+      
 
-        <div class="col-lg-6">
+        <div class="col-lg-8 mx-auto">
             <div class="card">
                 <div class="card-header">
                     <h3 class="mb-0 h6 text-center">{{translate('Commission Type')}}</h3>
@@ -67,8 +47,34 @@
             </div>
         </div>
 
+        <div class="col-lg-8 mx-auto">
+            <div class="card">
+              <div class="card-header">
+                  <h5 class="mb-0 h6">{{translate('Withdraw Seller Amount')}}</h5>
+              </div>
+              <div class="card-body">
+                  <form class="form-horizontal" action="{{ route('business_settings.update') }}" method="POST" enctype="multipart/form-data">
+                  	@csrf
+                    <div class="form-group row">
+                        <label class="col-md-4 col-from-label">{{translate('Minimum Seller Amount Withdraw')}}</label>
+                        <div class="col-md-8">
+                            <input type="hidden" name="types[]" value="minimum_seller_amount_withdraw">
+                            <div class="input-group">
+                                <input type="number" lang="en" min="0" step="0.01" value="{{ get_setting('minimum_seller_amount_withdraw') }}" placeholder="{{translate('Minimum Seller Amount Withdraw')}}" name="minimum_seller_amount_withdraw" class="form-control" required>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="form-group mb-0 text-right">
+                        <button type="submit" class="btn btn-sm btn-primary">{{translate('Save')}}</button>
+                    </div>
+                  </form>
+              </div>
+            </div>
+        </div>
+
+
         @if(get_setting('seller_commission_type') == 'fixed_rate')
-            <div class="col-lg-6">
+            <div class="col-lg-8 mx-auto">
                 <div class="card">
                 <div class="card-header">
                     <h5 class="mb-0 h6">{{translate('Fixed Commission Rate')}}</h5>
@@ -97,33 +103,32 @@
             </div>
         @endif
 
-        <div class="col-lg-6">
+      
+        <div class="col-lg-8 mx-auto">
             <div class="card">
-              <div class="card-header">
-                  <h5 class="mb-0 h6">{{translate('Withdraw Seller Amount')}}</h5>
-              </div>
-              <div class="card-body">
-                  <form class="form-horizontal" action="{{ route('business_settings.update') }}" method="POST" enctype="multipart/form-data">
-                  	@csrf
-                    <div class="form-group row">
-                        <label class="col-md-4 col-from-label">{{translate('Minimum Seller Amount Withdraw')}}</label>
-                        <div class="col-md-8">
-                            <input type="hidden" name="types[]" value="minimum_seller_amount_withdraw">
-                            <div class="input-group">
-                                <input type="number" lang="en" min="0" step="0.01" value="{{ get_setting('minimum_seller_amount_withdraw') }}" placeholder="{{translate('Minimum Seller Amount Withdraw')}}" name="minimum_seller_amount_withdraw" class="form-control" required>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="form-group mb-0 text-right">
-                        <button type="submit" class="btn btn-sm btn-primary">{{translate('Save')}}</button>
-                    </div>
-                  </form>
-              </div>
+                <div class="card-header">
+                    <h5 class="mb-0 h6">{{translate('Note')}}</h5>
+                </div>
+                <div class="card-body">
+                    <ul class="list-group">
+                        <li class="list-group-item text-muted">
+                            1. {{ translate('If the Commission Type is Fixed Rate') }}, {{ get_setting('vendor_commission') }}% {{translate('of seller product price will be deducted from seller earnings') }}.
+                        </li>
+                        <li class="list-group-item text-muted">
+                            2. {{ translate('If the Commission Type is Seller Based, set commission percentage ') }} <a href="{{ route('seller_based_commission') }}">{{ translate('Here') }}</a>
+                        </li>
+                        <li class="list-group-item text-muted">
+                            3. {{ translate('If the Commission Type is Category Based, set commission percentage ') }} <a href="{{ route('categories_wise_commission') }}">{{ translate('Here') }}</a>
+                        </li>
+                    </ul>
+                </div>
             </div>
         </div>
 
     </div>
 
+
+    
 @endsection
 
 @section('script')
@@ -145,11 +150,26 @@
             $.post('{{ route('business_settings.update.activation') }}', {_token:'{{ csrf_token() }}', type:type, value:value}, function(data){
                 if(data == 1){
                     AIZ.plugins.notify('success', '{{ translate('Settings updated successfully') }}');
+                    toggleCommissionInputs(value);
                 }
                 else{
                     AIZ.plugins.notify('danger', 'Something went wrong');
                 }
             });
         }
+
+        function toggleCommissionInputs(status) {
+             if (status == 1) {
+                 $('.radio input,  button, .form-group input').prop('disabled', false);
+             } else {
+                 $('.radio input, button, .form-group input').prop('disabled', true);
+            }
+        }
+
+        $(document).ready(function(){
+            var commission_status = @json(get_setting('vendor_commission_activation'));
+             toggleCommissionInputs(commission_status);
+        });
+
     </script>
 @endsection

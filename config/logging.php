@@ -87,6 +87,12 @@ return [
             'driver' => 'errorlog',
             'level' => 'debug',
         ],
+        'seller_login' => [
+            'driver' => 'single',
+            'path' => storage_path('logs/seller_login.log'),
+            'level' => 'info',
+            'days' => 180,
+        ],
     ],
 
 ];

@@ -19,8 +19,10 @@ class ProductDetailCollection extends ResourceCollection
                 $calculable_price = floatval($calculable_price);
                 // $calculable_price = round($calculable_price, 2);
                 $photo_paths = get_images_path($data->photos);
-
+                $short_video_paths = $data->short_video ? get_videos_path($data->short_video) : [];
+                $short_video_thumbnail_paths = $data->short_video_thumbnail ? get_images_path($data->short_video_thumbnail) : [];
                 $photos = [];
+                $videos = [];
 
 
                 if (!empty($photo_paths)) {
@@ -30,6 +32,17 @@ class ProductDetailCollection extends ResourceCollection
                             $item['variant'] = "";
                             $item['path'] = $photo_paths[$i];
                             $photos[] = $item;
+                        }
+                    }
+                }
+
+                if (!empty($short_video_paths)) {
+                    for ($i = 0; $i < count($short_video_paths); $i++) {
+                        if ($short_video_paths[$i] != "") {
+                            $item = array();
+                            $item['path'] = $short_video_paths[$i];
+                            $item['thumbnail'] = $short_video_thumbnail_paths[$i] ?? "";
+                            $videos[] = $item;
                         }
                     }
                 }
@@ -91,11 +104,12 @@ class ProductDetailCollection extends ResourceCollection
                     'earn_point' => (float)$data->earn_point,
                     'description' => $data->getTranslation('description'),
                     'downloads' => $data->pdf ? uploaded_asset($data->pdf) : null,
-                    'video_link' => $data->video_link != null ?  $data->video_link : "",
+                    'video_link' => $data->video_link != null ?  $data->video_link : [],
                     'brand' => $brand,
                     'link' => route('product', $data->slug),
                     'wholesale' => $whole_sale,
                     'est_shipping_time' => (int)$data->est_shipping_days,
+                    'videos' => $videos,
 
                 ];
             })

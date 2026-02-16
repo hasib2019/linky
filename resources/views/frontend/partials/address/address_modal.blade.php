@@ -22,6 +22,7 @@
                             </div>
                         </div>
 
+                        @if (get_active_countries()->count() > 1)
                         <!-- Country -->
                         <div class="row">
                             <div class="col-md-2">
@@ -32,13 +33,16 @@
                                     <select class="form-control aiz-selectpicker rounded-0" data-live-search="true" data-placeholder="{{ translate('Select your country') }}" name="country_id" required>
                                         <option value="">{{ translate('Select your country') }}</option>
                                         @foreach (get_active_countries() as $key => $country)
-                                            <option value="{{ $country->id }}">{{ $country->name }}</option>
+                                        <option value="{{ $country->id }}">{{ $country->name }}</option>
                                         @endforeach
                                     </select>
                                 </div>
                             </div>
                         </div>
-
+                        @elseif(get_active_countries()->count() == 1)
+                        <input type="hidden" name="country_id" value="{{get_active_countries()[0]->id }}">
+                        @endif
+                        @if (get_setting('has_state') == 1)
                         <!-- State -->
                         <div class="row">
                             <div class="col-md-2">
@@ -50,14 +54,27 @@
                                 </select>
                             </div>
                         </div>
+                        @endif
 
                         <!-- City -->
-                        <div class="row">
+                        <div class="row ">
                             <div class="col-md-2">
                                 <label>{{ translate('City')}}</label>
                             </div>
                             <div class="col-md-10">
                                 <select class="form-control mb-3 aiz-selectpicker rounded-0" data-live-search="true" name="city_id" required>
+
+                                </select>
+                            </div>
+                        </div>
+
+                         <!--Area-->
+                        <div class="row area-field d-none">
+                            <div class="col-md-2">
+                                <label>{{ translate('Area')}}</label>
+                            </div>
+                            <div class="col-md-10">
+                                <select class="form-control mb-3 aiz-selectpicker rounded-0" data-live-search="true" name="area_id">
 
                                 </select>
                             </div>
@@ -133,7 +150,7 @@
     <div class="modal-dialog modal-dialog-centered modal-md" role="document">
         <div class="modal-content">
             <div class="modal-header">
-                <h5 class="modal-title" id="exampleModalLabel">{{ translate('New Address') }}</h5>
+                <h5 class="modal-title" id="exampleModalLabel">{{ translate('Edit Address') }}</h5>
                 <button type="button" class="close" data-dismiss="modal" aria-label="Close">
                     <span aria-hidden="true">&times;</span>
                 </button>

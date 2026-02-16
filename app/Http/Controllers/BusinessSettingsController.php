@@ -2,9 +2,17 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\ElementStyle;
 use Illuminate\Http\Request;
 use App\Models\BusinessSetting;
+use App\Models\Category;
+use App\Models\Country;
+use App\Models\ElementType;
 use App\Models\PaymentMethod;
+use App\Models\Product;
+use App\Models\ShippingSystem;
+use App\Models\State;
+use App\Models\Zone;
 use Artisan;
 use Illuminate\Support\Facades\Redirect;
 use Illuminate\Support\Facades\URL;
@@ -33,6 +41,7 @@ class BusinessSettingsController extends Controller
         $this->middleware(['permission:google_map_setting'])->only('google_map');
         $this->middleware(['permission:google_firebase_setting'])->only('google_firebase');
         $this->middleware(['permission:shipping_configuration'])->only('shipping_configuration');
+        $this->middleware(['permission:business_settings'])->only('business_settings');
     }
 
     public function general_setting(Request $request)
@@ -57,58 +66,42 @@ class BusinessSettingsController extends Controller
 
     public function google_analytics(Request $request)
     {
-        
-        
         return view('backend.setup_configurations.google_configuration.google_analytics');
     }
 
     public function google_recaptcha(Request $request)
     {
-        
-        
         return view('backend.setup_configurations.google_configuration.google_recaptcha');
     }
 
     public function google_map(Request $request)
     {
-        
-        
         return view('backend.setup_configurations.google_configuration.google_map');
     }
 
     public function google_firebase(Request $request)
     {
-        
-        
         return view('backend.setup_configurations.google_configuration.google_firebase');
     }
 
     public function whatsappChat(Request $request)
     {
-        
-        
         return view('backend.setup_configurations.whatsapp_chat');
     }
 
     public function facebook_comment(Request $request)
     {
-        
-        
         return view('backend.setup_configurations.facebook_configuration.facebook_comment');
     }
 
     public function payment_method(Request $request)
     {
-        
-        
         $payment_methods = PaymentMethod::whereNull('addon_identifier')->get();
         return view('backend.setup_configurations.payment_method.index', compact('payment_methods'));
     }
 
     public function file_system(Request $request)
     {
-        
-        
         return view('backend.setup_configurations.file_system');
     }
 
@@ -131,6 +124,31 @@ class BusinessSettingsController extends Controller
             } else {
                 $business_settings->value = 0;
                 $business_settings->save();
+            }
+        }else{
+            $business_settings = new BusinessSetting();
+            if ($request->has($request->payment_method . '_sandbox')) {
+                $business_settings->type = $request->payment_method . '_sandbox';
+                $business_settings->value = 1;
+                $business_settings->save();
+            } else {
+                $business_settings->type = $request->payment_method . '_sandbox';
+                $business_settings->value = 0;
+                $business_settings->save();
+            }
+        }
+
+        // Save phonepe_version to settings
+        if ($request->has('phonepe_version')) {
+            $phonepeVersion = BusinessSetting::where('type', 'phonepe_version')->first();
+            if ($phonepeVersion) {
+                $phonepeVersion->value = $request->phonepe_version;
+                $phonepeVersion->save();
+            } else {
+                $newSetting = new BusinessSetting();
+                $newSetting->type = 'phonepe_version';
+                $newSetting->value = $request->phonepe_version;
+                $newSetting->save();
             }
         }
 
@@ -213,10 +231,6 @@ class BusinessSettingsController extends Controller
 
     public function google_firebase_update(Request $request)
     {
-        foreach ($request->types as $key => $type) {
-            $this->overWriteEnvFile($type, $request[$type]);
-        }
-
         $business_settings = BusinessSetting::where('type', 'google_firebase')->first();
 
         if ($request->has('google_firebase')) {
@@ -244,15 +258,18 @@ class BusinessSettingsController extends Controller
         foreach ($request->types as $key => $type) {
             $this->overWriteEnvFile($type, $request[$type]);
         }
+        $settings = [
+            'whatsapp_chat' => BusinessSetting::where('type', 'whatsapp_chat')->first(),
+            'whatsapp_order' => BusinessSetting::where('type', 'whatsapp_order')->first(),
+            'whatsapp_order_seller_prods' => BusinessSetting::where('type', 'whatsapp_order_seller_prods')->first(),
+            'order_messege_template' => BusinessSetting::where('type', 'order_messege_template')->first()
+        ];
 
-        $business_settings = BusinessSetting::where('type', 'whatsapp_chat')->first();
-
-        if ($request->has('whatsapp_chat')) {
-            $business_settings->value = 1;
-            $business_settings->save();
-        } else {
-            $business_settings->value = 0;
-            $business_settings->save();
+        foreach ($settings as $key => $setting) {
+            if ($setting) {
+                $setting->value = $request->has($key) ? $request->input($key) : 0;
+                $setting->save();
+            }
         }
 
         Artisan::call('cache:clear');
@@ -384,6 +401,10 @@ class BusinessSettingsController extends Controller
 
     public function update(Request $request)
     {
+       // dd($request->all());
+        $types = $request->types ?? [];
+        $resetRefundData = in_array('refund_type', $types);
+
         foreach ($request->types as $key => $type) {
             if ($type == 'site_name') {
                 $this->overWriteEnvFile('APP_NAME', $request[$type]);
@@ -405,6 +426,15 @@ class BusinessSettingsController extends Controller
                         $business_settings->value = json_encode($request[$type]);
                     } else {
                         $business_settings->value = $request[$type];
+                        if ($type == "seller_commission_type"  && $request[$type] == "category_based") {
+                            $business_settings2 = BusinessSetting::where('type', 'category_wise_commission')->first();
+                            $business_settings2->value = 1;
+                            $business_settings2->save();
+                        } elseif ($type == "seller_commission_type" && ($request[$type] == "seller_based" || $request[$type] == "fixed_rate")) {
+                            $business_settings2 = BusinessSetting::where('type', 'category_wise_commission')->first();
+                            $business_settings2->value = 0;
+                            $business_settings2->save();
+                        }
                     }
                     $business_settings->lang = $lang;
                     $business_settings->save();
@@ -422,6 +452,18 @@ class BusinessSettingsController extends Controller
             }
         }
 
+        
+        if ($resetRefundData) {
+            Product::query()->update([
+                'refundable' => 0,
+            ]);
+            Category::query()->update([
+                'refund_request_time' => null,
+            ]);
+            BusinessSetting::where('type', 'refund_request_time')->update([
+                'value' => null,
+            ]);
+        }
         Artisan::call('cache:clear');
 
         flash(translate("Settings updated successfully"))->success();
@@ -431,6 +473,7 @@ class BusinessSettingsController extends Controller
         }
         return redirect()->back();
     }
+
 
     public function updateActivationSettings(Request $request)
     {
@@ -474,6 +517,16 @@ class BusinessSettingsController extends Controller
         return 1;
     }
 
+    public function updateShippingActivationSettings(Request $request)
+    {
+        $shipping_system = ShippingSystem::findOrFail($request->id);
+        $shipping_system->active = $request->value;
+        $shipping_system->save();
+
+        Artisan::call('cache:clear');
+        return 1;
+    }
+
     public function updateActivationSettingsInEnv($request)
     {
         if ($request->type == 'FORCE_HTTPS' && $request->value == '1') {
@@ -501,13 +554,37 @@ class BusinessSettingsController extends Controller
 
     public function shipping_configuration(Request $request)
     {
-        return view('backend.setup_configurations.shipping_configuration.index');
+        $countries = Country::where('status', 1)->get();
+        return view('backend.setup_configurations.shipping_configuration.index', compact('countries'));
     }
+
+    public function shipping_method(Request $request)
+    {
+        $countries = Country::where('status', 1)->get();
+        return view('backend.setup_configurations.shipping_configuration.shipping_method', compact('countries'));
+    }
+
+
 
     public function shipping_configuration_update(Request $request)
     {
+        if ($request->type == 'shipping_type' && $request->shipping_type == 'carrier_wise_shipping') {
+            $inactiveZoneIds = Zone::where('status', 0)->pluck('id')->toArray();
+            $hasInvalidCountries = Country::where('status', 1)
+                ->where(function ($query) use ($inactiveZoneIds) {
+                    $query->where('zone_id', 0)
+                        ->orWhereIn('zone_id', $inactiveZoneIds);
+                })
+                ->exists();
+
+            if ($hasInvalidCountries) {
+                flash(translate('Your active shipping countries are assigned to inactive or undefined shipping zones. Please review your zone setup before enabling carrier-wise shipping.'))->error();
+                return back();
+            }
+        }
         $business_settings = BusinessSetting::where('type', $request->type)->first();
         $business_settings->value = $request[$request->type];
+
         $business_settings->save();
 
         Artisan::call('cache:clear');
@@ -558,21 +635,13 @@ class BusinessSettingsController extends Controller
 
     public function import_data(Request $request)
     {
-        if (env("DEMO_MODE") == "On"){
+        if (env("DEMO_MODE") == "On") {
             flash(translate('Demo data import will not work in demo site'))->error();
             return back();
         }
 
-        if (! AddonController::isLocalhostDomain()) {
-                   
-        $check_domain_verification =  AddonController::checkVerification('item',$request->purchase_key);
-        $check_domain_activation =  AddonController::checkActivation('item',$request->purchase_key);
+        
 
-            if (!$check_domain_verification || !$check_domain_activation) {
-                return translate('Please activate your domain at first');
-            }
-        }
-     
         // import sql
         $sql_path = base_path('public/demo.sql');
         DB::unprepared(file_get_contents($sql_path));
@@ -583,7 +652,150 @@ class BusinessSettingsController extends Controller
         $zip->extractTo('public/uploads/all/');
         flash(translate('Demo data uploaded successfully'))->success();
         return redirect()->back();
-
     }
 
+    public function stateBasedShippingSettings(Request $request)
+    {
+        $business_settings = BusinessSetting::where('type', 'has_state')->first();
+        if (!$business_settings) {
+            $business_settings = new BusinessSetting();
+            $business_settings->type = 'has_state';
+        }
+
+        $business_settings->value = $request->has_state;
+
+        $business_settings->save();
+
+        Artisan::call('cache:clear');
+            return $request->has_state ? 1 : 0;
+       
+    }
+
+    public function select_header(Request $request)
+    {
+        $business_settings = BusinessSetting::where('type', 'header_element')->first();
+        if (!$business_settings) {
+            $business_settings = new BusinessSetting();
+            $business_settings->type = 'header_element';
+        }
+
+        $business_settings->value = $request->header_element;
+        $business_settings->save();
+        $selectedElementType = ElementType::find($request->header_element);
+        foreach ($selectedElementType->element_styles as $style) {
+            $businessSetting = BusinessSetting::where('type', $style->name)->first();
+            if (!$businessSetting) {
+                $businessSetting = new BusinessSetting();
+                $businessSetting->type = $style->name;
+                $businessSetting->value = $style->value;
+                $businessSetting->save();
+            }else{
+                $businessSetting->value = $style->value;
+                $businessSetting->save();
+            }
+        }
+        Artisan::call('cache:clear');
+        flash(translate('Header layout updated successfully'))->success();
+        return redirect()->back();
+    }
+
+
+    public function customProductVisitorsUpdate( Request $request)
+    {
+         $settings = [
+            'show_custom_product_visitors' => BusinessSetting::where('type', 'show_custom_product_visitors')->first(),
+            'min_custom_product_visitors' => BusinessSetting::where('type', 'min_custom_product_visitors')->first(),
+            'max_custom_product_visitors' => BusinessSetting::where('type', 'max_custom_product_visitors')->first()
+        ];
+
+        foreach ($settings as $key => $setting) {
+            if ($setting) {
+                $setting->value = $request->has($key) ? $request->input($key) : 0;
+                $setting->save();
+            }else{
+                $newSetting = new BusinessSetting();
+                $newSetting->type = $key;
+                $newSetting->value = $request->has($key) ? $request->input($key) : 0;
+                $newSetting->save();
+            }
+        }
+
+        Artisan::call('cache:clear');
+        flash(translate("Custom Product Visitors settings updated successfully"))->success();
+        return back();
+    }
+
+    public function select_font_family(Request $request)
+    {
+        $fonts = config('font') ?? [];
+        if (!is_array($fonts)) {
+            $fonts = array_values((array) $fonts);
+        } else {
+            $fonts = array_values($fonts);
+        }
+        $selectedFont = get_setting('system_font_family') ?? '';
+        return view('backend.font_family', compact('fonts', 'selectedFont'));
+    }
+
+    public function business_settings(){
+        $business_info = json_decode(get_setting('business_info'), true) ?? [];
+        return view('backend.setup_configurations.business_settings', compact('business_info'));
+    }
+
+    public function business_info_update(Request $request)
+    {
+        $business_settings = BusinessSetting::where('type', 'business_info')->first();
+        
+        $business_info = $business_settings 
+            ? json_decode($business_settings->value, true) ?? [] 
+            : [];
+
+        if ($request->has('certificate_number')) {
+            $business_info['certificate_number'] = $request->certificate_number;
+
+            if ($request->hasFile('certificate')) {
+                if (!empty($business_info['certificate']) && file_exists(public_path($business_info['certificate']))) {
+                    unlink(public_path($business_info['certificate']));
+                }
+
+                $business_info['certificate'] = $request->file('certificate')->store('uploads/verification_form');
+            }
+
+            $business_info['country'] = Country::find($request->country_id)?->name ?? '';
+            $business_info['state']   = State::find($request->state_id)?->name ?? '';
+            $business_info['address'] = $request->address;
+            $business_info['shop_logo'] = $request->shop_logo;
+            $business_info['invoice_logo'] = $request->invoice_logo;
+        }
+
+        if (addon_is_activated('gst_system') && $request->has('gstin_number')) {
+            $business_info['gstin'] = $request->gstin_number;
+
+            if ($request->hasFile('gstin_certificate')) {
+                if (!empty($business_info['gstin_certificate']) && file_exists(public_path($business_info['gstin_certificate']))) {
+                    unlink(public_path($business_info['gstin_certificate']));
+                }
+
+                $business_info['gstin_certificate'] = $request->file('gstin_certificate')->store('uploads/verification_form');
+            }
+        }
+
+        // Now: manually check if record exists → create or update
+        if ($business_settings) {
+            // Update existing
+            $business_settings->value = json_encode($business_info);
+            $business_settings->save();
+        } else {
+            $newSetting = new BusinessSetting();
+            $newSetting->type = 'business_info';
+            $newSetting->value = json_encode($business_info);
+            $newSetting->save();
+        }
+
+        Artisan::call('cache:clear');
+
+        flash(translate("Business info updated successfully"))->success();
+
+        return back();
+    }
 }

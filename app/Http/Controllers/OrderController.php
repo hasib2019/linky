@@ -25,6 +25,7 @@ use Maatwebsite\Excel\Facades\Excel;
 use Illuminate\Support\Facades\Notification;
 use App\Notifications\OrderNotification;
 use App\Utility\EmailUtility;
+use Illuminate\Support\Facades\Log;
 
 class OrderController extends Controller
 {
@@ -34,88 +35,83 @@ class OrderController extends Controller
         // Staff Permission Check
         $this->middleware(['permission:view_all_orders|view_inhouse_orders|view_seller_orders|view_pickup_point_orders|view_all_offline_payment_orders'])->only('all_orders');
         $this->middleware(['permission:view_order_details'])->only('show');
-        $this->middleware(['permission:delete_order'])->only('destroy', 'bulk_order_delete');
+        $this->middleware(['permission:delete_order'])->only('destroy','bulk_order_delete');
     }
 
     // All Orders
-    public function all_orders(Request $request)
-    {
 
 
-        $date = $request->date;
-        $sort_search = null;
-        $delivery_status = null;
-        $payment_status = '';
-        $order_type = '';
+    public function all_orders(Request $request){
+       
+        $order_from = '';
+        $seller_types =[];
+        $shipping_type ='';
+        $manual_payment = '';
+        $col = '';
+        $status = '';
 
-        $orders = Order::orderBy('id', 'desc');
-        $admin_user_id = get_admin()->id;
+        $orders = Order::orderBy('id', 'desc')->where('order_from','pos');
 
-        if (Route::currentRouteName() == 'inhouse_orders.index' && Auth::user()->can('view_inhouse_orders')) {
-            $orders = $orders->where('orders.seller_id', '=', $admin_user_id);
-        } elseif (Route::currentRouteName() == 'seller_orders.index' && Auth::user()->can('view_seller_orders')) {
-            $orders = $orders->where('orders.seller_id', '!=', $admin_user_id);
-        } elseif (Route::currentRouteName() == 'pick_up_point.index' && Auth::user()->can('view_pickup_point_orders')) {
+        $seller_types = ['All', 'Inhouse', 'Seller'];
+        $order_types ='All Orders';
+         if (Route::currentRouteName() == 'inhouse_orders.index' && Auth::user()->can('view_inhouse_orders')) {
+            $seller_types = ['Inhouse'];
+            $order_types = 'Inhouse Orders';
+        }
+        elseif (Route::currentRouteName() == 'seller_orders.index' && Auth::user()->can('view_seller_orders')) {
+            $seller_types = ['Seller'];
+            $order_types = 'Seller Orders';
+        }
+        elseif (Route::currentRouteName() == 'pick_up_point.index' && Auth::user()->can('view_pickup_point_orders')) {
+            $seller_types = ['All', 'Inhouse', 'Seller'];
+            $order_types ='Pick-up Point Orders';
+            $col = 'shipping_type';
+            $status = 'pickup_point';
             if (get_setting('vendor_system_activation') != 1) {
-                $orders = $orders->where('orders.seller_id', '=', $admin_user_id);
+                $seller_types = ['Inhouse'];
             }
-            $orders->where('shipping_type', 'pickup_point')->orderBy('code', 'desc');
-            if (
-                Auth::user()->user_type == 'staff' &&
-                Auth::user()->staff->pick_up_point != null
-            ) {
-                $orders->where('shipping_type', 'pickup_point')
-                    ->where('pickup_point_id', Auth::user()->staff->pick_up_point->id);
-            }
-        } elseif (Route::currentRouteName() == 'all_orders.index' && Auth::user()->can('view_all_orders')) {
+        }
+        elseif (Route::currentRouteName() == 'all_orders.index' && Auth::user()->can('view_all_orders')) {
+            $seller_types = ['All', 'Inhouse', 'Seller'];
+            $order_types ='All Orders';
             if (get_setting('vendor_system_activation') != 1) {
-                $orders = $orders->where('orders.seller_id', '=', $admin_user_id);
+                $seller_types = ['Inhouse'];
             }
-        } elseif (Route::currentRouteName() == 'offline_payment_orders.index' && Auth::user()->can('view_all_offline_payment_orders')) {
+        }
+        elseif (Route::currentRouteName() == 'offline_payment_orders.index' && Auth::user()->can('view_all_offline_payment_orders')) {
             $orders = $orders->where('orders.manual_payment', 1);
-            if ($request->order_type != null) {
-                $order_type = $request->order_type;
-                $orders = $order_type == 'inhouse_orders' ?
-                    $orders->where('orders.seller_id', '=', $admin_user_id) :
-                    $orders->where('orders.seller_id', '!=', $admin_user_id);
-            }
-        } elseif (Route::currentRouteName() == 'unpaid_orders.index' && Auth::user()->can('view_all_unpaid_orders')) {
+            $seller_types = ['All', 'Inhouse', 'Seller'];
+            $order_types ='Offline Payment Orders';
+            $col = 'manual_payment';
+            $status = 1;
+        }
+        elseif (Route::currentRouteName() == 'unpaid_orders.index' && Auth::user()->can('view_all_unpaid_orders')) {
             $orders = $orders->where('orders.payment_status', 'unpaid');
-        } else {
+            $seller_types = ['All', 'Inhouse', 'Seller'];
+            $order_types = 'Unpaid Orders';
+            $col = 'payment_status';
+            $status = 'unpaid';
+        }
+        else {
             abort(403);
         }
 
-        if ($request->search) {
-            $sort_search = $request->search;
-            $orders = $orders->where('code', 'like', '%' . $sort_search . '%');
-        }
-        if ($request->payment_status != null) {
-            $orders = $orders->where('payment_status', $request->payment_status);
-            $payment_status = $request->payment_status;
-        }
-        if ($request->delivery_status != null) {
-            $orders = $orders->where('delivery_status', $request->delivery_status);
-            $delivery_status = $request->delivery_status;
-        }
-        if ($date != null) {
-            $orders = $orders->where('created_at', '>=', date('Y-m-d', strtotime(explode(" to ", $date)[0])) . '  00:00:00')
-                ->where('created_at', '<=', date('Y-m-d', strtotime(explode(" to ", $date)[1])) . '  23:59:59');
-        }
-        $orders = $orders->paginate(15);
         $unpaid_order_payment_notification = get_notification_type('complete_unpaid_order_payment', 'type');
-        return view('backend.sales.index', compact('orders', 'sort_search', 'order_type', 'payment_status', 'delivery_status', 'date', 'unpaid_order_payment_notification'));
+
+        return view('backend.sales.index', compact('orders','seller_types','order_from','order_types','unpaid_order_payment_notification', 'col', 'status'));
+
     }
 
     public function show($id)
     {
         $order = Order::findOrFail(decrypt($id));
-
+        
         $order_shipping_address = json_decode($order->shipping_address);
         $delivery_boys = User::where('city', $order_shipping_address->city)
-            ->where('user_type', 'delivery_boy')
-            ->get();
-
-        if (env('DEMO_MODE') != 'On') {
+                ->where('user_type', 'delivery_boy')
+                ->get();
+                
+        if(env('DEMO_MODE') != 'On') {
             $order->viewed = 1;
             $order->save();
         }
@@ -141,7 +137,6 @@ class OrderController extends Controller
      */
     public function store(Request $request)
     {
-
         $carts = Cart::where('user_id', Auth::user()->id)->active()->get();
 
         if ($carts->isEmpty()) {
@@ -150,15 +145,18 @@ class OrderController extends Controller
         }
 
         $address = Address::where('id', $carts[0]['address_id'])->first();
+        $billing_address = Address::where('id', $carts[0]['billing_address'])->first();
 
         $shippingAddress = [];
         if ($address != null) {
             $shippingAddress['name']        = Auth::user()->name;
             $shippingAddress['email']       = Auth::user()->email;
-            $shippingAddress['address']     = $address->address;
+            $shippingAddress['address']     = $address->address. (isset($address->area) ? ', ' . $address->area->name : '');
             $shippingAddress['country']     = $address->country->name;
+            if(get_setting('has_state') == 1){
             $shippingAddress['state']       = $address->state->name;
-            $shippingAddress['city']        = $address->city_id == 100000001 ? 'Dhaka' : ($address->city_id == 100000002 ? 'Outside Dhaka' : $address->city->name);
+            }
+            $shippingAddress['city']        = $address->city->name;
             $shippingAddress['postal_code'] = $address->postal_code;
             $shippingAddress['phone']       = $address->phone;
             if ($address->latitude || $address->longitude) {
@@ -166,9 +164,29 @@ class OrderController extends Controller
             }
         }
 
+        $billingAddress=[];
+        if ($billing_address != null) {
+            $billingAddress['name']        = Auth::user()->name;
+            $billingAddress['email']       = Auth::user()->email;
+            $billingAddress['address']     = $billing_address->address. (isset($billing_address->area) ? ', ' . $billing_address->area->name : '');
+            $billingAddress['country']     = $billing_address->country->name;
+            if(get_setting('has_state') == 1){
+            $billingAddress['state']       = $billing_address->state->name;
+            }
+            $billingAddress['city']        = $billing_address->city->name;
+            $billingAddress['postal_code'] = $billing_address->postal_code;
+            $billingAddress['phone']       = $billing_address->phone;
+            if ($billing_address->latitude || $billing_address->longitude) {
+                $billingAddress['lat_lang'] = $billing_address->latitude . ',' . $billing_address->longitude;
+            }
+        }else {
+            $billingAddress = $shippingAddress;
+        }
+
         $combined_order = new CombinedOrder;
         $combined_order->user_id = Auth::user()->id;
         $combined_order->shipping_address = json_encode($shippingAddress);
+
         $combined_order->save();
 
         $seller_products = array();
@@ -187,6 +205,7 @@ class OrderController extends Controller
             $order->combined_order_id = $combined_order->id;
             $order->user_id = Auth::user()->id;
             $order->shipping_address = $combined_order->shipping_address;
+            $order->billing_address = json_encode($billingAddress);
             $order->additional_info = $request->additional_info;
             $order->payment_type = $request->payment_option;
             $order->delivery_viewed = '0';
@@ -199,6 +218,7 @@ class OrderController extends Controller
             $tax = 0;
             $shipping = 0;
             $coupon_discount = 0;
+            $gst =0;
 
             //Order Details Storing
             foreach ($seller_product as $cartItem) {
@@ -230,10 +250,32 @@ class OrderController extends Controller
                 $order_detail->shipping_type = $cartItem['shipping_type'];
                 $order_detail->product_referral_code = $cartItem['product_referral_code'];
                 $order_detail->shipping_cost = $cartItem['shipping_cost'];
+                $order_detail->coupon_discount = $cartItem['discount'];
+                if (addon_is_activated('gst_system')) {
+                $order_detail->gst_rate = $product->gst_rate;
+                $order_detail->gst_amount = (($order_detail->shipping_cost + $order_detail->tax + $order_detail->price - $cartItem['discount'])*$product->gst_rate)/100;
+                $gst+=$order_detail->gst_amount;
+                }
+                
+                if (addon_is_activated('refund_request')) {
 
+                    $refund_type = get_setting('refund_type');
+
+                    if($refund_type == 'global_refund' && $product->refundable != 0){
+
+                        $refund_days = get_setting('refund_request_time');
+                        $order_detail->refund_days = (int) $refund_days;
+
+                    }elseif($refund_type == 'category_based_refund' && $product->refundable != 0){
+
+                        $refund_days = $product->main_category->refund_request_time;
+                        $order_detail->refund_days = (int) $refund_days;
+
+                    }
+                }
+                
                 $shipping += $order_detail->shipping_cost;
                 //End of storing shipping cost
-
                 $order_detail->quantity = $cartItem['quantity'];
 
                 if (addon_is_activated('club_point')) {
@@ -271,7 +313,7 @@ class OrderController extends Controller
                 }
             }
 
-            $order->grand_total = $subtotal + $tax + $shipping;
+            $order->grand_total = $subtotal + $tax + $shipping + $gst;
 
             if ($seller_product[0]->coupon_code != null) {
                 $order->coupon_discount = $coupon_discount;
@@ -332,6 +374,12 @@ class OrderController extends Controller
      */
     public function destroy($id)
     {
+        $result = $this->single_order_delete($id);
+        return $result;
+    }
+
+    public function single_order_delete($id)
+    {
         $order = Order::findOrFail($id);
         if ($order != null) {
             $order->commissionHistory()->delete();
@@ -344,23 +392,22 @@ class OrderController extends Controller
                 $orderDetail->delete();
             }
             $order->delete();
-            flash(translate('Order has been deleted successfully'))->success();
+            return 1;
         } else {
-            flash(translate('Something went wrong'))->error();
+            return 0;
         }
-        return back();
     }
 
     public function bulk_order_delete(Request $request)
     {
         if ($request->id) {
             foreach ($request->id as $order_id) {
-                $this->destroy($order_id);
+                $this->single_order_delete($order_id);
             }
         }
 
         return 1;
-    }
+    } 
 
     public function order_details(Request $request)
     {
@@ -376,11 +423,11 @@ class OrderController extends Controller
         $order->delivery_status = $request->status;
         $order->save();
 
-        if ($request->status == 'delivered') {
+        if($request->status == 'delivered'){
             $order->delivered_date = date("Y-m-d H:i:s");
             $order->save();
         }
-
+        
         if ($request->status == 'cancelled' && $order->payment_type == 'wallet') {
             $user = User::where('id', $order->user_id)->first();
             $user->balance += $order->grand_total;
@@ -388,7 +435,7 @@ class OrderController extends Controller
         }
 
         // If the order is cancelled and the seller commission is calculated, deduct seller earning
-        if ($request->status == 'cancelled' && $order->user->user_type == 'seller' && $order->payment_status == 'paid' && $order->commission_calculated == 1) {
+        if($request->status == 'cancelled' && $order->user->user_type == 'seller' && $order->payment_status == 'paid' && $order->commission_calculated == 1){
             $sellerEarning = $order->commissionHistory->seller_earning;
             $shop = $order->shop;
             $shop->admin_to_pay -= $sellerEarning;
@@ -438,14 +485,13 @@ class OrderController extends Controller
             }
         }
         // Delivery Status change email notification to Admin, seller, Customer
-        EmailUtility::order_email($order, $request->status);
+        EmailUtility::order_email($order, $request->status);  
 
         // Delivery Status change SMS notification
         if (addon_is_activated('otp_system') && SmsTemplate::where('identifier', 'delivery_status_change')->first()->status == 1) {
             try {
                 SmsUtility::delivery_status_change(json_decode($order->shipping_address)->phone, $order);
-            } catch (\Exception $e) {
-            }
+            } catch (\Exception $e) {}
         }
 
         //Send web Notifications to user
@@ -521,8 +567,8 @@ class OrderController extends Controller
         }
 
         // Payment Status change email notification to Admin, seller, Customer
-        if ($request->status == 'paid') {
-            EmailUtility::order_email($order, $request->status);
+        if($request->status == 'paid'){
+            EmailUtility::order_email($order, $request->status);  
         }
 
         //Sends Web Notifications to Admin, seller, Customer
@@ -601,20 +647,19 @@ class OrderController extends Controller
 
     public function orderBulkExport(Request $request)
     {
-        if ($request->id) {
-            return Excel::download(new OrdersExport($request->id), 'orders.xlsx');
+        if($request->id){
+          return Excel::download(new OrdersExport($request->id), 'orders.xlsx');
         }
         return back();
     }
 
-    public function unpaid_order_payment_notification_send(Request $request)
-    {
-        if ($request->order_ids != null) {
+    public function unpaid_order_payment_notification_send(Request $request){
+        if($request->order_ids != null){
             $notificationType = get_notification_type('complete_unpaid_order_payment', 'type');
-            foreach (explode(",", $request->order_ids) as $order_id) {
+            foreach (explode(",",$request->order_ids) as $order_id) {
                 $order = Order::where('id', $order_id)->first();
                 $user = $order->user;
-                if ($notificationType->status == 1 && $order->payment_status == 'unpaid') {
+                if($notificationType->status == 1 && $order->payment_status == 'unpaid'){
                     $order_notification['order_id']     = $order->id;
                     $order_notification['order_code']   = $order->code;
                     $order_notification['user_id']      = $order->user_id;
@@ -625,9 +670,84 @@ class OrderController extends Controller
                 }
             }
             flash(translate('Notification Sent Successfully.'))->success();
-        } else {
+        }
+        else{
             flash(translate('Something went wrong!.'))->warning();
         }
         return back();
     }
+
+    public function get_filter_orders(Request $request)
+    {
+        $date= $request->date;
+        Log::info('Filter Orders Request: ', $request->all());
+        $col_name = null;
+        $query = null;
+        $sort_search = null;
+        $orders = Order::orderBy('id', 'desc');
+        $admin_id = get_admin()->id;
+        if ($request->seller_type == 'inhouse') {
+            $orders = $orders->where('seller_id', $admin_id);
+        } elseif ($request->seller_type == 'seller') {
+             $orders = $orders->where('seller_id', '!=', $admin_id);
+        }
+        if ($request->order_from) {
+            $orders= $orders->where('order_from','pos');
+        }
+
+        if($request->col && $request->status){
+            $orders= $orders->where($request->col,$request->status);
+            if($request->status == 'pickup_point'){
+                if (Auth::user()->user_type == 'staff' && Auth::user()->staff->pick_up_point != null ) {
+                    $orders->where('shipping_type', 'pickup_point')->where('pickup_point_id', Auth::user()->staff->pick_up_point->id);
+                }
+            }
+        }
+        
+        if ($request->search != null) {
+            $sort_search = $request->search;
+
+            $orders = $orders->where(function ($query) use ($sort_search) {
+                $query->where('code', 'like', '%' . $sort_search . '%')
+
+                    ->orWhereHas('shop', function ($q) use ($sort_search) {
+                        $q->where('name', 'like', '%' . $sort_search . '%');
+                    })
+
+                    ->orWhereHas('user', function ($q) use ($sort_search) {
+                        $q->where('name', 'like', '%' . $sort_search . '%');
+                    });
+            });
+        }
+
+        if ($date != null) {
+            $orders = $orders->where('created_at', '>=', date('Y-m-d', strtotime(explode(" to ", $date)[0])) . '  00:00:00')
+                ->where('created_at', '<=', date('Y-m-d', strtotime(explode(" to ", $date)[1])) . '  23:59:59');
+        }
+
+        if ($request->payment_status != null) {
+            $var = explode(",", $request->payment_status);
+            $col_name = $var[0];
+            $query = $var[1];
+            $orders = $orders->where($col_name, $query);
+        }
+
+        $filters = $request->selected_filter ?? [];
+        if (!empty($filters)) {
+            if (!empty($filters)) {
+                $orders->whereIn('delivery_status', $filters);
+            }
+        }
+
+        $orders = $orders->paginate(15);
+        $type = $request->seller_type;
+        $unpaid_order_payment_notification = get_notification_type('complete_unpaid_order_payment', 'type');
+
+        $view = view('backend.sales.orders_table',
+            compact('orders', 'type', 'col_name', 'query', 'sort_search','unpaid_order_payment_notification')
+        )->render();
+
+        return response()->json(['html' => $view]);
+    }
+
 }

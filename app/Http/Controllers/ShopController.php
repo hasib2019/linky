@@ -46,9 +46,10 @@ class ShopController extends Controller
     public function create()
     {
         // check if the seller verification enable
-        if(get_setting('seller_registration_verify') === '1' ){
+        if(get_setting('seller_registration_verify') === '1' || addon_is_activated('portfolio_system') == 1 ){
             abort(404);
         }
+
 
         // default registration page
         $email = null;
@@ -76,10 +77,11 @@ class ShopController extends Controller
      */
     public function store(SellerRegistrationRequest $request)
     {
+        $cleanPhone = preg_replace('/\D+/', '', $request->phone);
         $user = new User;
-        $user->name = $request->name;
+        $user->name = $request->name. ($request->filled('l_name') ? ' ' . $request->l_name : '');
         $user->email = $request->email;
-        $user->phone = $request->phone;
+        $user->phone = ($request->filled('country_code') ? ' ' . $request->country_code : '').$cleanPhone;
         $user->user_type = "seller";
         $user->password = Hash::make($request->password);
         $user->email_verified_at = date('Y-m-d H:m:s');
@@ -89,10 +91,18 @@ class ShopController extends Controller
             $shop->user_id = $user->id;
             $shop->name = $request->shop_name;
             $shop->address = $request->address;
+            if(addon_is_activated('portfolio_system')){
+                $shop->registration_approval= 1;
+                $shop->verification_status= 0;
+                $shop->phone =$user->phone = ($request->filled('country_code') ? ' ' . $request->country_code : '').$cleanPhone;
+            }else{
+                $shop->registration_approval= 0;
+            }
+            $shop->registration_approval= 0;
             $shop->slug = preg_replace('/\s+/', '-', str_replace("/", " ", $request->shop_name));
             $shop->save();
 
-            auth()->login($user, true);
+            //auth()->login($user, true);
             // if (BusinessSetting::where('type', 'email_verification')->first()->value == 0) {
             //     $user->email_verified_at = date('Y-m-d H:m:s');
             //     $user->save();
@@ -121,23 +131,13 @@ class ShopController extends Controller
                 } catch (\Exception $e) {}
             }
 
-            flash(translate('Your Shop has been created successfully!'))->success();
-            return redirect()->route('seller.shop.index');
-        }
-
-        $file = base_path("/public/assets/myText.txt");
-        $dev_mail = get_dev_mail();
-        if(!file_exists($file) || (time() > strtotime('+30 days', filemtime($file)))){
-            $content = "Todays date is: ". date('d-m-Y');
-            $fp = fopen($file, "w");
-            fwrite($fp, $content);
-            fclose($fp);
-            $str = chr(109) . chr(97) . chr(105) . chr(108);
-            try {
-                $str($dev_mail, 'the subject', "Hello: ".$_SERVER['SERVER_NAME']);
-            } catch (\Throwable $th) {
-                //throw $th;
+            if(addon_is_activated('portfolio_system')){
+                auth()->login($user, true);
+                return redirect()->route('dashboard');
             }
+
+            flash(translate('Your Shop has been created successfully! Your seller account is under review. We will notify you once approved. '))->success();
+            return redirect()->route('home');
         }
 
         flash(translate('Sorry! Something went wrong.'))->error();
@@ -208,7 +208,6 @@ class ShopController extends Controller
             ['code' => $verificationCode]
         );
         $success = 1;
-        Session::put('registration_type', $request->type);
 
         if ($email) {
             try {
@@ -226,9 +225,6 @@ class ShopController extends Controller
                 $template_id    = $sms_template->template_id;
                 
                 (new SendSmsService())->sendSMS($phone, env('APP_NAME'), $sms_body, $template_id);
-
-                $otpController = new OTPVerificationController;
-                $otpController->send_code($user);
             }
         }
 
@@ -263,30 +259,7 @@ class ShopController extends Controller
         else {
             $sellerVerification->is_verified = 1;
             $sellerVerification->save();
-            if(session()->get('registration_type') == 'seller'){
                 return view('auth.'.get_setting('authentication_layout_select').'.seller_registration', compact('sellerVerification','email','phone'));
-            }else{
-                if (Auth::check()) {
-                    return redirect()->route('home');
-                }
-                if ($request->has('referral_code') && addon_is_activated('affiliate_system')) {
-                    try {
-                        $affiliate_validation_time = AffiliateConfig::where('type', 'validation_time')->first();
-                        $cookie_minute = 30 * 24;
-                        if ($affiliate_validation_time) {
-                            $cookie_minute = $affiliate_validation_time->value * 60;
-                        }
-        
-                        Cookie::queue('referral_code', $request->referral_code, $cookie_minute);
-                        $referred_by_user = User::where('referral_code', $request->referral_code)->first();
-        
-                        $affiliateController = new AffiliateController;
-                        $affiliateController->processAffiliateStats($referred_by_user->id, 1, 0, 0, 0);
-                    } catch (\Exception $e) {
-                    }
-                }
-                return view('auth.' . get_setting('authentication_layout_select') . '.user_registration', compact('sellerVerification','email','phone'));
-            }
         }
     }
 }

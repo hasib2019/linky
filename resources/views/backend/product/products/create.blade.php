@@ -2,10 +2,6 @@
 
 @section('content')
 
-@php
-    
-    
-@endphp
 
 <div class="page-content">
     <div class="aiz-titlebar text-left mt-2 pb-2 px-3 px-md-2rem border-bottom border-gray">
@@ -17,6 +13,11 @@
                 <a class="btn btn-xs btn-soft-primary" href="javascript:void(0);" onclick="clearTempdata()">
                     {{ translate('Clear Tempdata') }}
                 </a>
+                @can('product_duplicate')
+                <a class="btn btn-xs btn-soft-warning " href="javascript:void(0);" onclick="showProductSelectModal()">
+                    {{ translate('Import Product') }}
+                </a>
+                @endcan
             </div>
             {{-- <div class="col text-right">
                 <a class="btn has-transition btn-xs p-0 hov-svg-danger" href="{{ route('home') }}"
@@ -103,7 +104,7 @@
             <!-- Data type -->
             <input type="hidden" id="data_type" value="physical">
 
-            <form action="{{route('products.store')}}" method="POST" enctype="multipart/form-data" enctype="multipart/form-data" id="choice_form">
+            <form action="{{route('products.store')}}" method="POST" enctype="multipart/form-data" enctype="multipart/form-data" id="aizSubmitForm">
                 @csrf
                 <div class="tab-content">
                     <!-- General -->
@@ -115,70 +116,56 @@
                                 <div class="row">
                                     <div class="col-xxl-7 col-xl-6">
                                         <!-- Product Name -->
-                                        <div class="form-group row">
-                                            <label class="col-xxl-3 col-from-label fs-13">{{translate('Product Name')}} <span class="text-danger">*</span></label>
-                                            <div class="col-xxl-9">
-                                                <input type="text" class="form-control @error('name') is-invalid @enderror" name="name" value="{{ old('name') }}" placeholder="{{ translate('Product Name') }}" onchange="update_sku()" required>
-                                            </div>
+                                        <div class="form-group mb-2">
+                                            <label class="col-from-label fs-13">{{translate('Product Name')}} <span class="text-danger">*</span></label>
+                                            <input type="text" class="form-control @error('name') is-invalid @enderror" name="name" value="{{ old('name') }}" placeholder="{{ translate('Product Name') }}" onchange="update_sku()">
                                         </div>
                                         <!-- Brand -->
-                                        <div class="form-group row" id="brand">
-                                            <label class="col-xxl-3 col-from-label fs-13">{{translate('Brand')}}</label>
-                                            <div class="col-xxl-9">
-                                                <select class="form-control aiz-selectpicker" name="brand_id" id="brand_id" data-live-search="true">
-                                                    <option value="">{{ translate('Select Brand') }}</option>
-                                                    @foreach (\App\Models\Brand::all() as $brand)
-                                                        <option value="{{ $brand->id }}" @selected(old('brand_id') == $brand->id)>{{ $brand->getTranslation('name') }}</option>
-                                                    @endforeach
-                                                </select>
-                                                <small class="text-muted">{{translate("You can choose a brand if you'd like to display your product by brand.")}}</small>
-                                            </div>
+                                        <div class="form-group mb-2" id="brand">
+                                            <label class="col-from-label fs-13">{{translate('Brand')}}</label>
+                                            <select class="form-control aiz-selectpicker" name="brand_id" id="brand_id" data-live-search="true">
+                                                <option value="">{{ translate('Select Brand') }}</option>
+                                                @foreach (\App\Models\Brand::all() as $brand)
+                                                    <option value="{{ $brand->id }}" @selected(old('brand_id') == $brand->id)>{{ $brand->getTranslation('name') }}</option>
+                                                @endforeach
+                                            </select>
+                                            <small class="text-muted">{{translate("You can choose a brand if you'd like to display your product by brand.")}}</small>
                                         </div>
                                         <!-- Unit -->
-                                        <div class="form-group row">
-                                            <label class="col-xxl-3 col-from-label fs-13">{{translate('Unit')}} <span class="text-danger">*</span></label>
-                                            <div class="col-xxl-9">
-                                                <input type="text" class="form-control @error('unit') is-invalid @enderror" name="unit" value="{{ old('unit') }}" placeholder="{{ translate('Unit (e.g. KG, Pc etc)') }}" required>
-                                            </div>
+                                        <div class="form-group mb-2">
+                                            <label class="col-from-label fs-13">{{translate('Unit')}} <span class="text-danger">*</span></label>
+                                            <input type="text" letter-only class="form-control @error('unit') is-invalid @enderror" name="unit" value="{{ old('unit') }}" placeholder="{{ translate('Unit (e.g. KG, Pc etc)') }}">
                                         </div>
                                         <!-- Weight -->
-                                        <div class="form-group row">
-                                            <label class="col-xxl-3 col-from-label fs-13">{{translate('Weight')}} <small>({{ translate('In Kg') }})</small></label>
-                                            <div class="col-xxl-9">
-                                                <input type="number" class="form-control" name="weight" value="{{ old('weight') ?? 0.00 }}"  step="0.01" placeholder="0.00">
-                                            </div>
+                                        <div class="form-group mb-2">
+                                            <label class="col-from-label fs-13">{{translate('Weight')}} <small>({{ translate('In Kg') }})</small></label>
+                                            <input type="number" class="form-control" name="weight" value="0.00"  step="0.01" placeholder="0.00">
                                         </div>
                                         <!-- Minimum Purchase Qty -->
-                                        <div class="form-group row">
-                                            <label class="col-xxl-3 col-from-label fs-13">{{translate('Minimum Purchase Qty')}} <span class="text-danger">*</span></label>
-                                            <div class="col-xxl-9">
-                                                <input type="number" lang="en" class="form-control @error('min_qty') is-invalid @enderror" name="min_qty" value="{{ old('min_qty') ?? 1 }}" placeholder="1" min="1" required>
-                                                <small class="text-muted">{{translate("The minimum quantity needs to be purchased by your customer.")}}</small>
-                                            </div>
+                                        <div class="form-group mb-2">
+                                            <label class="col-from-label fs-13">{{translate('Minimum Purchase Qty')}} <span class="text-danger">*</span></label>
+                                            <input type="number" lang="en" class="form-control @error('min_qty') is-invalid @enderror" name="min_qty" value="{{ old('min_qty') ?? 1 }}" placeholder="1" min="1" step="1" integer-only required>
+                                            <small class="text-muted">{{translate("The minimum quantity needs to be purchased by your customer.")}}</small>
                                         </div>
                                         <!-- Tags -->
-                                        <div class="form-group row">
-                                            <label class="col-xxl-3 col-from-label fs-13">{{translate('Tags')}}</label>
-                                            <div class="col-xxl-9">
-                                                <input type="text" class="form-control aiz-tag-input" name="tags[]" placeholder="{{ translate('Type and hit enter to add a tag') }}">
-                                                <small class="text-muted">{{translate('This is used for search. Input those words by which cutomer can find this product.')}}</small>
-                                            </div>
+                                        <div class="form-group mb-2">
+                                            <label class="col-from-label fs-13">{{translate('Tags')}}</label>
+                                            <input type="text" class="form-control aiz-tag-input" name="tags[]" placeholder="{{ translate('Type and hit enter to add a tag') }}">
+                                            <small class="text-muted">{{translate('This is used for search. Input those words by which cutomer can find this product.')}}</small>
                                         </div>
 
                                         @if (addon_is_activated('pos_system'))
                                         <!-- Barcode -->
-                                        <div class="form-group row">
+                                        <div class="form-group mb-2">
                                             <label class="col-xxl-3 col-from-label fs-13">{{translate('Barcode')}}</label>
-                                            <div class="col-xxl-9">
-                                                <input type="text" class="form-control" name="barcode" value="{{ old('barcode') }}" placeholder="{{ translate('Barcode') }}">
-                                            </div>
+                                            <input type="text" class="form-control" name="barcode" value="{{ old('barcode') }}" placeholder="{{ translate('Barcode') }}">
                                         </div>
                                         @endif
                                     </div>
 
                                     <!-- Product Category -->
                                     <div class="col-xxl-5 col-xl-6">
-                                        <div class="card @if($errors->has('category_ids') || $errors->has('category_id')) border border-danger @endif">
+                                        <div id="category-card" class="card mb-1 @if($errors->has('category_ids') || $errors->has('category_id')) border border-danger @endif">
                                             <div class="card-header">
                                                 <h5 class="mb-0 h6">{{ translate('Product Category') }}</h5>
                                                 <h6 class="float-right fs-13 mb-0">
@@ -190,7 +177,7 @@
                                                 </h6>
                                             </div>
                                             <div class="card-body">
-                                                <div class="h-300px overflow-auto c-scrollbar-light">
+                                                <div class="h-400px overflow-auto c-scrollbar-light">
                                                     <ul class="hummingbird-treeview-converter list-unstyled" data-checkbox-name="category_ids[]" data-radio-name="category_id">
                                                         @foreach ($categories as $category)
                                                         <li id="{{ $category->id }}">{{ $category->getTranslation('name') }}</li>
@@ -202,6 +189,7 @@
                                                 </div>
                                             </div>
                                         </div>
+                                        <div id="category-tree-table-error"></div>
                                     </div>
                                 </div>
 
@@ -222,10 +210,13 @@
                                     <div class="form-group row">
                                         <label class="col-md-3 col-from-label">{{translate('Refundable')}}?</label>
                                         <div class="col-md-9">
-                                            <label class="aiz-switch aiz-switch-success mb-0">
-                                                <input type="checkbox" name="refundable" checked value="1" onchange="isRefundable()">
+                                            <label class="aiz-switch aiz-switch-success mb-0 d-block">
+                                                <input type="checkbox" name="refundable" value="1" onchange="isRefundable()"
+                                                    @if(get_setting('refund_type') != 'category_based_refund') checked
+                                                    @endif>
                                                 <span></span>
                                             </label>
+                                            <small id="refundable-note" class="text-muted d-none"></small>
                                         </div>
                                     </div>
                                     <div class="w-100 refund-block d-none">
@@ -319,6 +310,20 @@
                                 </div>
                             </div>
 
+                            <!-- GST Rate -->
+                            @if (addon_is_activated('gst_system'))
+                            <h5 class="mb-3 mt-4 pb-3 fs-17 fw-700" style="border-bottom: 1px dashed #e4e5eb;">{{translate('HSN & GST')}}</h5>
+                            <div class="w-100">
+                                <div class="form-group mb-2">
+                                    <label class="col-from-label">{{translate('HSN Code')}}</label>
+                                    <input type="text" lang="en" placeholder="{{ translate('HSN Code') }}" name="hsn_code" class="form-control">
+                                </div>
+                                <div class="form-group mb-2">
+                                    <label class="col-from-label">{{translate('GST Rate (%)')}}</label>
+                                    <input type="number" lang="en" min="0" value="0" step="0.01" placeholder="{{ translate('GST Rate') }}" name="gst_rate" class="form-control">
+                                </div>
+                            </div>
+                            @else
                             <!-- Vat & TAX -->
                             <h5 class="mb-3 mt-4 pb-3 fs-17 fw-700" style="border-bottom: 1px dashed #e4e5eb;">{{translate('Vat & TAX')}}</h5>
                             <div class="w-100">
@@ -341,80 +346,145 @@
                                     </div>
                                 @endforeach
                             </div>
+                            @endif
                         </div>
                     </div>
 
-                    <!-- Files & Media -->
-                    <div class="tab-pane fade" id="files_and_media" role="tabpanel" aria-labelledby="files-and-media-tab">
+                   <!-- Files & Media -->
+                    <div class="tab-pane fade" id="files_and_media" role="tabpanel"
+                        aria-labelledby="files-and-media-tab">
                         <div class="bg-white p-3 p-sm-2rem">
                             <!-- Product Files & Media -->
-                            <h5 class="mb-3 pb-3 fs-17 fw-700" style="border-bottom: 1px dashed #e4e5eb;">{{translate('Product Files & Media')}}</h5>
+                            <h5 class="mb-3 pb-3 fs-17 fw-700" style="border-bottom: 1px dashed #e4e5eb;">
+                                {{ translate('Product Files & Media') }}</h5>
                             <div class="w-100">
                                 <!-- Gallery Images -->
-                                <div class="form-group row">
-                                    <label class="col-md-3 col-form-label" for="signinSrEmail">{{translate('Gallery Images')}}</label>
-                                    <div class="col-md-9">
-                                        <div class="input-group" data-toggle="aizuploader" data-type="image" data-multiple="true">
-                                            <div class="input-group-prepend">
-                                                <div class="input-group-text bg-soft-secondary font-weight-medium">{{ translate('Browse')}}</div>
-                                            </div>
-                                            <div class="form-control file-amount">{{ translate('Choose File') }}</div>
-                                            <input type="hidden" name="photos" class="selected-files">
-                                        </div>
-                                        <div class="file-preview box sm">
-                                        </div>
-                                        <small class="text-muted">{{translate('These images are visible in product details page gallery. Minimum dimensions required: 900px width X 900px height.')}}</small>
-                                    </div>
-                                </div>
-                                <!-- Thumbnail Image -->
-                                <div class="form-group row">
-                                    <label class="col-md-3 col-form-label" for="signinSrEmail">{{translate('Thumbnail Image')}}</label>
-                                    <div class="col-md-9">
-                                        <div class="input-group" data-toggle="aizuploader" data-type="image">
-                                            <div class="input-group-prepend">
-                                                <div class="input-group-text bg-soft-secondary font-weight-medium">{{ translate('Browse')}}</div>
-                                            </div>
-                                            <div class="form-control file-amount">{{ translate('Choose File') }}</div>
-                                            <input type="hidden" name="thumbnail_img" class="selected-files">
-                                        </div>
-                                        <div class="file-preview box sm">
-                                        </div>
-                                        <small class="text-muted">{{translate("This image is visible in all product box. Minimum dimensions required: 195px width X 195px height. Keep some blank space around main object of your image as we had to crop some edge in different devices to make it responsive.")}}</small>
-                                    </div>
-                                </div>
-                            </div>
-                            <!-- Video Provider -->
-                            <div class="form-group row">
-                                <label class="col-md-3 col-from-label">{{translate('Video Provider')}}</label>
-                                <div class="col-md-9">
-                                    <select class="form-control aiz-selectpicker" name="video_provider" id="video_provider">
-                                        <option value="youtube" @selected(old('video_provider') == 'youtube')>{{translate('Youtube')}}</option>
-                                        <option value="dailymotion" @selected(old('video_provider') == 'dailymotion')>{{translate('Dailymotion')}}</option>
-                                        <option value="vimeo" @selected(old('video_provider') == 'vimeo')>{{translate('Vimeo')}}</option>
-                                    </select>
-                                </div>
-                            </div>
-                            <!-- Video Link -->
-                            <div class="form-group row">
-                                <label class="col-md-3 col-from-label">{{translate('Video Link')}}</label>
-                                <div class="col-md-9">
-                                    <input type="text" class="form-control" name="video_link" value="{{ old('video_link') }}" placeholder="{{ translate('Video Link') }}">
-                                    <small class="text-muted">{{translate("Use proper link without extra parameter. Don't use short share link/embeded iframe code.")}}</small>
-                                </div>
-                            </div>
-                            <!-- PDF Specification -->
-                            <div class="form-group row">
-                                <label class="col-md-3 col-form-label" for="signinSrEmail">{{translate('PDF Specification')}}</label>
-                                <div class="col-md-9">
-                                    <div class="input-group" data-toggle="aizuploader" data-type="document">
+                                <div class="form-group mb-2">
+                                    <label class="col-form-label"
+                                        for="signinSrEmail">{{ translate('Gallery Images') }}</label>
+                                    <div class="input-group" data-toggle="aizuploader" data-type="image"
+                                        data-multiple="true">
                                         <div class="input-group-prepend">
-                                            <div class="input-group-text bg-soft-secondary font-weight-medium">{{ translate('Browse')}}</div>
+                                            <div class="input-group-text bg-soft-secondary font-weight-medium">
+                                                {{ translate('Browse') }}</div>
                                         </div>
                                         <div class="form-control file-amount">{{ translate('Choose File') }}</div>
-                                        <input type="hidden" name="pdf" class="selected-files">
+                                        <input type="hidden" name="photos" class="selected-files">
                                     </div>
                                     <div class="file-preview box sm">
                                     </div>
+                                    <small
+                                        class="text-muted">{{ translate('These images are visible in product details page gallery. Minimum dimensions required: 900px width X 900px height.') }}</small>
+                                </div>
+                                <!-- Thumbnail Image -->
+                                <div class="form-group mb-2">
+                                    <label class="col-form-label"
+                                        for="signinSrEmail">{{ translate('Thumbnail Image') }}</label>
+                                    <div class="input-group" data-toggle="aizuploader" data-type="image">
+                                        <div class="input-group-prepend">
+                                            <div class="input-group-text bg-soft-secondary font-weight-medium">
+                                                {{ translate('Browse') }}</div>
+                                        </div>
+                                        <div class="form-control file-amount">{{ translate('Choose File') }}</div>
+                                        <input type="hidden" name="thumbnail_img" class="selected-files">
+                                    </div>
+                                    <div class="file-preview box sm">
+                                    </div>
+                                    <small
+                                            class="text-muted">{{ translate("This image is visible in all product box. Minimum dimensions required: 195px width X 195px height. Keep some blank space around main object of your image as we had to crop some edge in different devices to make it responsive. If no thumbnail is uploaded, the product's first gallery image will be used as the thumbnail image.") }}</small>
+                                </div>
+
+
+                                <!--  Video Upload -->
+                                <div class="form-group mb-2">
+                                    <label class=" col-form-label"
+                                        for="signinSrEmail">{{ translate('Videos') }}</label>
+                                    <div class="input-group" data-toggle="aizuploader" data-type="video"  data-multiple="true">
+                                        <div class="input-group-prepend">
+                                            <div class="input-group-text bg-soft-secondary font-weight-medium">
+                                                {{ translate('Browse') }}</div>
+                                        </div>
+                                        <div class="form-control file-amount">{{ translate('Choose File') }}</div>
+                                        <input type="hidden" name="short_video" class="selected-files" >
+                                    </div>
+                                    <div class="file-preview box sm">
+                                    </div>
+                                    <small
+                                        class="text-muted">{{ translate('Try to upload videos under 30 seconds for better performance.') }}</small>
+                                </div>
+
+                                <!-- short_video_thumbnail Upload -->
+                                <div class="form-group mb-2">
+                                    <label class="col-form-label"
+                                        for="signinSrEmail">{{ translate('Video Thumbnails') }}</label>
+                                    <div class="input-group" data-toggle="aizuploader" data-type="image" data-multiple="true" >
+                                        <div class="input-group-prepend">
+                                            <div class="input-group-text bg-soft-secondary font-weight-medium">
+                                                {{ translate('Browse') }}</div>
+                                        </div>
+                                        <div class="form-control file-amount">{{ translate('Choose File') }}</div>
+                                        <input type="hidden" name="short_video_thumbnail"
+                                            class="selected-files" >
+                                    </div>
+                                    <div class="file-preview box sm">
+                                    </div>
+                                    <small class="text-muted">
+                                    {{ translate('Add thumbnails in the same order as your videos. If you upload only one image, it will be used for all videos.') }}
+                                    </small>
+                                </div>
+                            </div>
+
+                                <!-- Youtube Video Link -->
+                            <div class="form-group mb-2">
+                                <label class="col-from-label">{{ translate('Youtube video / shorts link') }}</label>
+                                <div class="video-provider-link">
+                                    {{-- @if (!$product->video_link) --}}
+                                    @if (empty($product->video_link))
+                                        <div class="row mb-2">
+                                            <div class="col-md-12">
+                                                <input type="text" class="form-control" name="video_link[]"
+                                                    value="" placeholder="{{ translate('Youtube video / shorts url') }}">
+                                                <small
+                                                    class="text-muted">{{ translate("Use proper link without extra parameter. Don't use short share link/embeded iframe code.") }}</small>
+                                            </div>
+                                            
+                                        </div>
+                                    @endif
+                                </div>
+                                <div class="form-group row d-flex justify-content-end " style="width: 100%">
+
+                                    <button type="button" class="btn btn-block border border-dashed hov-bg-soft-secondary fs-14 rounded-0 d-flex align-items-center justify-content-center ml-3 mt-3"
+                                        data-toggle="add-more"
+                                        data-content='<div class="row mb-2">
+                                                <div class="col">
+                                                    <input type="text" class="form-control" name="video_link[]" value="" placeholder="{{ translate('Youtube video or short link') }}">
+                                                    <small class="text-muted">{{ translate("Use proper link without extra parameter. Don't use short share link/embeded iframe code.") }}</small>
+                                                </div>
+                                                <div class="col-auto d-flex justify-content-end">
+                                                        <button type="button" class="my-1 pt-2 btn btn-icon btn-circle btn-sm btn-soft-danger" data-toggle="remove-parent" data-parent=".row">
+                                                            <i class="las la-times"></i>
+                                                        </button>
+                                                </div>
+                                            </div>'
+                                        data-target=".video-provider-link">
+                                        <i class="las la-plus mr-2"></i>
+                                        {{ translate('Add Another') }} 
+                                    </button>
+                                </div>
+                            </div>
+                            <!-- PDF Specification -->
+                            <div class="form-group mb-2">
+                                <label class="col-form-label"
+                                    for="signinSrEmail">{{ translate('PDF Specification') }}</label>
+                                <div class="input-group" data-toggle="aizuploader" data-type="document">
+                                    <div class="input-group-prepend">
+                                        <div class="input-group-text bg-soft-secondary font-weight-medium">
+                                            {{ translate('Browse') }}</div>
+                                    </div>
+                                    <div class="form-control file-amount">{{ translate('Choose File') }}</div>
+                                    <input type="hidden" name="pdf" class="selected-files">
+                                </div>
+                                <div class="file-preview box sm">
                                 </div>
                             </div>
                         </div>
@@ -450,7 +520,7 @@
                                     <div class="col-md-3">
                                         <input type="text" class="form-control" value="{{translate('Attributes')}}" disabled>
                                     </div>
-                                    <div class="col-md-8">
+                                    <div class="col-md-9">
                                         <select name="choice_attributes[]" id="choice_attributes" class="form-control aiz-selectpicker" data-selected-text-format="count" data-live-search="true" multiple data-placeholder="{{ translate('Choose Attributes') }}">
                                             @foreach (\App\Models\Attribute::all() as $key => $attribute)
                                             <option value="{{ $attribute->id }}">{{ $attribute->getTranslation('name') }}</option>
@@ -469,82 +539,68 @@
                                 </div>
 
                                 <!-- Unit price -->
-                                <div class="form-group row">
-                                    <label class="col-md-3 col-from-label">{{translate('Unit price')}} <span class="text-danger">*</span></label>
-                                    <div class="col-md-6">
-                                        <input type="number" lang="en" min="0" value="0" step="0.01" placeholder="{{ translate('Unit price') }}" name="unit_price" class="form-control @error('unit_price') is-invalid @enderror">
-                                    </div>
+                                <div class="form-group mb-2">
+                                    <label class="col-from-label">{{translate('Unit price')}} <span class="text-danger">*</span></label>
+                                    <input type="number" lang="en" min="0" value="0" step="0.01" placeholder="{{ translate('Unit price') }}" name="unit_price" class="form-control @error('unit_price') is-invalid @enderror">
                                 </div>
                                 <!-- Discount Date Range -->
-                                <div class="form-group row">
-                                    <label class="col-sm-3 control-label" for="start_date">{{translate('Discount Date Range')}}</label>
-                                    <div class="col-sm-9">
-                                      <input type="text" class="form-control aiz-date-range" name="date_range" placeholder="{{translate('Select Date')}}" data-time-picker="true" data-format="DD-MM-Y HH:mm:ss" data-separator=" to " autocomplete="off">
-                                    </div>
+                                <div class="form-group mb-2">
+                                    <label class="control-label" for="start_date">{{translate('Discount Date Range')}}</label>
+                                    <input type="text" class="form-control aiz-date-range" name="date_range" placeholder="{{translate('Select Date')}}" data-time-picker="true" data-past-disable="true"  data-format="DD-MM-Y HH:mm:ss" data-separator=" to " autocomplete="off">
                                 </div>
                                 <!-- Discount -->
-                                <div class="form-group row">
-                                    <label class="col-md-3 col-from-label">{{translate('Discount')}} <span class="text-danger">*</span></label>
-                                    <div class="col-md-6">
-                                        <input type="number" lang="en" min="0" value="0" step="0.01" placeholder="{{ translate('Discount') }}" name="discount" class="form-control @error('discount') is-invalid @enderror">
-                                    </div>
-                                    <div class="col-md-3">
-                                        <select class="form-control aiz-selectpicker" name="discount_type">
-                                            <option value="amount" @selected(old('discount_type') == 'amount')>{{translate('Flat')}}</option>
-                                            <option value="percent" @selected(old('discount_type') == 'percent')>{{translate('Percent')}}</option>
-                                        </select>
+                                <div class="form-group mb-2">
+                                    <label class="col-from-label">{{translate('Discount')}} <span class="text-danger">*</span></label>
+                                    <div class="row">
+                                        <div class="col-md-9">
+                                            <input type="number" lang="en" value="0" step="0.01" placeholder="{{ translate('Discount')}}" name="discount" class="form-control @error('discount') is-invalid @enderror">
+                                        </div>
+                                        <div class="col-md-3">
+                                            <select class="form-control aiz-selectpicker" name="discount_type">
+                                                <option value="amount" @selected(old('discount_type') == 'amount')>{{translate('Flat')}}</option>
+                                                <option value="percent" @selected(old('discount_type') == 'percent')>{{translate('Percent')}}</option>
+                                            </select>
+                                        </div>
                                     </div>
                                 </div>
 
                                 @if(addon_is_activated('club_point'))
                                     <!-- club point -->
-                                    <div class="form-group row">
-                                        <label class="col-md-3 col-from-label">
+                                    <div class="form-group mb-2">
+                                        <label class=" col-from-label">
                                             {{translate('Set Point')}}
                                         </label>
-                                        <div class="col-md-6">
-                                            <input type="number" lang="en" min="0" value="0" step="1" placeholder="{{ translate('1') }}" name="earn_point" class="form-control">
-                                        </div>
+                                        <input type="number" lang="en" min="0" value="0" step="1" integer-only placeholder="{{ translate('1') }}" name="earn_point" class="form-control">
                                     </div>
                                 @endif
 
                                 <div id="show-hide-div">
                                     <!-- Quantity -->
-                                    <div class="form-group row">
-                                        <label class="col-md-3 col-from-label">{{translate('Quantity')}} <span class="text-danger">*</span></label>
-                                        <div class="col-md-6">
-                                            <input type="number" lang="en" min="0" value="0" step="1" placeholder="{{ translate('Quantity') }}" name="current_stock" class="form-control">
-                                        </div>
+                                    <div class="form-group mb-2">
+                                        <label class="col-from-label">{{translate('Quantity')}} <span class="text-danger">*</span></label>
+                                        <input type="number" lang="en"  value="0" step="1" integer-only placeholder="{{ translate('Quantity') }}" name="current_stock" class="form-control">
                                     </div>
                                     <!-- SKU -->
-                                    <div class="form-group row">
-                                        <label class="col-md-3 col-from-label">
-                                            {{translate('SKU')}}
-                                        </label>
-                                        <div class="col-md-6">
-                                            <input type="text" placeholder="{{ translate('SKU') }}" name="sku" value="{{ old('sku') }}" class="form-control">
-                                        </div>
+                                    <div class="form-group">
+                                        <label class="col-from-label">{{translate('SKU')}}</label>
+                                        <input type="text" placeholder="{{ translate('SKU') }}" name="sku" value="{{ old('sku') }}" class="form-control">
                                     </div>
                                 </div>
                                 <!-- External link -->
-                                <div class="form-group row">
-                                    <label class="col-md-3 col-from-label">
+                                <div class="form-group mb-2">
+                                    <label class="col-from-label">
                                         {{translate('External link')}}
                                     </label>
-                                    <div class="col-md-9">
-                                        <input type="text" placeholder="{{ translate('External link') }}" value="{{ old('external_link') }}" name="external_link" class="form-control">
-                                        <small class="text-muted">{{translate('Leave it blank if you do not use external site link')}}</small>
-                                    </div>
+                                    <input type="text" placeholder="{{ translate('External link') }}" value="{{ old('external_link') }}" name="external_link" class="form-control">
+                                    <small class="text-muted">{{translate('Leave it blank if you do not use external site link')}}</small>
                                 </div>
                                 <!-- External link button text -->
-                                <div class="form-group row">
-                                    <label class="col-md-3 col-from-label">
+                                <div class="form-group mb-2">
+                                    <label class="col-from-label">
                                         {{translate('External link button text')}}
                                     </label>
-                                    <div class="col-md-9">
-                                        <input type="text" placeholder="{{ translate('External link button text') }}" name="external_link_btn" value="{{ old('external_link_btn') }}" class="form-control">
-                                        <small class="text-muted">{{translate('Leave it blank if you do not use external site link')}}</small>
-                                    </div>
+                                    <input type="text" placeholder="{{ translate('External link button text') }}" name="external_link_btn" value="{{ old('external_link_btn') }}" class="form-control">
+                                    <small class="text-muted">{{translate('Leave it blank if you do not use external site link')}}</small>
                                 </div>
                                 <br>
                                 <!-- sku combination -->
@@ -556,13 +612,11 @@
                             <!-- Low Stock Quantity -->
                             <h5 class="mb-3 pb-3 fs-17 fw-700" style="border-bottom: 1px dashed #e4e5eb;">{{translate('Low Stock Quantity Warning')}}</h5>
                             <div class="w-100 mb-3">
-                                <div class="form-group row">
-                                    <label class="col-md-3 col-from-label">
+                                <div class="form-group mb-2">
+                                    <label class="col-from-label">
                                         {{translate('Quantity')}}
                                     </label>
-                                    <div class="col-md-9">
-                                        <input type="number" name="low_stock_quantity" value="1" min="0" step="1" class="form-control">
-                                    </div>
+                                    <input type="number" name="low_stock_quantity" value="1" min="0" step="1" integer-only class="form-control">
                                 </div>
                             </div>
 
@@ -610,32 +664,32 @@
                             <h5 class="mb-3 pb-3 fs-17 fw-700" style="border-bottom: 1px dashed #e4e5eb;">{{translate('SEO Meta Tags')}}</h5>
                             <div class="w-100">
                                 <!-- Meta Title -->
-                                <div class="form-group row">
-                                    <label class="col-md-3 col-from-label">{{translate('Meta Title')}}</label>
-                                    <div class="col-md-9">
-                                        <input type="text" class="form-control" name="meta_title" value="{{ old('meta_title') }}" placeholder="{{ translate('Meta Title') }}">
-                                    </div>
+                                <div class="form-group mb-2">
+                                    <label class="col-from-label">{{translate('Meta Title')}}</label>
+                                    <input type="text" class="form-control" name="meta_title" value="{{ old('meta_title') }}" placeholder="{{ translate('Meta Title') }}">
                                 </div>
                                 <!-- Description -->
-                                <div class="form-group row">
-                                    <label class="col-md-3 col-from-label">{{translate('Description')}}</label>
-                                    <div class="col-md-9">
-                                        <textarea name="meta_description" rows="8" class="form-control">{{ old('meta_description') }}</textarea>
-                                    </div>
+                                <div class="form-group mb-2">
+                                    <label class="col-from-label">{{translate('Description')}}</label>
+                                    <textarea name="meta_description" rows="8" class="form-control">{{ old('meta_description') }}</textarea>
                                 </div>
+                                <!--Meta Keywords -->
+                                <div class="form-group mb-2">
+                                    <label class="col-from-label">{{ translate('Keywords') }}</label>
+                                    <textarea class="resize-off form-control" name="meta_keywords" placeholder="{{translate('Keyword, Keyword')}}"></textarea>
+                                    <small class="text-muted">{{ translate('Separate with coma') }}</small>                                   
+                                </div> 
                                 <!--Meta Image -->
-                                <div class="form-group row">
-                                    <label class="col-md-3 col-form-label" for="signinSrEmail">{{ translate('Meta Image') }}</label>
-                                    <div class="col-md-9">
-                                        <div class="input-group" data-toggle="aizuploader" data-type="image">
-                                            <div class="input-group-prepend">
-                                                <div class="input-group-text bg-soft-secondary font-weight-medium">{{ translate('Browse')}}</div>
-                                            </div>
-                                            <div class="form-control file-amount">{{ translate('Choose File') }}</div>
-                                            <input type="hidden" name="meta_img" class="selected-files">
+                                <div class="form-group mb-2">
+                                    <label class="col-form-label" for="signinSrEmail">{{ translate('Meta Image') }}</label>
+                                    <div class="input-group" data-toggle="aizuploader" data-type="image">
+                                        <div class="input-group-prepend">
+                                            <div class="input-group-text bg-soft-secondary font-weight-medium">{{ translate('Browse')}}</div>
                                         </div>
-                                        <div class="file-preview box sm">
-                                        </div>
+                                        <div class="form-control file-amount">{{ translate('Choose File') }}</div>
+                                        <input type="hidden" name="meta_img" class="selected-files">
+                                    </div>
+                                    <div class="file-preview box sm">
                                     </div>
                                 </div>
                             </div>
@@ -691,11 +745,9 @@
                                 </div>
                                 <!-- Shipping cost -->
                                 <div class="flat_rate_shipping_div" style="display: none">
-                                    <div class="form-group row">
-                                        <label class="col-md-3 col-from-label">{{translate('Shipping cost')}}</label>
-                                        <div class="col-md-9">
-                                            <input type="number" lang="en" min="0" value="0" step="0.01" placeholder="{{ translate('Shipping cost') }}" name="flat_shipping_cost" class="form-control">
-                                        </div>
+                                    <div class="form-group mb-2">
+                                        <label class="col-from-label">{{translate('Shipping cost')}}</label>
+                                        <input type="number" lang="en" min="0" value="0" step="0.01" placeholder="{{ translate('Shipping cost') }}" name="flat_shipping_cost" class="form-control">
                                     </div>
                                 </div>
                                 <!-- Is Product Quantity Mulitiply -->
@@ -711,8 +763,8 @@
                                 @else
                                 <p>
                                     {{ translate('Product wise shipping cost is disable. Shipping cost is configured from here') }}
-                                    <a href="{{route('shipping_configuration.index')}}" class="aiz-side-nav-link {{ areActiveRoutes(['shipping_configuration.index','shipping_configuration.edit','shipping_configuration.update'])}}">
-                                        <span class="aiz-side-nav-text">{{translate('Shipping Configuration')}}</span>
+                                    <a href="{{route('shipping_configuration.shipping_method')}}" class="aiz-side-nav-link {{ areActiveRoutes(['shipping_configuration.shipping_method'])}}">
+                                        <span class="aiz-side-nav-text">{{translate('Shipping Method')}}</span>
                                     </a>
                                 </p>
                                 @endif
@@ -721,14 +773,12 @@
                             <!-- Estimate Shipping Time -->
                             <h5 class="mb-3 mt-4 pb-3 fs-17 fw-700" style="border-bottom: 1px dashed #e4e5eb;">{{translate('Estimate Shipping Time')}}</h5>
                             <div class="w-100">
-                                <div class="form-group row">
-                                    <label class="col-md-3 col-from-label">{{translate('Shipping Days')}}</label>
-                                    <div class="col-md-9">
+                                <div class="form-group mb-2">
+                                    <label class="col-from-label">{{translate('Shipping Days')}}</label>
                                         <div class="input-group">
-                                            <input type="number" class="form-control" name="est_shipping_days" value="{{ old('est_shipping_days') }}" min="1" step="1" placeholder="{{translate('Shipping Days')}}">
-                                            <div class="input-group-prepend">
-                                                <span class="input-group-text" id="inputGroupPrepend">{{translate('Days')}}</span>
-                                            </div>
+                                        <input type="number" class="form-control" name="est_shipping_days" value="{{ old('est_shipping_days') }}" min="1" step="1" integer-only placeholder="{{translate('Shipping Days')}}">
+                                        <div class="input-group-prepend">
+                                            <span class="input-group-text" id="inputGroupPrepend">{{translate('Days')}}</span>
                                         </div>
                                     </div>
                                 </div>
@@ -841,10 +891,10 @@
 
                     <!-- Save Button -->
                     <div class="mt-4 text-right">
-                        <button type="submit" name="button" value="unpublish" class="mx-2 btn btn-light w-230px btn-md rounded-2 fs-14 fw-700 shadow-secondary border-soft-secondary action-btn">{{ translate('Save & Unpublish') }}</button>
-                        <button type="submit" name="button" value="publish" class="mx-2 btn btn-success w-230px btn-md rounded-2 fs-14 fw-700 shadow-success action-btn">{{ translate('Save & Publish') }}</button>
+                        <button type="submit" name="button" value="unpublish" data-action="unpublish" class="mx-2 btn btn-light w-230px btn-md rounded-2 fs-14 fw-700 shadow-secondary border-soft-secondary action-btn">{{ translate('Save & Unpublish') }}</button>
+                        <button type="submit" name="button" value="publish" data-action="publish" class="mx-2 btn btn-success w-230px btn-md rounded-2 fs-14 fw-700 shadow-success action-btn">{{ translate('Save & Publish') }}</button>
+                        <button type="button" name="button" value="draft"  class="mx-2 btn btn-secondary w-230px btn-md rounded-2 fs-14 fw-700 shadow-secondary action-btn" id="saveDraftBtn">{{ translate('Save as Draft') }}</button>
                     </div>
-
                 </div>
             </form>
         </div>
@@ -859,6 +909,12 @@
 
     {{-- Note Modal --}}
     @include('modals.note_modal')
+
+    <!-- Single Product Select Modal -->
+    @include('modals.products_select_modal')
+
+    <!-- loading Modal -->
+    @include('modals.loading_modal')
 @endsection
 
 @section('script')
@@ -884,7 +940,8 @@
         }
 
         if(main_id){
-            $('#treeview input:radio[value='+main_id+']').prop('checked',true);
+            $('#treeview input:radio[value='+main_id+']').prop('checked',true).trigger('change');
+        $('#treeview input:radio[value=' + main_id + ']').next('ul').css("display", "block");
         }
 
         $('#treeview input:checkbox').on("click", function (){
@@ -932,8 +989,8 @@
                         <input type="hidden" name="choice_no[]" value="'+i+'">\
                         <input type="text" class="form-control" name="choice[]" value="'+name+'" placeholder="{{ translate('Choice Title') }}" readonly>\
                     </div>\
-                    <div class="col-md-8">\
-                        <select class="form-control aiz-selectpicker attribute_choice" data-live-search="true" name="choice_options_'+ i +'[]" data-selected-text-format="count" multiple>\
+                    <div class="col-md-9">\
+                        <select class="form-control aiz-selectpicker attribute_choice" data-live-search="true" name="choice_options_'+ i +'[]" data-selected-text-format="count" multiple required>\
                             '+obj+'\
                         </select>\
                     </div>\
@@ -986,16 +1043,18 @@
         $.ajax({
            type:"POST",
            url:'{{ route('products.sku_combination') }}',
-           data:$('#choice_form').serialize(),
+           data:$('#aizSubmitForm').serialize(),
            success: function(data) {
                 $('#sku_combination').html(data);
                 AIZ.uploader.previewGenerate();
                 AIZ.plugins.sectionFooTable('#sku_combination');
                 if (data.trim().length > 1) {
                    $('#show-hide-div').hide();
+                   $('input[name="current_stock"]').removeAttr('integer-only');
                 }
                 else {
                     $('#show-hide-div').show();
+                    $('input[name="current_stock"]').attr('integer-only', 'true');
                 }
            }
        });
@@ -1068,13 +1127,66 @@
     }
 
     // Refundable
-    function isRefundable(){
-        if($('input[name="refundable"]').is(':checked')) {
-            $('.refund-block').removeClass('d-none');
+    function isRefundable() {
+        const refundType = "{{ get_setting('refund_type') }}";
+        const $refundable = $('input[name="refundable"]');
+        const $mainCategoryRadio = $('input[name="category_id"]:checked');
+        const $note = $('#refundable-note');
+
+        $refundable.off('change.isRefundableLock');
+
+        if (refundType !== 'category_based_refund') {
+            $refundable.prop('disabled', false);
+            $note.addClass('d-none');
+            $('.refund-block').toggleClass('d-none', !$refundable.is(':checked'));
+            return;
         }
-        else {
+
+        if (!$mainCategoryRadio.length) {
+            $refundable.prop('checked', false);
+            $refundable.prop('disabled', true);
             $('.refund-block').addClass('d-none');
+            $note.text('{{ translate("Your refund type is category based. At first select the main category.") }}')
+                .removeClass('d-none');
+            return;
         }
+
+        const categoryId = $mainCategoryRadio.val();
+        $.ajax({
+            type: 'POST',
+            url: '{{ route("admin.products.check_refundable_category") }}',
+            data: {
+                _token: '{{ csrf_token() }}',
+                category_id: categoryId
+            },
+            success: function (response) {
+                if (response.status === 'success' && response.is_refundable) {
+                    $refundable.prop('disabled', false);
+                    $note.text('{{ translate("This product allows refunds.") }}')
+                        .removeClass('d-none');
+                    $refundable.on('change.isRefundableLock', function () {
+                        if (!$refundable.is(':checked')) {
+                            $('.refund-block').addClass('d-none');
+                        } else {
+                            $('.refund-block').removeClass('d-none');
+                        }
+                    });
+                } else {
+                    $refundable.prop('checked', false);
+                    $refundable.prop('disabled', true);
+                    $('.refund-block').addClass('d-none');
+                    $note.text('{{ translate("Selected main category has no refund. Select a refundable category.") }}')
+                        .removeClass('d-none');
+                }
+            },
+            error: function () {
+                $refundable.prop('checked', false);
+                $refundable.prop('disabled', true);
+                $('.refund-block').addClass('d-none');
+                $note.text('{{ translate("Could not verify category refund status.") }}')
+                    .removeClass('d-none');
+            }
+        });
     }
     
     function noteModal(noteType){
@@ -1112,11 +1224,128 @@
 
 @include('partials.product.product_temp_data')
 
-<script type="text/javascript">
-    $(document).ready(function() {
+ <script type="text/javascript">
+    $(document).ready(function () {
         warrantySelection();
         isRefundable();
+
+        $(document).on('change', 'input[name="category_id"]', function () {
+            isRefundable();
+        });
+
+        $('input[name="refundable"]').on('change', function () {
+            if (!$('input[name="refundable"]').prop('disabled')) {
+                $('.refund-block').toggleClass('d-none', !$(this).is(':checked'));
+            }
+        });
     });
+
+    function showProductSelectModal() {
+        $('#products_select_modal').modal('show', {backdrop: 'static'});
+        $('#products_select_modal #modal-title-text').text("{{ translate('Copy Products') }}");
+        $('#products_select_modal .action-btn').text("{{ translate('Copy') }}").attr('onclick', 'duplicateProduct()');
+    }
+
+    function filterProductByCategory() {
+        var searchKey = $('input[name=search_product_keyword]').val();
+        var selectedCategory = $('select[name=selected_Products_category]').val();
+        $.post('{{ route('products.search') }}', { _token: AIZ.data.csrf, product_id: null, search_key:searchKey, category:selectedCategory, product_type:"physical",single_select: 1 }, function(data){
+            $('#products-list').html(data);
+            AIZ.plugins.sectionFooTable('#products-list');
+        });
+    }
+
+    var duplicateProductUrl = "{{ route('products.duplicate', ':id') }}";
+
+   // innitially assign pid null
+    let draftProductId = null;
+
+   $(document).ready(function() {
+        function saveDraft() {
+            let form = $('#aizSubmitForm')[0];
+            let formData = new FormData(form);
+
+            // Update Draft
+            if (draftProductId) {
+                formData.append('id', draftProductId);
+            }
+            let draftBtn = $('#saveDraftBtn');
+            let draftBtnText = draftBtn.length ? draftBtn.text() : '';
+            if (draftBtn.length) {
+                draftBtn.prop('disabled', true).html('<i class="las la-spinner la-spin mr-2"></i> '+AIZ.local.saving_as_draft);
+            }
+
+            $.ajax({
+                url: "{{ route('products.store_as_draft') }}",
+                type: 'POST',
+                data: formData,
+                processData: false,
+                contentType: false,
+                dataType: 'json',
+                success: function(response) {
+                    if (response.success) {
+                        draftProductId = response.product_id;
+
+                        // Update form action for future edits
+                        $('#aizSubmitForm').attr('action', "{{ url('admin/products/update') }}/" + draftProductId);
+
+                        if ($('#aizSubmitForm input[name="_method"]').length === 0) {
+                            $('#aizSubmitForm').append('<input type="hidden" name="_method" value="POST">');
+                        }
+
+                        if (draftBtn.length) {
+                         draftBtn.prop('disabled', false).html('<i class="las la-check-circle mr-2"></i>'+draftBtnText);
+                        }
+                        AIZ.plugins.notify('success',  `${response.message}`);
+                        savedClearTempdata();
+                    } else {
+                        if (draftBtn.length) {
+                            draftBtn.prop('disabled', false).html('<i class="las la-exclamation-circle text-danger mr-2"></i>'+draftBtnText);
+                        }
+                    }
+                },
+                error: function(xhr) {
+                    if (xhr.status === 422) {
+                        let errors = xhr.responseJSON.errors;
+                        Object.values(errors).forEach(function(fieldErrors) {
+                            // fieldErrors.forEach(function(error) {
+                            //     AIZ.plugins.notify('danger', error);
+                            // });
+                        if (draftBtn.length) {
+                            draftBtn.prop('disabled', false).html('<i class="las la-exclamation-circle text-danger mr-2"></i>'+draftBtnText);
+                        }
+                        });
+                    } else {
+                        if (draftBtn.length) {
+                            draftBtn.prop('disabled', false).html('<i class="las la-exclamation-circle text-danger mr-2"></i>'+draftBtnText);
+                        }
+                         //AIZ.plugins.notify('danger', AIZ.local.error_occured_while_processing);
+                    }
+                }
+            });
+        }
+
+        // Auto-save on tab click
+        $('a[data-toggle="tab"]').on('show.bs.tab', function() {
+            var productName = $('input[name="name"]').val();
+            if (productName && productName.trim() !== '') {
+                saveDraft();
+            } 
+        });
+
+        $('#saveDraftBtn').on('click', function(e) {
+            e.preventDefault();
+            saveDraft();
+        });
+
+    });
+
+
+    
+
+
 </script>
+
+
 
 @endsection

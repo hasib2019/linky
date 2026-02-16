@@ -29,14 +29,14 @@
                                 <!-- Login form -->
                                 <div class="pt-3">
                                     <div class="">
-                                        <form class="form-default loginForm" role="form" action="{{ route('login') }}" method="POST">
+                                        <form class="form-default loginForm" id="user-login-form"role="form" action="{{ route('login') }}" method="POST">
                                             @csrf
                                             
                                             <!-- Email or Phone -->
                                             @if (addon_is_activated('otp_system'))
                                                 <div class="form-group phone-form-group mb-1">
                                                     <label for="phone" class="fs-12 fw-700 text-soft-dark">{{  translate('Phone') }}</label>
-                                                    <input type="tel" id="phone-code" class="form-control{{ $errors->has('phone') ? ' is-invalid' : '' }} rounded-0" value="{{ old('phone') }}" placeholder="" name="phone" autocomplete="off">
+                                                    <input type="tel" phone-number id="phone-code" class="form-control{{ $errors->has('phone') ? ' is-invalid' : '' }} rounded-0" value="{{ old('phone') }}" placeholder="" name="phone" autocomplete="off">
                                                 </div>
 
                                                 <input type="hidden" name="country_code" value="">
@@ -75,6 +75,16 @@
                                                         <i class="password-toggle las la-2x la-eye"></i>
                                                     </div>
                                                 </div>
+
+                                                <!-- Recaptcha -->
+                                                @if(get_setting('google_recaptcha') == 1 && get_setting('recaptcha_customer_login') == 1)
+                                                    
+                                                    @if ($errors->has('g-recaptcha-response'))
+                                                        <span class="border invalid-feedback rounded p-2 mb-3 bg-danger text-white" role="alert" style="display: block;">
+                                                            <strong>{{ $errors->first('g-recaptcha-response') }}</strong>
+                                                        </span>
+                                                    @endif
+                                                @endif
 
                                                 <div class="row mb-2">
                                                     <!-- Remember Me -->
@@ -130,17 +140,20 @@
                                                         </a>
                                                     </li>
                                                 @endif
+                                                @if (get_setting('twitter_login') == 1)
+                                                    <li class="list-inline-item">
+                                                        <a href="{{ route('social.login', ['provider' => 'twitter']) }}" class="x-twitter">
+                                                            <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" fill="#ffffff" viewBox="0 0 16 16" class="mb-2 pb-1">
+                                                                <path d="M12.6.75h2.454l-5.36 6.142L16 15.25h-4.937l-3.867-5.07-4.425 5.07H.316l5.733-6.57L0 
+                                                                .75h5.063l3.495 4.633L12.601.75Zm-.86 13.028h1.36L4.323 2.145H2.865z"/>
+                                                            </svg>
+                                                        </a>
+                                                    </li>
+                                                @endif
                                                 @if(get_setting('google_login') == 1)
                                                     <li class="list-inline-item">
                                                         <a href="{{ route('social.login', ['provider' => 'google']) }}" class="google">
                                                             <i class="lab la-google"></i>
-                                                        </a>
-                                                    </li>
-                                                @endif
-                                                @if (get_setting('twitter_login') == 1)
-                                                    <li class="list-inline-item">
-                                                        <a href="{{ route('social.login', ['provider' => 'twitter']) }}" class="twitter">
-                                                            <i class="lab la-twitter"></i>
                                                         </a>
                                                     </li>
                                                 @endif
@@ -160,8 +173,7 @@
                                     <!-- Register Now -->
                                     <p class="fs-12 text-gray mb-0">
                                         {{ translate('Dont have an account?')}}
-                                        <a href="{{ route(get_setting('customer_registration_verify') === '1' ? 'registration.verification' : 'user.registration') }}" class="ml-2 fs-14 fw-700 animate-underline-primary">{{ translate('Register Now')}}</a>
-                                        {{-- <a href="{{ route('user.registration') }}" class="ml-2 fs-14 fw-700 animate-underline-primary">{{ translate('Register Now')}}</a> --}}
+                                        <a href="{{ route('user.registration') }}" class="ml-2 fs-14 fw-700 animate-underline-primary">{{ translate('Register Now')}}</a>
                                     </p>
                                 </div>
                             </div>
@@ -187,4 +199,31 @@
             $('#password').val('123456');
         }
     </script>
+
+    @if(get_setting('google_recaptcha') == 1 && get_setting('recaptcha_customer_login') == 1)
+        <script src="https://www.google.com/recaptcha/api.js?render={{ env('CAPTCHA_KEY') }}"></script>
+        
+        <script type="text/javascript">
+                document.getElementById('user-login-form').addEventListener('submit', function(e) {
+                    e.preventDefault();
+                    grecaptcha.ready(function() {
+                        grecaptcha.execute(`{{ env('CAPTCHA_KEY') }}`, {action: 'register'}).then(function(token) {
+                            var input = document.createElement('input');
+                            input.setAttribute('type', 'hidden');
+                            input.setAttribute('name', 'g-recaptcha-response');
+                            input.setAttribute('value', token);
+                            e.target.appendChild(input);
+
+                            var actionInput = document.createElement('input');
+                            actionInput.setAttribute('type', 'hidden');
+                            actionInput.setAttribute('name', 'recaptcha_action');
+                            actionInput.setAttribute('value', 'recaptcha_customer_login');
+                            e.target.appendChild(actionInput);
+                            
+                            e.target.submit();
+                        });
+                    });
+                });
+        </script>
+    @endif
 @endsection

@@ -129,6 +129,13 @@
                             </div>
                         </div>
                         <div class="form-group row">
+                            <label class="col-md-3 col-from-label">{{ translate('Keywords') }}</label>
+                            <div class="col-md-8">
+                                <textarea class="resize-off form-control" name="meta_keywords" placeholder="{{translate('Keyword, Keyword')}}"></textarea>
+                                <small class="text-muted">{{ translate('Separate with coma') }}</small>                                   
+                            </div>
+                        </div>
+                        <div class="form-group row">
                             <label class="col-lg-3 col-form-label" for="signinSrEmail">{{ translate('Meta Image') }}</label>
                             <div class="col-lg-9">
                                 <div class="input-group" data-toggle="aizuploader" data-type="image" data-multiple="false">
@@ -156,6 +163,22 @@
                                 <input type="number" lang="en" min="0" value="0" step="0.01" placeholder="{{translate('Unit price')}}" name="unit_price" class="form-control" required>
                             </div>
                         </div>
+                        @if (addon_is_activated('gst_system'))
+                        <div class="w-100">
+                            <div class="form-group mb-2 row">
+                                <label class="col-lg-2 col-from-label">{{translate('HSN Code')}}</label>
+                                <div class="col-lg-8">
+                                    <input type="text" lang="en"  placeholder="{{ translate('HSN Code') }}" name="hsn_code" class="form-control">
+                                </div>
+                            </div>
+                            <div class="form-groupmb-2 row">
+                                    <label class="col-lg-2 col-from-label">{{translate('GST Rate (%)')}}</label>
+                                    <div class="col-lg-8">
+                                        <input type="number" lang="en" min="0"  value="0" step="0.01" placeholder="{{ translate('GST Rate') }}" name="gst_rate" class="form-control">
+                                    </div>
+                            </div>
+                        </div>
+                        @else
                         @foreach (\App\Models\Tax::where('tax_status', 1)->get() as $tax)
                         <div class="form-group row">
                             <label class="col-lg-3 col-from-label">{{ $tax->name }}</label>
@@ -171,6 +194,7 @@
                             </div>
                         </div>
                         @endforeach
+                        @endif
                         <div class="form-group row">
                             <label class="col-md-3 control-label"
                                 for="start_date">{{ translate('Discount Date Range') }} </label>

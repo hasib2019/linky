@@ -6,6 +6,8 @@ use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use App\Models\BlogCategory;
 use App\Models\Blog;
+use Illuminate\Support\Str;
+use Stichoza\GoogleTranslate\GoogleTranslate;
 
 class BlogController extends Controller
 {
@@ -143,7 +145,7 @@ class BlogController extends Controller
     public function change_status(Request $request)
     {
         $blog = Blog::find($request->id);
-        $blog->status = $request->status;
+        $blog->{$request->field} = $request->status;
 
         $blog->save();
         return 1;
@@ -206,5 +208,16 @@ class BlogController extends Controller
         $blog = Blog::where('slug', $slug)->first();
         $recent_blogs = Blog::where('status', 1)->orderBy('created_at', 'desc')->limit(9)->get();
         return view("frontend.blog.details", compact('blog', 'recent_blogs'));
+    }
+
+    public function generateSlug(Request $request)
+    {
+        $translator = new GoogleTranslate('en'); // Target language
+        $translated = $translator->translate($request->title); // auto detects source
+
+        // Slugify the translated string
+        $slug = Str::slug($translated);
+
+        return response()->json(['slug' => $slug]);
     }
 }

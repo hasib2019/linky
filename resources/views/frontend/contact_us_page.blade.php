@@ -1,4 +1,20 @@
-@extends('frontend.layouts.app')
+@php
+    $layout = 'frontend.layouts.app';
+
+    if (addon_is_activated('portfolio_system')) {
+        $user = auth()->user();
+
+        if (
+            !$user ||
+            $user->verification_status == 0 ||
+            optional($user->shop)->verification_status == 0
+        ) {
+            $layout = 'frontend.layouts.portfolio_app';
+        }
+    }
+@endphp
+
+@extends($layout)
 
 @section('meta_title'){{ $page->meta_title }}@stop
 
@@ -76,7 +92,7 @@
                 <div class="col-lg-6">
                     <div class="p-3 p-md-4 p-xl-5">
                         <div class="bg-white p-4 p-xl-2rem border rounded-3">
-                            <form class="form-default" role="form" action="{{ route('contact') }}" method="POST">
+                            <form class="form-default" id="contact-us" role="form" action="{{ route('contact') }}" method="POST">
                                 @csrf
 
                                 <!-- Name -->
@@ -106,13 +122,11 @@
                                     ></textarea>
                                 </div>
 
-                                <!-- Recaptcha -->
-                                @if(get_setting('google_recaptcha') == 1)
-                                    <div class="form-group">
-                                        <div class="g-recaptcha" data-sitekey="{{ env('CAPTCHA_KEY') }}"></div>
-                                    </div>
+                               <!-- Recaptcha -->
+                                @if(get_setting('google_recaptcha') == 1 && get_setting('recaptcha_contact_form') == 1) 
+                                    
                                     @if ($errors->has('g-recaptcha-response'))
-                                        <span class="invalid-feedback" role="alert" style="display: block;">
+                                        <span class="border invalid-feedback rounded p-2 mb-3 bg-danger text-white" role="alert" style="display: block;">
                                             <strong>{{ $errors->first('g-recaptcha-response') }}</strong>
                                         </span>
                                     @endif
@@ -141,31 +155,25 @@
 @endsection
 
 @section('script')
-    @if(get_setting('google_recaptcha') == 1)
-        <script src="https://www.google.com/recaptcha/api.js" async defer></script>
+     @if(get_setting('google_recaptcha') == 1 && get_setting('recaptcha_contact_form') == 1)
+        <script src="https://www.google.com/recaptcha/api.js?render={{ env('CAPTCHA_KEY') }}"></script>
+        
+        <script type="text/javascript">
+                document.getElementById('contact-us').addEventListener('submit', function(e) {
+                    e.preventDefault();
+                    grecaptcha.ready(function() {
+                        grecaptcha.execute(`{{ env('CAPTCHA_KEY') }}`, {action: 'contact_us'}).then(function(token) {
+                            var input = document.createElement('input');
+                            input.setAttribute('type', 'hidden');
+                            input.setAttribute('name', 'g-recaptcha-response');
+                            input.setAttribute('value', token);
+                            e.target.appendChild(input);
+                            e.target.submit();
+                        });
+                    });
+                });
+        </script>
     @endif
-    
-    <script type="text/javascript">
-        @if(get_setting('google_recaptcha') == 1)
-        // making the CAPTCHA  a required field for form submission
-        $(document).ready(function(){
-            $("#reg-form").on("submit", function(evt)
-            {
-                var response = grecaptcha.getResponse();
-                if(response.length == 0)
-                {
-                //reCaptcha not verified
-                    alert("please verify you are human!");
-                    evt.preventDefault();
-                    return false;
-                }
-                //captcha verified
-                //do the rest of your validations here
-                $("#reg-form").submit();
-            });
-        });
-        @endif
-    </script>
 
 
     <script type="text/javascript">

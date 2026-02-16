@@ -46,6 +46,9 @@
                 <td>
                     @if(isset($history->order))
                         {{ $history->order->code }}
+                        @if (addon_is_activated('pos_system') && $history->order->order_from == 'pos')
+                            <span class="badge badge-inline badge-warning ml-2">{{ translate('POS') }}</span>
+                        @endif
                     @else
                         <span class="badge badge-inline badge-danger">
                             {{ translate('Order Deleted') }}

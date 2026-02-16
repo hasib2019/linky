@@ -24,7 +24,10 @@ class StateController extends Controller
         $sort_country = $request->sort_country;
         $sort_state = $request->sort_state;
 
-        $state_queries = State::query();
+        //$state_queries = State::query();
+        $state_queries = State::whereHas('country', function ($q) {
+            $q->where('status', 1);
+        });
         if ($request->sort_state) {
             $state_queries->where('name', 'like', "%$sort_state%");
         }
@@ -32,7 +35,7 @@ class StateController extends Controller
             $state_queries->where('country_id', $request->sort_country);
         }
 
-        $states = $state_queries->paginate(15);
+        $states = $state_queries->orderBy('created_at', 'desc')->paginate(15);
         return view('backend.setup_configurations.states.index', compact('states', 'sort_country', 'sort_state'));
     }
 
@@ -130,10 +133,14 @@ class StateController extends Controller
         $state->status = $request->status;
         $state->save();
 
-        if ($state->status) {
+        if (!$state->status) {
             foreach ($state->cities as $city) {
-                $city->status = 1;
+                $city->status = 0;
                 $city->save();
+                foreach ($city->areas as $area) {
+                            $area->status = 0;
+                            $area->save();
+                        }
             }
         }
 

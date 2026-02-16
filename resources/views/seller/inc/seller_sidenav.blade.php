@@ -55,16 +55,23 @@
                                 <span class="aiz-side-nav-text">{{ translate('Product Bulk Upload') }}</span>
                             </a>
                         </li>
+                        @if (get_setting('digital_product_manage_by_seller') == 1)
                         <li class="aiz-side-nav-item">
                             <a href="{{ route('seller.digitalproducts') }}"
                                 class="aiz-side-nav-link {{ areActiveRoutes(['seller.digitalproducts', 'seller.digitalproducts.create', 'seller.digitalproducts.edit']) }}">
                                 <span class="aiz-side-nav-text">{{ translate('Digital Products') }}</span>
                             </a>
                         </li>
+                        @endif
                         <li class="aiz-side-nav-item">
                             <a href="{{ route('seller.product-reviews') }}"
                                 class="aiz-side-nav-link {{ areActiveRoutes(['seller.product-reviews', 'seller.detail-reviews']) }}">
                                 <span class="aiz-side-nav-text">{{ translate('Product Reviews') }}</span>
+                            </a>
+                        </li>
+                        <li class="aiz-side-nav-item">
+                            <a href="{{route('seller.custom_label.index')}}" class="aiz-side-nav-link {{ areActiveRoutes(['seller.custom_label.edit', 'seller.custom_label.create'])}}">
+                                <span class="aiz-side-nav-text">{{translate('Custom Label')}}</span>
                             </a>
                         </li>
                     </ul>
@@ -290,6 +297,60 @@
                                     <span class="aiz-side-nav-text">{{ translate('POS Configuration') }}</span>
                                 </a>
                             </li>
+                            {{--<li class="aiz-side-nav-item">
+                                <a href="{{route('seller.pos.orders')}}" class="aiz-side-nav-link">
+                                    <span class="aiz-side-nav-text">{{translate('POS Orders')}}</span>
+                                </a>
+                            </li>
+                            <li class="aiz-side-nav-item">
+                                <a href="{{route('seller.pos.products')}}" class="aiz-side-nav-link">
+                                    <span class="aiz-side-nav-text">{{translate('POS Products')}}</span>
+                                </a>
+                            </li>--}}
+                        </ul>
+                    </li>
+                @endif
+
+                @if (addon_is_activated('gst_system'))
+                    <li class="aiz-side-nav-item">
+                        <a href="#" class="aiz-side-nav-link">
+                            <i class="las la-percentage aiz-side-nav-icon"></i>
+                            <span class="aiz-side-nav-text">{{ translate('GST System') }}</span>
+                            @if (env('DEMO_MODE') == 'On')
+                                <span class="badge badge-inline badge-danger">Addon</span>
+                            @endif
+                            <span class="aiz-side-nav-arrow"></span>
+                        </a>
+                        <ul class="aiz-side-nav-list level-2">
+                            <li class="aiz-side-nav-item">
+                                <a href="{{ route('seller.products.hsn-gst.assigns') }}"
+                                    class="aiz-side-nav-link {{ areActiveRoutes(['seller.products.hsn-gst.assigns']) }}">
+                                    <span class="aiz-side-nav-text">{{ translate('HSN Assign') }}</span>
+                                </a>
+                            </li>
+                            @if (addon_is_activated('wholesale'))
+                            <li class="aiz-side-nav-item">
+                                <a href="{{ route('seller.products.wholesale-hsn-gst.assigns') }}" class="aiz-side-nav-link">
+                                    <span class="aiz-side-nav-text">{{ translate('Wholesale Products') }}</span>
+                                </a>
+                            </li>
+                            @endif
+
+                            @if (addon_is_activated('preorder'))
+                            <li class="aiz-side-nav-item">
+                                <a href="{{ route('seller.products.preorder-hsn-gst.assigns') }}" class="aiz-side-nav-link">
+                                    <span class="aiz-side-nav-text">{{ translate('Preorder Products') }}</span>
+                                </a>
+                            </li>
+                            @endif
+
+                            @if (addon_is_activated('auction'))
+                            <li class="aiz-side-nav-item">
+                                <a href="{{ route('seller.products.auction-hsn-gst.assigns') }}" class="aiz-side-nav-link">
+                                    <span class="aiz-side-nav-text">{{ translate('Auction Products') }}</span>
+                                </a>
+                            </li>
+                            @endif
                         </ul>
                     </li>
                 @endif
@@ -303,12 +364,27 @@
                 </li>
                 @if (addon_is_activated('refund_request'))
                     <li class="aiz-side-nav-item">
-                        <a href="{{ route('seller.vendor_refund_request') }}"
-                            class="aiz-side-nav-link {{ areActiveRoutes(['seller.vendor_refund_request', 'reason_show']) }}">
+                        <a href="javascript:void(0);" class="aiz-side-nav-link">
                             <i class="las la-backward aiz-side-nav-icon"></i>
-                            <span class="aiz-side-nav-text">{{ translate('Received Refund Request') }}</span>
+                            <span class="aiz-side-nav-text">{{ translate('Refund') }}</span>
+                            <span class="aiz-side-nav-arrow"></span>
                         </a>
+                        <ul class="aiz-side-nav-list level-2">
+                            <li class="aiz-side-nav-item">
+                                <a href="{{ route('seller.vendor_refund_request') }}"
+                                    class="aiz-side-nav-link {{ areActiveRoutes(['seller.vendor_refund_request', 'reason_show']) }}">
+                                    <span class="aiz-side-nav-text">{{ translate('Received Refund Request') }}</span>
+                                </a>
+                            </li>
+                            <li class="aiz-side-nav-item">
+                                <a href="{{ route('seller.refund_configuration') }}"
+                                    class="aiz-side-nav-link {{ areActiveRoutes(['seller.refund_configuration']) }}">
+                                    <span class="aiz-side-nav-text">{{ translate('Refund Configuration') }}</span>
+                                </a>
+                            </li>
+                        </ul>
                     </li>
+
                 @endif
 
 
@@ -339,7 +415,7 @@
                 <li class="aiz-side-nav-item">
                     <a href="{{ route('seller.commission-history.index') }}" class="aiz-side-nav-link">
                         <i class="las la-file-alt aiz-side-nav-icon"></i>
-                        <span class="aiz-side-nav-text">{{ translate('Commission History') }}</span>
+                        <span class="aiz-side-nav-text">{{ translate('Commission') }}</span>
                     </a>
                 </li>
 

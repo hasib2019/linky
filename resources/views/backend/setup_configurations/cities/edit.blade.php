@@ -28,7 +28,7 @@
                       <label for="name">{{translate('Name')}}</label>
                       <input type="text" placeholder="{{translate('Name')}}" value="{{ $city->getTranslation('name', $lang) }}" name="name" class="form-control" required>
                   </div>
-
+                 @if (get_setting('has_state') == 1)
                   <div class="form-group">
                       <label for="state_id">{{translate('State')}}</label>
                       <select class="select2 form-control aiz-selectpicker" name="state_id" data-selected="{{ $city->state_id }}" data-toggle="select2" data-placeholder="Choose ..." data-live-search="true" required>
@@ -37,6 +37,18 @@
                           @endforeach
                       </select>
                   </div>
+                  @else
+                  <div class="form-group">
+                      <label for="country_id">{{translate('Country')}}</label>
+                      <select class="select2 form-control aiz-selectpicker" name="country_id" data-selected="{{ $city->country_id }}" data-toggle="select2" data-placeholder="Choose ..." data-live-search="true" required>
+                          @foreach ($countries as $country)
+                            <option value="{{ $country->id }}">{{ $country->name }}</option>
+                          @endforeach
+                      </select>
+                  </div>
+
+                  @endif
+
 
                   <div class="form-group mb-3">
                       <label for="name">{{translate('Cost')}}</label>

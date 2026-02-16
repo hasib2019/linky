@@ -16,6 +16,7 @@ class FlashDealController extends Controller
         $flash_deals = FlashDeal::where('status', 1)
             ->where('start_date', '<=', strtotime(date('d-m-Y')))
             ->where('end_date', '>=', strtotime(date('d-m-Y')))
+            ->orderBy('created_at', 'desc')
             ->get();
 
         return new FlashDealCollection($flash_deals);

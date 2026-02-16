@@ -95,8 +95,26 @@
                                         <td class="border-top-0 py-2">{{ json_decode($first_order->shipping_address)->email }}</td>
                                     </tr>
                                     <tr>
+                                        @php
+                                            $shipping = json_decode($first_order->shipping_address);
+                                            $billing = json_decode($first_order->billing_address);
+                                        @endphp
                                         <td class="w-50 fw-600 border-top-0 pl-0 py-2">{{ translate('Shipping address')}}:</td>
-                                        <td class="border-top-0 py-2">{{ json_decode($first_order->shipping_address)->address }}, {{ json_decode($first_order->shipping_address)->city }}, {{ json_decode($first_order->shipping_address)->country }}</td>
+                                        <td class="border-top-0 py-2">
+                                            {{ $shipping->address }}, 
+                                            {{ $shipping?->city ? $shipping->city . ', ' : '' }}
+                                            {{ isset($shipping->state) ? $shipping->state . ', ' : '' }}
+                                            {{ $shipping->country }}
+                                        </td>
+                                    </tr>
+                                    <tr>
+                                        <td class="w-50 fw-600 border-top-0 pl-0 py-2">{{ translate('Billing address')}}:</td>
+                                        <td class="border-top-0 py-2">
+                                            {{ $billing->address }}, 
+                                            {{ $billing?->city ? $billing->city . ', ' : '' }}
+                                            {{ isset($billing->state) ? $billing->state . ', ' : '' }}
+                                            {{ $billing->country }}
+                                        </td>
                                     </tr>
                                 </table>
                             </div>
@@ -130,6 +148,51 @@
                                 <!-- Order Code -->
                                 <div class="text-center py-1 mb-4">
                                     <h2 class="h5 fs-20">{{ translate('Order Code:')}} <span class="fw-700 text-primary">{{ $order->code }}</span></h2>
+                                    <h5 class="h5 fs-14">{{ translate('Delivery Type:')}} 
+                                        <span class="fw-700">
+                                            @if ($order->shipping_type != null && $order->shipping_type == 'home_delivery')
+                                                {{  translate('Home Delivery') }}
+                                            @elseif ($order->shipping_type != null && $order->shipping_type == 'carrier')
+                                                {{  translate('Carrier') }}
+                                            @elseif ($order->shipping_type == 'pickup_point')
+                                                @if ($order->pickup_point != null)
+                                                    {{ $order->pickup_point->getTranslation('name') }} ({{ translate('Pickip Point') }})
+                                                @endif
+                                            @endif
+                                        </span>
+                                    </h5>
+                                   {{-- Sold BY --}}
+
+                                    <h5 class="h5 fs-14">{{ translate('Sold By')}}:
+                                        <span class="fw-700">
+                                            @if($order->seller_id != null)
+                                                {{ $order->shop->name ?? get_setting('site_name') }}
+                                            @else
+                                                {{ get_setting('site_name') }}
+                                            @endif
+                                        </span>
+                                    </h5>
+
+                                    {{-- phone --}}
+                                    @if($order->seller_id != null && !empty($order->seller->phone))
+                                    <h5 class="h5 fs-14">{{ translate('Phone')}}:
+                                        <span class="fw-700">
+                                            {{ $order->seller->phone}}
+                                        </span>
+                                    </h5>
+                                    @endif
+
+
+                                    @if(get_seller_gstin($order) != null)
+                                    <h5 class="h5 fs-14">{{ translate('GSTIN')}}: 
+                                        <span class="fw-700">
+                                            {{get_seller_gstin($order)}}
+                                        </span>
+                                    </h5>
+                                    @endif
+
+                                    <h5 class="h5 fs-14"> <span class="fw-700">{{ get_seller_address($order) }}</span>
+                                    </h5>
                                 </div>
                                 <!-- Order Details -->
                                 <div>
@@ -141,9 +204,19 @@
                                                 <tr>
                                                     <th class="opacity-60 border-top-0 pl-0">#</th>
                                                     <th class="opacity-60 border-top-0" width="30%">{{ translate('Product')}}</th>
-                                                    <th class="opacity-60 border-top-0">{{ translate('Variation')}}</th>
-                                                    <th class="opacity-60 border-top-0">{{ translate('Quantity')}}</th>
-                                                    <th class="opacity-60 border-top-0">{{ translate('Delivery Type')}}</th>
+                                                    <th class="opacity-60 border-top-0">{{ translate('Qty')}}</th>
+                                                    @if(addon_is_activated('gst_system'))
+                                                    <th class="opacity-60 border-top-0">{{ translate('Gross Amount')}}</th>
+                                                    <th class="opacity-60 border-top-0">{{ translate('Discount/ Coupon')}}</th>
+                                                    <th class="opacity-60 border-top-0">{{ translate('Taxable Value')}}</th>
+                                                    @if(same_state_shipping($order))
+                                                    <th class="opacity-60 border-top-0">{{ translate('CGST')}}</th>
+                                                    <th class="opacity-60 border-top-0">{{ translate('SGST')}}</th>
+                                                    @else
+                                                    <th class="opacity-60 border-top-0">{{ translate('IGST')}}</th>
+                                                    @endif
+                                                    @endif
+
                                                     <th class="text-right opacity-60 border-top-0 pr-0">{{ translate('Price')}}</th>
                                                 </tr>
                                             </thead>
@@ -163,29 +236,84 @@
                                                                         }
                                                                     @endphp
                                                                 </a>
+                                                                <p class="fs-12">{{ $orderDetail->variation }}</p>
                                                             @else
                                                                 <strong>{{  translate('Product Unavailable') }}</strong>
                                                             @endif
                                                         </td>
                                                         <td class="border-top-0 border-bottom">
-                                                            {{ $orderDetail->variation }}
-                                                        </td>
-                                                        <td class="border-top-0 border-bottom">
                                                             {{ $orderDetail->quantity }}
                                                         </td>
+                                                        @if(addon_is_activated('gst_system'))
                                                         <td class="border-top-0 border-bottom">
-                                                            @if ($order->shipping_type != null && $order->shipping_type == 'home_delivery')
-                                                                {{  translate('Home Delivery') }}
-                                                            @elseif ($order->shipping_type != null && $order->shipping_type == 'carrier')
-                                                                {{  translate('Carrier') }}
-                                                            @elseif ($order->shipping_type == 'pickup_point')
-                                                                @if ($order->pickup_point != null)
-                                                                    {{ $order->pickup_point->getTranslation('name') }} ({{ translate('Pickip Point') }})
-                                                                @endif
-                                                            @endif
+                                                            {{ single_price($orderDetail->price) }}
                                                         </td>
+
+                                                        <td class="border-top-0 border-bottom">
+                                                            {{ single_price($orderDetail->coupon_discount) }}
+                                                        </td>
+
+                                                        <td class="border-top-0 border-bottom">
+                                                            {{ single_price($orderDetail->price - $orderDetail->coupon_discount) }}
+                                                        </td>
+
+                                                        @php 
+                                                            $gst_amount = get_gst_by_price_and_rate($orderDetail->price - $orderDetail->coupon_discount , $orderDetail->gst_rate);
+                                                            $shipping_gst = get_gst_by_price_and_rate($orderDetail->shipping_cost, $orderDetail->gst_rate);
+                                                            @endphp
+                                                        @if(same_state_shipping($order))
+                                                        <td class="border-top-0 border-bottom">
+                                                            {{ single_price($gst_amount/2) }}
+                                                        </td>
+                                                        <td class="border-top-0 border-bottom">
+                                                            {{ single_price($gst_amount/2) }}
+                                                        </td>
+                                                        @else
+                                                        <td class="border-top-0 border-bottom">
+                                                            {{ single_price($gst_amount) }}
+                                                        </td>
+                                                        @endif
+                                                        @endif
+                                                        @if(addon_is_activated('gst_system'))
+                                                        <td class="border-top-0 border-bottom pr-0 text-right">{{ single_price($orderDetail->price - $orderDetail->coupon_discount + $gst_amount) }}</td>
+                                                        @else
                                                         <td class="border-top-0 border-bottom pr-0 text-right">{{ single_price($orderDetail->price) }}</td>
+                                                        @endif
                                                     </tr>
+                                                    @if(addon_is_activated('gst_system'))
+                                                    <tr>
+                                                        <td class="border-top-0 border-bottom pl-0"></td>
+                                                        <td class="border-top-0 border-bottom">
+                                                            {{translate('Shipping')}}
+                                                        </td>
+                                                        <td class="border-top-0 border-bottom">
+                                                            1
+                                                        </td>
+                                                        <td class="border-top-0 border-bottom">
+                                                            {{ single_price($orderDetail->shipping_cost) }}
+                                                        </td>
+                                                        <td class="border-top-0 border-bottom">
+                                                            {{ single_price(0) }}
+                                                        </td>
+                                                        <td class="border-top-0 border-bottom">
+                                                            {{ single_price($orderDetail->shipping_cost) }}
+                                                        </td>
+                                                        @if(same_state_shipping($order))
+                                                        <td class="border-top-0 border-bottom">
+                                                            {{ single_price($shipping_gst/2) }}
+                                                        </td>
+                                                        <td class="border-top-0 border-bottom">
+                                                            {{ single_price($shipping_gst/2) }}
+                                                        </td>
+                                                        @else
+                                                        <td class="border-top-0 border-bottom">
+                                                            {{ single_price($shipping_gst) }}
+                                                        </td>
+                                                        @endif
+                                                        <td class="border-top-0 border-bottom pr-0 text-right">{{ single_price($orderDetail->shipping_cost + (($orderDetail->shipping_cost* $orderDetail->gst_rate)/100)) }}
+                                                        </td>
+                                                    </tr>
+                                                    @endif
                                                 @endforeach
                                             </tbody>
                                         </table>
@@ -196,6 +324,20 @@
                                             <table class="table ">
                                                 <tbody>
                                                     <!-- Subtotal -->
+                                                     @if(addon_is_activated('gst_system'))
+                                                     <tr>
+                                                        <th class="border-top-0 py-2">{{ translate('Subtotal')}}</th>
+                                                        <td class="text-right border-top-0 pr-0 py-2">
+                                                            <span class="fw-600">{{ single_price($order->orderDetails->sum('price') + $order->orderDetails->sum('shipping_cost') - $order->orderDetails->sum('coupon_discount')) }}</span>
+                                                        </td>
+                                                    </tr>
+                                                    <tr>
+                                                        <th class="border-top-0 py-2">{{ translate('GST Amount')}}</th>
+                                                        <td class="text-right border-top-0 pr-0 py-2">
+                                                            <span>{{ single_price($order->orderDetails->sum('gst_amount')) }}</span>
+                                                        </td>
+                                                    </tr>
+                                                    @else
                                                     <tr>
                                                         <th class="border-top-0 py-2">{{ translate('Subtotal')}}</th>
                                                         <td class="text-right border-top-0 pr-0 py-2">
@@ -223,6 +365,7 @@
                                                             <span>{{ single_price($order->coupon_discount) }}</span>
                                                         </td>
                                                     </tr>
+                                                    @endif
                                                     <!-- Total -->
                                                     <tr>
                                                         <th class="py-2"><span class="fw-600">{{ translate('Total')}}</span></th>

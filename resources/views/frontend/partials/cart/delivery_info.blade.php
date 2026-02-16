@@ -38,7 +38,7 @@
         </div>
     </div>
 @endif
-
+<input type="hidden" id="carrierCount" value="{{ count($carrier_list) }}">
 <!-- Seller Products -->
 @if (!empty($seller_products))
     @foreach ($seller_products as $key => $seller_product)

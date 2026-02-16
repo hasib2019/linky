@@ -76,6 +76,7 @@ class AuctionProductDetailCollection extends ResourceCollection
                     "auction_end_date" => $data->auction_end_date > strtotime('now') ?  $data->auction_end_date  : 'Ended',
                     "starting_bid" =>  single_price($data->starting_bid),
                     'unit' => $unit,
+                    'gst_rate' => $data->gst_rate,
                     'min_bid_price' => $highest_bid != null ? ($highest_bid + 1) : $data->starting_bid,
                     'highest_bid' => $highest_bid != null ?  single_price($highest_bid) : '',
                     'description' => str_replace('&nbsp;', ' ', strip_tags($data->getTranslation('description'))),

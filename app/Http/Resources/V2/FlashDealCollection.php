@@ -21,6 +21,7 @@ class FlashDealCollection extends ResourceCollection
             'data' => $this->collection->map(function ($data) {
                 return [
                     'id' => $data->id,
+                    'featured' => $data->featured,
                     'slug' => $data->slug,
                     'title' => $data->title,
                     'date' => (int) $data->end_date,

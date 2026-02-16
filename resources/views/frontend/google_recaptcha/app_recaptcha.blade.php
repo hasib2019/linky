@@ -1,49 +1,46 @@
 <html>
-
 <head>
-  <style type="text/css">
-  *{
-margin:0;
-padding:0;
-}
-      html, body {
-        overflow: hidden;
-      }
-      </style>
-      
-    <script src='https://www.google.com/recaptcha/api.js' async defer></script>
+    <style type="text/css">
+        * { margin: 0; padding: 0; }
+        html, body { overflow: hidden; }
+    </style>
+    <script src='https://www.google.com/recaptcha/api.js?render={{ env('CAPTCHA_KEY') }}'></script>
 </head>
-<form action='?' method='POST'>
-    <div id="ff" style='height: 600px; width:2000px;' class='g-recaptcha' data-sitekey="{{ env('CAPTCHA_KEY') }}"
-        data-callback='captchaCallback' data-expired-callback='expiredCaptchaCallback' data-size='normal'></div>
-</form>
-<script>
-    function captchaCallback(response) {
-        if ( Captcha != 'undefined') {
-          console.log(response);
-            Captcha.postMessage(response);
-          Captcha1.postMessage("1235");
+<body>
+    <form id="captcha-form">
+        <input type="hidden" name="g-recaptcha-response" id="g-recaptcha-response">
+    </form>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            executeCaptcha();
+        });
+
+        function executeCaptcha() {
+            grecaptcha.ready(function() {
+                grecaptcha.execute('{{ env('CAPTCHA_KEY') }}', {action: 'submit'})
+                    .then(function(token) {
+                        if (typeof Captcha !== 'undefined') {
+                            console.log("reCAPTCHA v3 token:", token);
+                            Captcha.postMessage(token);
+                        }
+                        setTimeout(executeCaptcha, 120000);
+                    })
+                    .catch(function(error) {
+                        console.error("reCAPTCHA v3 error:", error);
+                        if (typeof Captcha !== 'undefined') {
+                            Captcha.postMessage("error");
+                        }
+                    });
+            });
         }
-    }
-  
-    function expiredCaptchaCallback(response) {
-      console.log("error");
-            Captcha.postMessage("");
-        
-    }
-  
-  
-  
- setInterval(captchaShow,2000);
- 
-  function captchaShow(){
-    var data =  document.querySelectorAll("[style*='visibility: visible; z-index: 2000000000;']");
-    
-   CaptchaShowValidation.postMessage(data.length==1);
 
-    }
-
-</script>
+        function captchaShow() {
+            if (typeof CaptchaShowValidation !== 'undefined') {
+                CaptchaShowValidation.postMessage(true);
+            }
+        }
+        setInterval(captchaShow, 4000);
+    </script>
 </body>
-
 </html>

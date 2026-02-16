@@ -333,7 +333,9 @@ Route::group(['prefix' => 'v2', 'middleware' => ['app_language']], function () {
     Route::get('states', 'App\Http\Controllers\Api\V2\AddressController@getStates');
     Route::get('countries', 'App\Http\Controllers\Api\V2\AddressController@getCountries');
 
+    Route::get('areas-by-city/{city_id}', 'App\Http\Controllers\Api\V2\AddressController@getAreasByCity');
     Route::get('cities-by-state/{state_id}', 'App\Http\Controllers\Api\V2\AddressController@getCitiesByState');
+    Route::get('cities-by-country/{country_id}', 'App\Http\Controllers\Api\V2\AddressController@getCitiesByCountry');
     Route::get('states-by-country/{country_id}', 'App\Http\Controllers\Api\V2\AddressController@getStatesByCountry');
 
 
@@ -375,6 +377,7 @@ Route::group(['prefix' => 'v2', 'middleware' => ['app_language']], function () {
     Route::get('/myfatoorah/initiate', 'App\Http\Controllers\Api\V2\MyfatoorahController@pay');
 
     Route::get('phonepe/payment/pay', 'App\Http\Controllers\Api\V2\PhonepeController@pay');
+    Route::get('/phonepe-credentials', 'App\Http\Controllers\Api\V2\PhonepeController@getPhonePayCredentials')->name('api.phonepe.credentials');
 
     Route::post('offline/payment/submit', 'App\Http\Controllers\Api\V2\OfflinePaymentController@submit')->name('api.offline.payment.submit');
 
@@ -440,6 +443,12 @@ Route::group(['prefix' => 'v2', 'middleware' => ['app_language']], function () {
         Route::get('instamojo/success', 'App\Http\Controllers\Api\V2\InstamojoController@success');
         Route::get('instamojo/failed', 'App\Http\Controllers\Api\V2\InstamojoController@failed');
 
+        // Cybersource
+        Route::post('cyber-source/payment/pay', 'App\Http\Controllers\Api\V2\CybersourceController@pay')->name('cybersource.pay');
+        Route::any('cyber-source/payment/process', 'App\Http\Controllers\Api\V2\CybersourceController@process')->name('cybersource.process');
+        Route::any('cyber-source/payment/callback', 'App\Http\Controllers\Api\V2\CybersourceController@callback')->name('cybersource.callback');
+        Route::any('cyber-source/payment/webhook', 'App\Http\Controllers\Api\V2\CybersourceController@webhook')->name('cybersource.webhook');
+        
         //Payfast routes <starts>
         Route::controller(PayfastController::class)->group(function () {
             Route::any('/payfast/notify', 'payfast_notify')->name('api.payfast.notify');

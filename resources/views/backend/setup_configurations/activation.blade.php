@@ -378,6 +378,72 @@
                 </div>
             </div>
         </div>
+
+        <div class="col-lg-4">
+            <div class="card">
+                <div class="card-header">
+                    <h3 class="mb-0 h6 text-center">{{ translate('Digital Product for Seller') }}</h3>
+                </div>
+                <div class="card-body text-center">
+                    <label class="aiz-switch aiz-switch-success mb-0">
+                        <input type="checkbox" onchange="updateSettings(this, 'digital_product_manage_by_seller')"
+                            <?php if (get_setting('digital_product_manage_by_seller') == 1) {
+                                echo 'checked';
+                            } ?>>
+                        <span class="slider round"></span>
+                    </label>
+                    <div class="alert"
+                        style="color: #004085;background-color: #cce5ff;border-color: #b8daff;margin-bottom:0;margin-top:10px;">
+                        {{ translate('After activating this option, sellers can add digital products.') }}.
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-lg-4">
+            <div class="card">
+                <div class="card-header">
+                    <h3 class="mb-0 h6 text-center">{{ translate('Billing Address Required') }}</h3>
+                </div>
+                <div class="card-body text-center">
+                    <label class="aiz-switch aiz-switch-success mb-0">
+                        <input type="checkbox" onchange="updateSettings(this, 'billing_address_required')"
+                            <?php if (get_setting('billing_address_required') == 1) {
+                                echo 'checked';
+                            } ?>>
+                        <span class="slider round"></span>
+                    </label>
+                    <div class="alert"
+                        style="color: #004085;background-color: #cce5ff;border-color: #b8daff;margin-bottom:0;margin-top:10px;">
+                        {{ translate('Billing Address Required For Checkout') }}.
+                    </div>
+                </div>
+            </div>
+        </div>
+
+
+        @if(addon_is_activated('portfolio_system'))
+        <div class="col-lg-4">
+            <div class="card">
+                <div class="card-header">
+                    <h3 class="mb-0 h6 text-center">{{ translate('Customer Verification') }}</h3>
+                </div>
+                <div class="card-body text-center">
+                    <label class="aiz-switch aiz-switch-success mb-0">
+                        <input type="checkbox" onchange="updateSettings(this, 'customer_verification')"
+                            <?php if (get_setting('customer_verification') == 1) {
+                                echo 'checked';
+                            } ?>>
+                        <span class="slider round"></span>
+                    </label>
+                    {{--<div class="alert"
+                        style="color: #004085;background-color: #cce5ff;border-color: #b8daff;margin-bottom:0;margin-top:10px;">
+                        {{ translate('Customer Verification') }}.
+                    </div>--}}
+                </div>
+            </div>
+        </div>
+        @endif
     </div>
 
     <h4 class="text-center text-muted mt-4">{{ translate('Social Media Login') }}</h4>

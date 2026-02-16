@@ -20,6 +20,10 @@ class City extends Model
        return $this->hasMany(CityTranslation::class);
     }
 
+    public function areas(){
+        return $this->hasMany(Area::class);
+    }
+
     public function country()
     {
         return $this->belongsTo(Country::class);

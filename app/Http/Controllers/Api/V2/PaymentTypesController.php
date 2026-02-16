@@ -29,8 +29,11 @@ class PaymentTypesController
             $all_online_payment_methods = get_activate_payment_methods();
             if (count($all_online_payment_methods) > 0) {
                 $available_online_payment_methods = [
-                    "paypal", "stripe", "instamojo", "razorpay", "paystack", "iyzico", "bkash", "nagad", "sslcommerz", "aamarpay", "flutterwave", "payfast", "paytm", "khalti", "myfatoorah", "phonepe"
+                    "paypal", "stripe", "instamojo", "razorpay", "paystack", "iyzico", "bkash", "nagad", "sslcommerz", "aamarpay", "flutterwave", "payfast", "paytm", "khalti", "myfatoorah", "phonepe", "cybersource"
                 ];
+                if (get_setting('phonepe_version', '1') != 2) {
+                    $available_online_payment_methods = array_diff($available_online_payment_methods, ['phonepe']);
+                }
                 $online_payment_methods = $all_online_payment_methods->toQuery()->whereIn('name', $available_online_payment_methods)->get();
 
                 foreach ($online_payment_methods as $online_payment_method){
@@ -40,7 +43,7 @@ class PaymentTypesController
                         $payment_type['payment_type_key'] = $online_payment_method->name;
                         $payment_type['image'] = static_asset('assets/img/cards/'.$online_payment_method->name.'.png');
                         $payment_type['name'] = ucfirst($online_payment_method->name);
-                        $payment_type['title'] = translate("Checkout with ".$online_payment_method->name);
+                        $payment_type['title'] = translate($online_payment_method->name);
                         $payment_type['offline_payment_id'] = 0;
                         $payment_type['details'] = "";
                         if ($mode == 'wallet') {

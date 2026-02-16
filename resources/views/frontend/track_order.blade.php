@@ -1,4 +1,20 @@
-@extends('frontend.layouts.app')
+@php
+    $layout = 'frontend.layouts.app';
+
+    if (addon_is_activated('portfolio_system')) {
+        $user = auth()->user();
+
+        if (
+            !$user ||
+            $user->verification_status == 0 ||
+            optional($user->shop)->verification_status == 0
+        ) {
+            $layout = 'frontend.layouts.portfolio_app';
+        }
+    }
+@endphp
+
+@extends($layout)
 
 @section('content')
     <section class="pt-4 mb-4">

@@ -2,10 +2,11 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Blog;
 use Illuminate\Http\Request;
 use App\Models\Page;
 use App\Models\PageTranslation;
-
+use App\Models\SellerPackage;
 
 class PageController extends Controller
 {
@@ -86,8 +87,8 @@ class PageController extends Controller
      * @param  int  $id
      * @return \Illuminate\Http\Response
      */
-   public function edit(Request $request, $id)
-   {
+    public function edit(Request $request, $id)
+    {
         $lang = $request->lang;
         $page_name = $request->page;
         $page = Page::where('slug', $id)->first();
@@ -95,10 +96,31 @@ class PageController extends Controller
             if ($page_name == 'home') {
                 return view('backend.website_settings.pages.'.get_setting('homepage_select').'.home_page_edit', compact('page','lang'));
             }
-            if ($id == 'contact-us') {
+            elseif ($page_name == 'portfolio') {
+                return view('backend.website_settings.pages.portfolio.home_page_edit', compact('page','lang'));
+            }
+            elseif ($page_name == 'resource') {
+                return view('backend.website_settings.pages.portfolio.resource_page_edit', compact('page','lang'));
+            }
+            elseif ($page_name == 'about_us_page') {
+                return view('backend.website_settings.pages.portfolio.about_us_page_edit', compact('page','lang'));
+            }
+            elseif ($page_name == 'join_us_page') {
+                return view('backend.website_settings.pages.portfolio.join_us_page_edit', compact('page','lang'));
+            }
+            elseif ($page_name == 'news') {
+                return view('backend.website_settings.pages.portfolio.news_page_edit', compact('page','lang'));
+            }
+            elseif ($page_name == 'plans_package_page') {
+                return view('backend.website_settings.pages.portfolio.plans_package_page_edit', compact('page','lang'));
+            }
+            elseif ($id == 'contact-us') {
                 return view('backend.website_settings.pages.contact_us_page_edit', compact('page','lang'));
             }
-            return view('backend.website_settings.pages.edit', compact('page','lang'));
+            else{
+                return view('backend.website_settings.pages.edit', compact('page','lang'));
+            }
+            
         }
         abort(404);
     }
@@ -169,9 +191,28 @@ class PageController extends Controller
 
     public function show_custom_page($slug){
         $page = Page::where('slug', $slug)->first();
+        $lang = get_system_language() ? get_system_language()->code : null;
         if($page != null){
             if($page->type == 'contact_us_page'){
-                return view('frontend.contact_us_page', compact('page'));
+                return view('frontend.contact_us_page', compact('page','lang'));
+            }elseif($page->type == 'about_us_page'){
+                return view('frontend.portfolio.about_us_page',  compact('page','lang'));
+            }elseif($page->type == 'plans_page'){
+                return view('frontend.portfolio.plans_page',  compact('page','lang'));
+            }elseif($page->type == 'news_page'){
+                $news = Blog::where('status', 1)->where('news', 1)->latest()->get();
+                return view('frontend.portfolio.news_page',  compact('page','lang','news'));
+            }elseif($page->type == 'join_us_page'){
+            return view('frontend.portfolio.join_us_page',  compact('page','lang'));
+            }elseif($page->type == 'resources_page'){
+                $events = Blog::where('status', 1)->where('event', 1)->latest()->get();
+                $goingons = Blog::where('status', 1)->where('going_on', 1)->latest()->get();
+
+                return view('frontend.portfolio.resources_page',  compact('page','lang','goingons','events'));
+            }
+            elseif($page->type == 'plans_package_page'){
+                $seller_packages = SellerPackage::all();
+                return view('frontend.portfolio.plans_package_page',  compact('page','lang','seller_packages'));
             }
             return view('frontend.custom_page', compact('page'));
         }

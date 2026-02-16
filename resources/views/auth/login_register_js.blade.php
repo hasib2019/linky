@@ -134,3 +134,37 @@
         }
     </script> 
 @endif
+
+<script>
+    function showError(input, message) {
+        const formGroup = input.closest('.form-group');
+        $(formGroup).find('.invalid-feedback').remove(); 
+        $(input).removeClass('is-valid').addClass('is-invalid');
+        $(formGroup).append(`<div class="invalid-feedback d-block text-left">${message}</div>`);
+    }
+
+
+    document.addEventListener("input", function(e) {
+        const input = e.target;
+        if (input.hasAttribute("phone-number")) {
+            const formGroup = input.closest('.form-group');
+            const original = input.value;
+            const numeric = original.replace(/[^0-9]/g, "");
+
+            // Update input
+            input.value = numeric;
+            // Remove old errors
+            $(formGroup).find('.invalid-feedback').remove();
+            $(input).removeClass('is-invalid');
+
+            // Show error if original != numeric
+            if (original !== numeric) {
+                $(input).addClass('is-invalid');
+                $(formGroup).append(`<div class="invalid-feedback d-block text-left">
+                    {{ translate('Please enter a valid phone number format') }}
+                </div>`);
+            }
+        }
+    });
+
+</script>

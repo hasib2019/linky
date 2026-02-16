@@ -1,6 +1,22 @@
 @extends('seller.layouts.app')
 
 @section('panel_content')
+    @if(get_setting('vendor_commission_activation') == 1)
+        <div class="aiz-titlebar text-left mt-2 mb-3">
+        
+            <div class="alert alert-info my-2 text-center">
+            @if(get_setting('seller_commission_type') == 'fixed_rate')
+            <p class="font-weight-bold my-1"> {{ translate('You are Under Fixed Commission. Commission Rate') }} :  {{ get_setting('vendor_commission') }} %</p>
+            @elseif(get_setting('seller_commission_type') == 'seller_based')
+            <p class="font-weight-bold my-1"> {{ translate('You are Under Seller Based Commission. Commission Rate') }} : {{ \App\Models\Shop::where('user_id', auth()->user()->id)->first()->commission_percentage }} %</p>
+            @elseif(get_setting('seller_commission_type') == 'category_based')
+            <p class="font-weight-bold my-1">{{ translate('You are under Category Wise commission. See the commission details ') }} <a class="text-info ml-1" href="{{ route('seller.categories-wise-commission') }}">{{ translate('Here') }}</a></p>
+            @endif
+            </div>
+
+        </div>
+    @endif
+
     <div class="card">
         <form class="" action="" id="sort_commission_history" method="GET">
             <div class="card-header row gutters-5">
@@ -37,6 +53,9 @@
                         <td>
                             @if(isset($history->order))
                                 {{ $history->order->code }}
+                                @if (addon_is_activated('pos_system') && $history->order->order_from == 'pos')
+                                    <span class="badge badge-inline badge-warning ml-2">{{ translate('POS') }}</span>
+                                @endif
                             @else
                                 <span class="badge badge-inline badge-danger">
                                     {{ translate('Order Deleted') }}

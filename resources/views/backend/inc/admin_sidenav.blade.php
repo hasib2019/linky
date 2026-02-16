@@ -92,13 +92,29 @@
                             </a>
                         </li>
                         @endcan
+
+                       {{-- @can('pos_Order')
+                        <li class="aiz-side-nav-item">
+                            <a href="{{route('pos.orders')}}" class="aiz-side-nav-link">
+                                <span class="aiz-side-nav-text">{{translate('POS Orders')}}</span>
+                            </a>
+                        </li>
+                        @endcan
+
+                        @can('add_pos_products')
+                        <li class="aiz-side-nav-item">
+                            <a href="{{route('admin.pos.products')}}" class="aiz-side-nav-link">
+                                <span class="aiz-side-nav-text">{{translate('POS Products')}}</span>
+                            </a>
+                        </li>
+                        @endcan--}}
                     </ul>
                 </li>
                 @endif
 
                 <!-- Product -->
-                @canany(['add_new_product', 'show_all_products','show_in_house_products','show_seller_products','show_digital_products','product_bulk_import',
-                        'product_bulk_export','view_product_categories','view_all_brands', 'brand_bulk_upload','view_product_attributes','view_colors','view_product_warranties','view_product_reviews'])
+                @canany(['add_new_product', 'show_all_products','show_in_house_products','show_seller_products','add_digital_product','edit_digital_product','product_bulk_import',
+                        'product_bulk_export','view_product_categories','view_all_brands', 'brand_bulk_upload','view_product_attributes','view_colors','view_product_warranties', 'smart-bar', 'view_custom_label', 'view_product_reviews'])
                     <li class="aiz-side-nav-item">
                         <a href="#" class="aiz-side-nav-link">
                             <div class="aiz-side-nav-icon">
@@ -127,7 +143,7 @@
                             @endcan
                             @can('show_all_products')
                             <li class="aiz-side-nav-item">
-                                <a href="{{route('products.all')}}" class="aiz-side-nav-link">
+                                <a href="{{route('products.all')}}" class="aiz-side-nav-link {{ areActiveRoutes(['digitalproducts.edit']) }}">
                                     <span class="aiz-side-nav-text">{{ translate('All Products') }}</span>
                                 </a>
                             </li>
@@ -140,11 +156,11 @@
                                 </a>
                             </li>
                             @endcan
-                            @can('show_digital_products')
+                            @can('add_digital_product')
                             <li class="aiz-side-nav-item">
-                                <a href="{{route('digitalproducts.index')}}"
-                                    class="aiz-side-nav-link {{ areActiveRoutes(['digitalproducts.index', 'digitalproducts.create', 'digitalproducts.edit']) }}">
-                                    <span class="aiz-side-nav-text">{{ translate('Digital Products') }}</span>
+                                <a href="{{ route('digitalproducts.create') }}"
+                                    class="aiz-side-nav-link {{ areActiveRoutes(['digitalproducts.create']) }}">
+                                    <span class="aiz-side-nav-text">{{ translate('Add New Digital Product') }}</span>
                                 </a>
                             </li>
                             @endcan
@@ -156,6 +172,11 @@
                                     <span class="aiz-side-nav-arrow"></span>
                                 </a>
                                 <ul class="aiz-side-nav-list level-3">
+                                    <li class="aiz-side-nav-item">
+                                        <a href="{{ route('products.seller','all') }}" class="aiz-side-nav-link {{ areActiveRoutes(['products.seller.edit']) }}">
+                                            <span class="aiz-side-nav-text">{{translate('All Products')}}</span>
+                                        </a>
+                                    </li>
                                     <li class="aiz-side-nav-item">
                                         <a href="{{ route('products.seller','physical') }}" class="aiz-side-nav-link">
                                             <span class="aiz-side-nav-text">{{translate('Physical Products')}}</span>
@@ -224,11 +245,17 @@
                                     </ul>
                                 </li>
                             @endcan
-
+                            @can('view_custom_label')
+                                <li class="aiz-side-nav-item">
+                                    <a href="{{route('custom_label.index')}}" class="aiz-side-nav-link {{ areActiveRoutes(['custom_label.edit', 'custom_label.create'])}}">
+                                        <span class="aiz-side-nav-text">{{translate('Custom Label')}}</span>
+                                    </a>
+                                </li>
+                            @endcan
                             @can('view_product_attributes')
                                 <li class="aiz-side-nav-item">
                                     <a href="{{route('attributes.index')}}"
-                                        class="aiz-side-nav-link {{ areActiveRoutes(['attributes.index','attributes.create','attributes.edit','attributes.show','edit-attribute-value'.''])}}">
+                                        class="aiz-side-nav-link {{ areActiveRoutes(['attributes.index','attributes.create','attributes.edit','attributes.show'])}}">
                                         <span class="aiz-side-nav-text">{{translate('Attribute')}}</span>
                                     </a>
                                 </li>
@@ -236,7 +263,7 @@
                             @can('view_colors')
                                 <li class="aiz-side-nav-item">
                                     <a href="{{route('colors')}}"
-                                        class="aiz-side-nav-link {{ areActiveRoutes(['colors','colors.edit'])}}">
+                                        class="aiz-side-nav-link {{ areActiveRoutes(['colors','colors.edit','colors.create'])}}">
                                         <span class="aiz-side-nav-text">{{translate('Colors')}}</span>
                                     </a>
                                 </li>
@@ -272,7 +299,13 @@
                                     </a>
                                 </li>
                             @endcan
-
+                            @can('smart-bar')
+                                <li class="aiz-side-nav-item">
+                                    <a class="aiz-side-nav-link {{ areActiveRoutes(['smart.bar'])}}" href="{{route('smart.bar')}}">
+                                        <span class="aiz-side-nav-text">{{translate('Smart Bar')}}</span>
+                                    </a>
+                                </li>
+                            @endcan
                             @can('view_product_reviews')
                                 <li class="aiz-side-nav-item">
                                     <a href="{{route('reviews.index')}}" class="aiz-side-nav-link {{ areActiveRoutes(['detail-reviews', 'custom-review.edit']) }}">
@@ -784,36 +817,29 @@
                 @endcanany
                 @endif
 
-                <!-- Refund addon -->
+ <!-- Refund addon -->
                 @if (addon_is_activated('refund_request'))
-                @canany(['view_refund_requests','view_approved_refund_requests','view_rejected_refund_requests','refund_request_configuration'])
-                <li class="aiz-side-nav-item">
-                    <a href="#" class="aiz-side-nav-link">
-                        <div class="aiz-side-nav-icon">
-                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 16 16">
-                                <path id="_4436b8ef9250481406399210799cb7f1"
-                                    data-name="4436b8ef9250481406399210799cb7f1"
-                                    d="M19.25,11.25a8.031,8.031,0,0,1-15.995,1,.688.688,0,0,1,1.365-.169A6.643,6.643,0,1,0,7.112,6.039h.866a.686.686,0,1,1,0,1.371H5.384A.687.687,0,0,1,4.7,6.724V4.138a.688.688,0,0,1,1.376,0v.987A8.024,8.024,0,0,1,19.25,11.25ZM11.278,6.907a.687.687,0,0,0-.688.686v.253a2.053,2.053,0,0,0-1.824,2.247,2.146,2.146,0,0,0,2.175,1.842h.8a.686.686,0,1,1,0,1.371h-1.6a.686.686,0,1,0,0,1.371h.458v.229a.688.688,0,0,0,1.376,0v-.26a2.113,2.113,0,0,0,1.824-1.811,2.062,2.062,0,0,0-2.053-2.272h-.917a.686.686,0,1,1,0-1.371h1.609a.686.686,0,1,0,0-1.371h-.462V7.593A.687.687,0,0,0,11.278,6.907Z"
-                                    transform="translate(-3.25 -3.25)" fill="#575b6a" />
-                            </svg>
-                        </div>
-                        <span class="aiz-side-nav-text">{{ translate('Refunds') }}</span>
-                        @if (env("DEMO_MODE") == "On")
-                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="14.001" viewBox="0 0 16 14.001"
-                            class="mx-2">
-                            <path id="Union_49" data-name="Union 49"
-                                d="M-19322,3342.5v-5a2.007,2.007,0,0,0-2-2v1.5a3,3,0,0,1-3,3h-4v-10h4a3,3,0,0,1,3,3v1.5a3,3,0,0,1,3,3v5a.506.506,0,0,1-.5.5A.5.5,0,0,1-19322,3342.5Zm-11-2V3339h-3a1,1,0,0,1-1-1,1,1,0,0,1,1-1h3v-7.5a.5.5,0,0,1,.5-.5.5.5,0,0,1,.5.5v11a.5.5,0,0,1-.5.5A.506.506,0,0,1-19333,3340.5Zm-3-7.5a1,1,0,0,1-1-1,1,1,0,0,1,1-1h3v2Z"
-                                transform="translate(19337 -3329)" fill="#f51350" />
-                        </svg>
-                        @endif
-                        <span class="aiz-side-nav-arrow"></span>
-                    </a>
-                    <ul class="aiz-side-nav-list level-2">
-                        @can('view_refund_requests')
+                    @canany(['view_refund_requests','view_approved_refund_requests','view_rejected_refund_requests','refund_request_configuration','set_category_wise_refund'])
                         <li class="aiz-side-nav-item">
-                            <a href="{{route('refund_requests_all')}}"
-                                class="aiz-side-nav-link {{ areActiveRoutes(['refund_requests_all', 'reason_show'])}}">
-                                <span class="aiz-side-nav-text">{{translate('Refund Requests')}}</span>
+                            <a href="#" class="aiz-side-nav-link">
+                                <div class="aiz-side-nav-icon">
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 16 16">
+                                        <path id="_4436b8ef9250481406399210799cb7f1"
+                                            data-name="4436b8ef9250481406399210799cb7f1"
+                                            d="M19.25,11.25a8.031,8.031,0,0,1-15.995,1,.688.688,0,0,1,1.365-.169A6.643,6.643,0,1,0,7.112,6.039h.866a.686.686,0,1,1,0,1.371H5.384A.687.687,0,0,1,4.7,6.724V4.138a.688.688,0,0,1,1.376,0v.987A8.024,8.024,0,0,1,19.25,11.25ZM11.278,6.907a.687.687,0,0,0-.688.686v.253a2.053,2.053,0,0,0-1.824,2.247,2.146,2.146,0,0,0,2.175,1.842h.8a.686.686,0,1,1,0,1.371h-1.6a.686.686,0,1,0,0,1.371h.458v.229a.688.688,0,0,0,1.376,0v-.26a2.113,2.113,0,0,0,1.824-1.811,2.062,2.062,0,0,0-2.053-2.272h-.917a.686.686,0,1,1,0-1.371h1.609a.686.686,0,1,0,0-1.371h-.462V7.593A.687.687,0,0,0,11.278,6.907Z"
+                                            transform="translate(-3.25 -3.25)" fill="#575b6a" />
+                                    </svg>
+                                </div>
+                                <span class="aiz-side-nav-text">{{ translate('Refunds') }}</span>
+                                @if (env("DEMO_MODE") == "On")
+                                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="14.001" viewBox="0 0 16 14.001"
+                                    class="mx-2">
+                                    <path id="Union_49" data-name="Union 49"
+                                        d="M-19322,3342.5v-5a2.007,2.007,0,0,0-2-2v1.5a3,3,0,0,1-3,3h-4v-10h4a3,3,0,0,1,3,3v1.5a3,3,0,0,1,3,3v5a.506.506,0,0,1-.5.5A.5.5,0,0,1-19322,3342.5Zm-11-2V3339h-3a1,1,0,0,1-1-1,1,1,0,0,1,1-1h3v-7.5a.5.5,0,0,1,.5-.5.5.5,0,0,1,.5.5v11a.5.5,0,0,1-.5.5A.506.506,0,0,1-19333,3340.5Zm-3-7.5a1,1,0,0,1-1-1,1,1,0,0,1,1-1h3v2Z"
+                                        transform="translate(19337 -3329)" fill="#f51350" />
+                                </svg>
+                                @endif
+                                <span class="aiz-side-nav-arrow"></span>
                             </a>
                             <ul class="aiz-side-nav-list level-2">
                                 @can('view_refund_requests')
@@ -823,54 +849,39 @@
                                         </a>
                                     </li>
                                 @endcan
+                                
                                 @can('view_approved_refund_requests')
-                                    <li class="aiz-side-nav-item">
-                                        <a href="{{route('paid_refund')}}" class="aiz-side-nav-link">
-                                            <span class="aiz-side-nav-text">{{translate('Approved Refunds')}}</span>
-                                        </a>
-                                    </li>
+                                <li class="aiz-side-nav-item">
+                                    <a href="{{route('paid_refund')}}" class="aiz-side-nav-link">
+                                        <span class="aiz-side-nav-text">{{translate('Approved Refunds')}}</span>
+                                    </a>
+                                </li>
                                 @endcan
                                 @can('view_rejected_refund_requests')
-                                    <li class="aiz-side-nav-item">
-                                        <a href="{{route('rejected_refund')}}" class="aiz-side-nav-link">
-                                            <span class="aiz-side-nav-text">{{translate('Rejected Refunds')}}</span>
-                                        </a>
-                                    </li>
+                                <li class="aiz-side-nav-item">
+                                    <a href="{{route('rejected_refund')}}" class="aiz-side-nav-link">
+                                        <span class="aiz-side-nav-text">{{translate('Rejected Refunds')}}</span>
+                                    </a>
+                                </li>
                                 @endcan
                                 @can('refund_request_configuration')
+                                <li class="aiz-side-nav-item">
+                                    <a href="{{route('refund_time_config')}}" class="aiz-side-nav-link">
+                                        <span class="aiz-side-nav-text">{{translate('Refund Configuration')}}</span>
+                                    </a>
+                                </li>
+                                @endcan
+
+                                  @can('set_category_wise_refund')
                                     <li class="aiz-side-nav-item">
-                                        <a href="{{route('refund_time_config')}}" class="aiz-side-nav-link">
-                                            <span class="aiz-side-nav-text">{{translate('Refund Configuration')}}</span>
+                                        <a href="{{route('categories_wise_product_refund')}}" class="aiz-side-nav-link">
+                                            <span class="aiz-side-nav-text">{{translate('Category Based Refund')}}</span>
                                         </a>
                                     </li>
                                 @endcan
                             </ul>
                         </li>
-                        @endcan
-                        @can('view_approved_refund_requests')
-                        <li class="aiz-side-nav-item">
-                            <a href="{{route('paid_refund')}}" class="aiz-side-nav-link">
-                                <span class="aiz-side-nav-text">{{translate('Approved Refunds')}}</span>
-                            </a>
-                        </li>
-                        @endcan
-                        @can('view_rejected_refund_requests')
-                        <li class="aiz-side-nav-item">
-                            <a href="{{route('rejected_refund')}}" class="aiz-side-nav-link">
-                                <span class="aiz-side-nav-text">{{translate('Rejected Refunds')}}</span>
-                            </a>
-                        </li>
-                        @endcan
-                        @can('refund_request_configuration')
-                        <li class="aiz-side-nav-item">
-                            <a href="{{route('refund_time_config')}}" class="aiz-side-nav-link">
-                                <span class="aiz-side-nav-text">{{translate('Refund Configuration')}}</span>
-                            </a>
-                        </li>
-                        @endcan
-                    </ul>
-                </li>
-                @endcanany
+                    @endcanany
                 @endif
 
                 <!-- Customers -->
@@ -896,6 +907,18 @@
                             </a>
                         </li>
                         @endcan
+
+                        @if(addon_is_activated('portfolio_system') && get_setting('customer_verification'))
+                        @can('view_all_customers')
+                        <li class="aiz-side-nav-item">
+                            <a href="{{ route('customers.unverified.index') }}"
+                                class="aiz-side-nav-link {{ areActiveRoutes(['customers.create'])}}">
+                                <span class="aiz-side-nav-text">{{ translate('Unverified Customers') }}</span>
+                            </a>
+                        </li>
+                        @endcan
+                        @endif
+
                         @if(get_setting('classified_product') == 1)
                         @can('view_classified_products')
                         <li class="aiz-side-nav-item">
@@ -919,7 +942,7 @@
 
                 <!-- Sellers -->
                 @if (get_setting('vendor_system_activation') == 1)
-                @canany(['view_all_seller','seller_payment_history','view_seller_payout_requests','seller_commission_configuration','view_all_seller_packages','seller_verification_form_configuration'])
+                @canany(['view_all_seller','seller_payment_history','view_seller_payout_requests','seller_commission_configuration','view_all_seller_packages','seller_verification_form_configuration','set_category_wise_commission','set_seller_based_commission'])
                 <li class="aiz-side-nav-item">
                     <a href="#" class="aiz-side-nav-link">
                         <div class="aiz-side-nav-icon">
@@ -940,12 +963,21 @@
                             '!=', null)->count();
                             @endphp
                             <a href="{{ route('sellers.index') }}"
-                                class="aiz-side-nav-link {{ areActiveRoutes(['sellers.index', 'sellers.create', 'sellers.edit', 'sellers.payment_history','sellers.approved','sellers.profile_modal','sellers.show_verification_request'])}}">
+                                class="aiz-side-nav-link {{ areActiveRoutes(['sellers.index', 'sellers.profile']) }}">
                                 <span class="aiz-side-nav-text">{{ translate('All Seller') }}</span>
                                 @if($sellers > 0)<span class="badge badge-info">{{ $sellers }}</span> @endif
                             </a>
                         </li>
                         @endcan
+                        @can('view_pending_seller')
+                        <li class="aiz-side-nav-item">
+                            <a href="{{ route('sellers.registration_pending') }}"
+                                class="aiz-side-nav-link">
+                                <span class="aiz-side-nav-text">{{ translate('Applied Seller') }}</span>
+                            </a>
+                        </li>
+                        @endcan
+
                         @can('view_all_seller_rating_and_followers')
                         <li class="aiz-side-nav-item">
                             <a href="{{ route('sellers.rating_followers') }}" class="aiz-side-nav-link">
@@ -971,6 +1003,20 @@
                         <li class="aiz-side-nav-item">
                             <a href="{{ route('business_settings.vendor_commission') }}" class="aiz-side-nav-link">
                                 <span class="aiz-side-nav-text">{{ translate('Seller Commission') }}</span>
+                                </a>
+                        </li>
+                        @endcan
+                        @can('set_seller_based_commission')
+                        <li class="aiz-side-nav-item">
+                            <a href="{{ route('seller_based_commission') }}" class="aiz-side-nav-link">
+                                <span class="aiz-side-nav-text">{{ translate('Seller Based Commission') }}</span>
+                            </a>
+                        </li>
+                        @endcan
+                        @can('set_category_wise_commission')
+                            <li class="aiz-side-nav-item">
+                                <a href="{{route('categories_wise_commission')}}" class="aiz-side-nav-link">
+                                    <span class="aiz-side-nav-text">{{translate('Category Based Commission')}}</span>
                             </a>
                         </li>
                         @endcan
@@ -1199,8 +1245,16 @@
                         @can('view_all_custom_alerts')
                         <li class="aiz-side-nav-item">
                             <a href="{{route('custom-alerts.index')}}"
-                                class="aiz-side-nav-link {{ areActiveRoutes(['custom-alerts.index', 'custom-alerts.create', 'custom-alerts.edit'])}}">
+                                class="aiz-side-nav-link {{ areActiveRoutes(['custom-alerts.index', 'custom-alerts.create', 'custom-alerts.edit','custom-sale-alert.edit'])}}">
                                 <span class="aiz-side-nav-text">{{ translate('Custom Alert') }}</span>
+                            </a>
+                        </li>
+                        @endcan
+                        @can('view_custom_sale_alert')
+                        <li class="aiz-side-nav-item">
+                            <a href="{{route('custom-sale-alerts.index')}}"
+                                class="aiz-side-nav-link {{ areActiveRoutes(['custom-sale-alerts.index'])}}">
+                                <span class="aiz-side-nav-text">{{ translate('Custom Sell Alert') }}</span>
                             </a>
                         </li>
                         @endcan
@@ -1312,6 +1366,17 @@
                             </a>
                         </li>
                         @endif
+
+                        @can('custom_visitors_setup')
+                        <li class="aiz-side-nav-item">
+                            <a href="{{route('custom_product_visitors')}}"
+                                class="aiz-side-nav-link {{ areActiveRoutes(['custom_product_visitors'])}}">
+                                <span class="aiz-side-nav-text">{{ translate('Custom Visitors') }}</span>
+                            </a>
+                        </li>
+                        @endcan
+
+                       
                     </ul>
                 </li>
                 @endcanany
@@ -1483,143 +1548,7 @@
                 @endcanany
                 @endif
 
-                <!-- Offline Payment Addon-->
-                @if (addon_is_activated('offline_payment'))
-                @canany(['view_all_manual_payment_methods','view_all_offline_payment_orders',
-                'view_all_offline_wallet_recharges','view_all_offline_customer_package_payments','view_all_offline_seller_package_payments'])
-                <li class="aiz-side-nav-item">
-                    <a href="#" class="aiz-side-nav-link">
-                        <div class="aiz-side-nav-icon">
-                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 16 16">
-                                <g id="Group_28292" data-name="Group 28292" transform="translate(-1.25 -1.25)">
-                                    <g id="Group_28290" data-name="Group 28290" transform="translate(1.25 9.644)">
-                                        <path id="Path_40747" data-name="Path 40747"
-                                            d="M10.706,20.168a3.576,3.576,0,0,1-1.517-.335L6.6,18.613a4.249,4.249,0,0,0-1.784-.4.562.562,0,0,1-.558-.558v-3.8a.562.562,0,0,1,.372-.528l1.286-.447a4.2,4.2,0,0,1,2.424-.089l4.238,1.139A1.419,1.419,0,0,1,13.6,14.973a1.2,1.2,0,0,1,.045.357v.134l1.941-.484a2.775,2.775,0,0,1,1.7.112,1.152,1.152,0,0,1,.1,2.106l-5.048,2.59a3.618,3.618,0,0,1-1.613.38ZM5.368,17.124a5.238,5.238,0,0,1,1.7.476l2.587,1.22a2.489,2.489,0,0,0,2.156-.03L16.87,16.2a1.3,1.3,0,0,0-1.033-.134l-3.688.923h-.022l-.223.06a.522.522,0,0,1-.216.007l-2.32-.342a.557.557,0,0,1,.164-1.1l2.208.327.059-.015.565-.32a.332.332,0,0,0,.164-.275c0-.007-.015-.082-.015-.089a.319.319,0,0,0-.23-.223L8.052,13.88a3.051,3.051,0,0,0-1.77.06l-.907.313v2.873Z"
-                                            transform="translate(-2.022 -12.562)" fill="#575b6a" />
-                                        <path id="Path_40748" data-name="Path 40748"
-                                            d="M4.038,18.856H1.808A.562.562,0,0,1,1.25,18.3V13.088a.562.562,0,0,1,.558-.558h2.23a.562.562,0,0,1,.558.558V18.3A.562.562,0,0,1,4.038,18.856ZM2.365,17.739H3.48V13.646H2.365Z"
-                                            transform="translate(-1.25 -12.53)" fill="#575b6a" />
-                                    </g>
-                                    <path id="Path_40749" data-name="Path 40749"
-                                        d="M12.986,9.064H7.038A2.79,2.79,0,0,1,4.25,6.273V4.041A2.79,2.79,0,0,1,7.038,1.25h5.948a2.79,2.79,0,0,1,2.788,2.791V6.273A2.79,2.79,0,0,1,12.986,9.064Zm-5.948-6.7A1.676,1.676,0,0,0,5.365,4.041V6.273A1.676,1.676,0,0,0,7.038,7.948h5.948a1.676,1.676,0,0,0,1.673-1.674V4.041a1.676,1.676,0,0,0-1.673-1.674Z"
-                                        transform="translate(-0.77)" fill="#575b6a" />
-                                    <g id="Group_28291" data-name="Group 28291" transform="translate(5.042 2.545)">
-                                        <path id="Path_40750" data-name="Path 40750"
-                                            d="M16.592,6.746A.445.445,0,0,1,16.15,6.3V5.542a.442.442,0,1,1,.884,0V6.3A.445.445,0,0,1,16.592,6.746Z"
-                                            transform="translate(-8.748 -3.315)" fill="#575b6a" />
-                                        <path id="Path_40751" data-name="Path 40751"
-                                            d="M6.792,6.745A.445.445,0,0,1,6.35,6.3V5.542a.442.442,0,1,1,.884,0V6.3A.445.445,0,0,1,6.792,6.745Z"
-                                            transform="translate(-6.234 -3.314)" fill="#575b6a" />
-                                        <path id="Path_40752" data-name="Path 40752"
-                                            d="M11.535,4.673H10.316c-.085,0-.152-.055-.152-.1s.067-.1.152-.1h1.219a.457.457,0,0,0,0-.915h-.152v-.1a.457.457,0,1,0-.914,0v.1h-.152A1.047,1.047,0,0,0,9.25,4.57a1.043,1.043,0,0,0,1.066,1.018h1.219c.085,0,.152.055.152.1s-.067.1-.152.1H10.316a.457.457,0,0,0,0,.915h.152v.1a.457.457,0,1,0,.914,0v-.1h.152a1.02,1.02,0,1,0,0-2.037Z"
-                                            transform="translate(-6.725 -2.519)" fill="#575b6a" />
-                                    </g>
-                                </g>
-                            </svg>
-                        </div>
-                        <span class="aiz-side-nav-text">{{translate('Offline Payment System')}}</span>
-                        @if (env("DEMO_MODE") == "On")
-                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="14.001" viewBox="0 0 16 14.001"
-                            class="mx-2">
-                            <path id="Union_49" data-name="Union 49"
-                                d="M-19322,3342.5v-5a2.007,2.007,0,0,0-2-2v1.5a3,3,0,0,1-3,3h-4v-10h4a3,3,0,0,1,3,3v1.5a3,3,0,0,1,3,3v5a.506.506,0,0,1-.5.5A.5.5,0,0,1-19322,3342.5Zm-11-2V3339h-3a1,1,0,0,1-1-1,1,1,0,0,1,1-1h3v-7.5a.5.5,0,0,1,.5-.5.5.5,0,0,1,.5.5v11a.5.5,0,0,1-.5.5A.506.506,0,0,1-19333,3340.5Zm-3-7.5a1,1,0,0,1-1-1,1,1,0,0,1,1-1h3v2Z"
-                                transform="translate(19337 -3329)" fill="#f51350" />
-                        </svg>
-                        @endif
-                        <span class="aiz-side-nav-arrow"></span>
-                    </a>
-                    <ul class="aiz-side-nav-list level-2">
-                        @can('view_all_manual_payment_methods')
-                        <li class="aiz-side-nav-item">
-                            <a href="{{ route('manual_payment_methods.index') }}"
-                                class="aiz-side-nav-link {{ areActiveRoutes(['manual_payment_methods.index', 'manual_payment_methods.create', 'manual_payment_methods.edit'])}}">
-                                <span class="aiz-side-nav-text">{{translate('Manual Payment Methods')}}</span>
-                            </a>
-                        </li>
-                        @endcan
-                        @can('view_all_offline_payment_orders')
-                        <li class="aiz-side-nav-item">
-                            <a href="{{ route('offline_payment_orders.index') }}" class="aiz-side-nav-link">
-                                <span class="aiz-side-nav-text">{{translate('Offline Payment Orders')}}</span>
-                            </a>
-                        </li>
-                        @endcan
-                        @can('view_all_offline_wallet_recharges')
-                        <li class="aiz-side-nav-item">
-                            <a href="{{ route('offline_wallet_recharge_request.index') }}" class="aiz-side-nav-link">
-                                <span class="aiz-side-nav-text">{{translate('Offline Wallet Recharge')}}</span>
-                            </a>
-                        </li>
-                        @endcan
-
-                        @if(get_setting('classified_product') == 1 &&
-                        auth()->user()->can('view_all_offline_customer_package_payments'))
-                        <li class="aiz-side-nav-item">
-                            <a href="{{ route('offline_customer_package_payment_request.index') }}"
-                                class="aiz-side-nav-link">
-                                <span class="aiz-side-nav-text">{{translate('Offline Customer Package
-                                    Payments')}}</span>
-                            </a>
-                        </li>
-                        @endif
-                        @if (addon_is_activated('seller_subscription') &&
-                        auth()->user()->can('view_all_offline_seller_package_payments'))
-                        <li class="aiz-side-nav-item">
-                            <a href="{{ route('offline_seller_package_payment_request.index') }}"
-                                class="aiz-side-nav-link">
-                                <span class="aiz-side-nav-text">{{translate('Offline Seller Package Payments')}}</span>
-                            </a>
-                        </li>
-                        @endif
-                    </ul>
-                </li>
-                @endcanany
-                @endif
-
-                <!-- Paytm Addon -->
-                @if (addon_is_activated('paytm') && auth()->user()->can('asian_payment_gateway_configuration'))
-                <li class="aiz-side-nav-item">
-                    <a href="#" class="aiz-side-nav-link">
-                        <div class="aiz-side-nav-icon">
-                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 16 16">
-                                <g id="Payment_1_" transform="translate(0 -16)">
-                                    <path id="Path_40758" data-name="Path 40758"
-                                        d="M316.375,220h-2.5a.668.668,0,0,1,0-1.333h3.75a.668.668,0,0,0,0-1.333H315.75v-.667a.626.626,0,1,0-1.25,0v.667h-.625a2,2,0,0,0,0,4h2.5a.668.668,0,0,1,0,1.333h-3.75a.668.668,0,0,0,0,1.333H314.5v.667a.626.626,0,1,0,1.25,0V224h.625a2,2,0,0,0,0-4Z"
-                                        transform="translate(-302.25 -193.333)" fill="#575b6a" />
-                                    <g id="Group_28296" data-name="Group 28296" transform="translate(0 16)">
-                                        <path id="Path_40759" data-name="Path 40759"
-                                            d="M13.5,16H2.5A2.59,2.59,0,0,0,0,18.667v6.667A2.59,2.59,0,0,0,2.5,28H7.875a.668.668,0,0,0,0-1.333H2.5a1.3,1.3,0,0,1-1.25-1.333v-4h13.5V22A.626.626,0,1,0,16,22V18.667A2.59,2.59,0,0,0,13.5,16ZM1.25,20V18.667A1.3,1.3,0,0,1,2.5,17.333h11a1.3,1.3,0,0,1,1.25,1.333V20Z"
-                                            transform="translate(0 -16)" fill="#575b6a" />
-                                        <path id="Path_40760" data-name="Path 40760"
-                                            d="M80.625,256a.668.668,0,0,0,0,1.333H81.75a.668.668,0,0,0,0-1.333Z"
-                                            transform="translate(-77.5 -248)" fill="#575b6a" />
-                                        <path id="Path_40761" data-name="Path 40761"
-                                            d="M196.625,256a.668.668,0,0,0,0,1.333h1.125a.668.668,0,0,0,0-1.333Z"
-                                            transform="translate(-189.875 -248)" fill="#575b6a" />
-                                    </g>
-                                </g>
-                            </svg>
-                        </div>
-                        <span class="aiz-side-nav-text">{{translate('Asian Payment Gateway')}}</span>
-                        @if (env("DEMO_MODE") == "On")
-                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="14.001" viewBox="0 0 16 14.001"
-                            class="mx-2">
-                            <path id="Union_49" data-name="Union 49"
-                                d="M-19322,3342.5v-5a2.007,2.007,0,0,0-2-2v1.5a3,3,0,0,1-3,3h-4v-10h4a3,3,0,0,1,3,3v1.5a3,3,0,0,1,3,3v5a.506.506,0,0,1-.5.5A.5.5,0,0,1-19322,3342.5Zm-11-2V3339h-3a1,1,0,0,1-1-1,1,1,0,0,1,1-1h3v-7.5a.5.5,0,0,1,.5-.5.5.5,0,0,1,.5.5v11a.5.5,0,0,1-.5.5A.506.506,0,0,1-19333,3340.5Zm-3-7.5a1,1,0,0,1-1-1,1,1,0,0,1,1-1h3v2Z"
-                                transform="translate(19337 -3329)" fill="#f51350" />
-                        </svg>
-                        @endif
-                        <span class="aiz-side-nav-arrow"></span>
-                    </a>
-                    <ul class="aiz-side-nav-list level-2">
-                        <li class="aiz-side-nav-item">
-                            <a href="{{ route('paytm.index') }}" class="aiz-side-nav-link">
-                                <span class="aiz-side-nav-text">{{translate('Set Asian PG Credentials')}}</span>
-                            </a>
-                        </li>
-                    </ul>
-                </li>
-                @endif
+               
 
                 <!-- Club Point Addon-->
                 @if (addon_is_activated('club_point'))
@@ -1708,66 +1637,99 @@
                     </a>
                     <ul class="aiz-side-nav-list level-2">
                         @can('otp_configurations')
-                        <li class="aiz-side-nav-item">
-                            <a href="{{ route('otp.configconfiguration') }}" class="aiz-side-nav-link">
-                                <span class="aiz-side-nav-text">{{translate('OTP Configurations')}}</span>
-                            </a>
-                            <ul class="aiz-side-nav-list level-2">
-                                @can('otp_configurations')
-                                    <li class="aiz-side-nav-item">
-                                        <a href="{{ route('otp.login_configuration') }}" class="aiz-side-nav-link">
-                                            <span class="aiz-side-nav-text">{{translate('OTP Login Configuration')}}</span>
-                                        </a>
-                                    </li>
-                                    <li class="aiz-side-nav-item">
-                                        <a href="{{ route('otp.configconfiguration') }}" class="aiz-side-nav-link">
-                                            <span class="aiz-side-nav-text">{{translate('OTP Configurations')}}</span>
-                                        </a>
-                                    </li>
-                                @endcan
-                                @can('sms_templates')
-                                    <li class="aiz-side-nav-item">
-                                        <a href="{{route('sms-templates.index')}}" class="aiz-side-nav-link">
-                                            <span class="aiz-side-nav-text">{{translate('SMS Templates')}}</span>
-                                        </a>
-                                    </li>
-                                @endcan
-                            </ul>
-                        </li>
+                            <li class="aiz-side-nav-item">
+                                <a href="{{ route('otp.login_configuration') }}" class="aiz-side-nav-link">
+                                    <span class="aiz-side-nav-text">{{translate('OTP Login Configuration')}}</span>
+                                </a>
+                            </li>
+                            <li class="aiz-side-nav-item">
+                                <a href="{{ route('otp.configconfiguration') }}" class="aiz-side-nav-link">
+                                    <span class="aiz-side-nav-text">{{translate('OTP Configurations')}}</span>
+                                </a>
+                            </li>
                         @endcan
                         @can('sms_templates')
-                        <li class="aiz-side-nav-item">
-                            <a href="{{route('sms-templates.index')}}" class="aiz-side-nav-link">
-                                <span class="aiz-side-nav-text">{{translate('SMS Templates')}}</span>
-                            </a>
-                        </li>
+                            <li class="aiz-side-nav-item">
+                                <a href="{{route('sms-templates.index')}}" class="aiz-side-nav-link">
+                                    <span class="aiz-side-nav-text">{{translate('SMS Templates')}}</span>
+                                </a>
+                            </li>
                         @endcan
+                       
                     </ul>
                 </li>
                 @endcanany
                 @endif
 
-                <!-- African Payment Gateway -->
-                @if(addon_is_activated('african_pg'))
-                @canany(['african_pg_configuration','african_pg_credentials_configuration'])
+                <!--Shipping System -->
+                @if (addon_is_activated('shiprocket') || addon_is_activated('steadfast') || addon_is_activated('pathao'))
+                    @canany(['manage_shipping_system'])
+                        <li class="aiz-side-nav-item">
+                            <a href="#" class="aiz-side-nav-link">
+                                <div class="aiz-side-nav-icon">
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="#575b6a">
+                                        <path d="M20 4H4c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 14H4V8l8 5 8-5v10zm0-12H4v-.5L12 16l8-5V6z"/>
+                                    </svg>
+                                </div>
+                                <span class="aiz-side-nav-text">{{translate('Shipping System')}}</span>
+                                @if (env("DEMO_MODE") == "On")
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="14.001" viewBox="0 0 16 14.001"
+                                        class="mx-2">
+                                        <path id="Union_49" data-name="Union 49"
+                                            d="M-19322,3342.5v-5a2.007,2.007,0,0,0-2-2v1.5a3,3,0,0,1-3,3h-4v-10h4a3,3,0,0,1,3,3v1.5a3,3,0,0,1,3,3v5a.506.506,0,0,1-.5.5A.5.5,0,0,1-19322,3342.5Zm-11-2V3339h-3a1,1,0,0,1-1-1,1,1,0,0,1,1-1h3v-7.5a.5.5,0,0,1,.5-.5.5.5,0,0,1,.5.5v11a.5.5,0,0,1-.5.5A.506.506,0,0,1-19333,3340.5Zm-3-7.5a1,1,0,0,1-1-1,1,1,0,0,1,1-1h3v2Z"
+                                            transform="translate(19337 -3329)" fill="#f51350" />
+                                    </svg>
+                                @endif
+                                <span class="aiz-side-nav-arrow"></span>
+                            </a>
+                            @if (addon_is_activated('shiprocket'))
+                                <ul class="aiz-side-nav-list level-2">
+                                    @can('manage_shipping_system')
+                                        <li class="aiz-side-nav-item">
+                                            <a href="{{ route('shiprocket_configuration') }}" class="aiz-side-nav-link {{ areActiveRoutes(['shiprocket_configuration'])}}">
+                                                <span class="aiz-side-nav-text">{{translate('Shiprocket')}}</span>
+                                            </a>
+                                        </li>
+                                    @endcan
+                                </ul>
+                            @endif
+                            @if (addon_is_activated('steadfast'))
+                                <ul class="aiz-side-nav-list level-2">
+                                    @can('manage_shipping_system')
+                                        <li class="aiz-side-nav-item">
+                                            <a href="{{ route('steadfast_configuration') }}" class="aiz-side-nav-link {{ areActiveRoutes(['steadfast_configuration'])}}">
+                                                <span class="aiz-side-nav-text">{{translate('Steadfast')}}</span>
+                                            </a>
+                                        </li>
+                                    @endcan
+                                </ul>
+                            @endif
+                            @if (addon_is_activated('pathao'))
+                                <ul class="aiz-side-nav-list level-2">
+                                    @can('manage_shipping_system')
+                                        <li class="aiz-side-nav-item">
+                                            <a href="{{ route('pathao_configuration') }}" class="aiz-side-nav-link {{ areActiveRoutes(['pathao_configuration'])}}">
+                                                <span class="aiz-side-nav-text">{{translate('Pathao')}}</span>
+                                            </a>
+                                        </li>
+                                    @endcan
+                                </ul>
+                            @endif
+                        </li>
+                    @endcanany
+                @endif   
+                  
+                <!--GST addon -->
+                @if (addon_is_activated('gst_system'))
                 <li class="aiz-side-nav-item">
                     <a href="#" class="aiz-side-nav-link">
                         <div class="aiz-side-nav-icon">
                             <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 16 16">
-                                <g id="Group_28295" data-name="Group 28295" transform="translate(-19275 2615)">
-                                    <path id="Subtraction_229" data-name="Subtraction 229"
-                                        d="M15,12H13V10.667h2A.667.667,0,0,0,15.666,10V4H2.334V8H1V2A2,2,0,0,1,3,0H15a2,2,0,0,1,2,2v8A2,2,0,0,1,15,12ZM3,1.333A.667.667,0,0,0,2.334,2v.667H15.666V2A.667.667,0,0,0,15,1.333Z"
-                                        transform="translate(19274 -2615)" fill="#575b6a" />
-                                    <path id="Path_40756" data-name="Path 40756"
-                                        d="M4.966.425H2.217L1.694,1.983H.027L2.86-5.579H4.312L7.16,1.983H5.493ZM2.64-.837h1.9L3.586-3.668Zm5.544,2.82V-2.535H7.343v-1.1h.841v-.478a1.933,1.933,0,0,1,.546-1.467A4.613,4.613,0,0,1,11.027-6l-.016,1.163a1.937,1.937,0,0,0-.46-.047q-.852,0-.852.795v.452h1.124v1.1H9.7V1.983Z"
-                                        transform="translate(19274.973 -2600.983)" fill="#575b6a" />
-                                    <path id="Path_40757" data-name="Path 40757"
-                                        d="M7.333,13H4.667a.667.667,0,0,0,0,1.333H7.333a.667.667,0,0,0,0-1.333Z"
-                                        transform="translate(19273.207 -2621.667)" fill="#575b6a" />
-                                </g>
+                                <path id="Path_1" data-name="Path 1" d="M104-848a2.507,2.507,0,0,1-.958-.187,2.451,2.451,0,0,1-.812-.542,3.083,3.083,0,0,0-.948-.687,3.092,3.092,0,0,0-1.177-.187,2.411,2.411,0,0,1-1.771-.729A2.411,2.411,0,0,1,97.6-852.1a3.108,3.108,0,0,0-.187-1.167,3.033,3.033,0,0,0-.687-.958,2.451,2.451,0,0,1-.542-.812A2.507,2.507,0,0,1,96-856a2.507,2.507,0,0,1,.188-.958,2.451,2.451,0,0,1,.542-.812,3.083,3.083,0,0,0,.688-.948A3.092,3.092,0,0,0,97.6-859.9a2.411,2.411,0,0,1,.729-1.771,2.411,2.411,0,0,1,1.771-.729,3.108,3.108,0,0,0,1.167-.187,3.033,3.033,0,0,0,.958-.687,2.451,2.451,0,0,1,.813-.542A2.507,2.507,0,0,1,104-864a2.507,2.507,0,0,1,.958.188,2.451,2.451,0,0,1,.813.542,3.083,3.083,0,0,0,.948.688,3.092,3.092,0,0,0,1.177.188,2.411,2.411,0,0,1,1.771.729,2.411,2.411,0,0,1,.729,1.771,3.108,3.108,0,0,0,.188,1.167,3.033,3.033,0,0,0,.688.958,2.451,2.451,0,0,1,.542.813A2.507,2.507,0,0,1,112-856a2.507,2.507,0,0,1-.187.958,2.451,2.451,0,0,1-.542.813,3.083,3.083,0,0,0-.687.948,3.092,3.092,0,0,0-.187,1.177,2.411,2.411,0,0,1-.729,1.771,2.411,2.411,0,0,1-1.771.729,3.108,3.108,0,0,0-1.167.188,3.033,3.033,0,0,0-.958.688,2.451,2.451,0,0,1-.812.542A2.507,2.507,0,0,1,104-848Zm0-1.5a1,1,0,0,0,.385-.073.985.985,0,0,0,.323-.219,4.243,4.243,0,0,1,1.438-1.021,4.709,4.709,0,0,1,1.75-.292.968.968,0,0,0,.713-.287.968.968,0,0,0,.287-.713,4.627,4.627,0,0,1,.292-1.74,4.484,4.484,0,0,1,1.021-1.448A.964.964,0,0,0,110.5-856a.964.964,0,0,0-.292-.708,4.484,4.484,0,0,1-1.021-1.448,4.627,4.627,0,0,1-.292-1.74.968.968,0,0,0-.287-.713.968.968,0,0,0-.713-.287,4.627,4.627,0,0,1-1.74-.292,4.485,4.485,0,0,1-1.448-1.021.985.985,0,0,0-.323-.219A1,1,0,0,0,104-862.5a1,1,0,0,0-.385.073.985.985,0,0,0-.323.219,4.243,4.243,0,0,1-1.437,1.021,4.709,4.709,0,0,1-1.75.292.968.968,0,0,0-.713.287.968.968,0,0,0-.287.713,4.627,4.627,0,0,1-.292,1.74,4.484,4.484,0,0,1-1.021,1.448A.964.964,0,0,0,97.5-856a.964.964,0,0,0,.292.708,4.484,4.484,0,0,1,1.021,1.448,4.627,4.627,0,0,1,.292,1.74.968.968,0,0,0,.287.713.968.968,0,0,0,.713.287,4.627,4.627,0,0,1,1.74.292,4.485,4.485,0,0,1,1.448,1.021.985.985,0,0,0,.323.219A1,1,0,0,0,104-849.5Zm2.25-3a1.205,1.205,0,0,0,.885-.365,1.206,1.206,0,0,0,.365-.885,1.206,1.206,0,0,0-.365-.885,1.205,1.205,0,0,0-.885-.365,1.205,1.205,0,0,0-.885.365,1.206,1.206,0,0,0-.365.885,1.206,1.206,0,0,0,.365.885A1.205,1.205,0,0,0,106.25-852.5Zm-4.25-.437,5-5L105.938-859l-5,5ZM101.75-857a1.205,1.205,0,0,0,.885-.365,1.206,1.206,0,0,0,.365-.885,1.206,1.206,0,0,0-.365-.885,1.205,1.205,0,0,0-.885-.365,1.205,1.205,0,0,0-.885.365,1.206,1.206,0,0,0-.365.885,1.206,1.206,0,0,0,.365.885A1.205,1.205,0,0,0,101.75-857ZM104-856Z" transform="translate(-96 864)" fill="#575b6a"/>
                             </svg>
+
                         </div>
-                        <span class="aiz-side-nav-text">{{translate('African Payment Gateway')}}</span>
+                        <span class="aiz-side-nav-text">{{translate('GST System')}}</span>
                         @if (env("DEMO_MODE") == "On")
                         <svg xmlns="http://www.w3.org/2000/svg" width="16" height="14.001" viewBox="0 0 16 14.001"
                             class="mx-2">
@@ -1778,101 +1740,395 @@
                         @endif
                         <span class="aiz-side-nav-arrow"></span>
                     </a>
-                    <ul class="aiz-side-nav-list level-2">
-                        @can('african_pg_credentials_configuration')
+                    <ul class="aiz-side-nav-list level-2">       
                         <li class="aiz-side-nav-item">
-                            <a href="{{route('african_credentials.index')}}" class="aiz-side-nav-link">
-                                <span class="aiz-side-nav-text">{{translate('Set African PG Credentials')}}</span>
+                            <a href="{{ route('gst.unverified.sellers') }}" class="aiz-side-nav-link">
+                                <span class="aiz-side-nav-text">{{translate('Unverified Sellers')}}</span>
                             </a>
                         </li>
+                        @can('gst_assign')
+                        <li class="aiz-side-nav-item">
+                            <a href="{{ route('products.hsn-gst.assigns') }}" class="aiz-side-nav-link">
+                                <span class="aiz-side-nav-text">{{translate('HSN Assign')}}</span>
+                            </a>
+                        </li>
+                        @if (addon_is_activated('wholesale'))
+                        <li class="aiz-side-nav-item">
+                            <a href="{{ route('products.wholesale-hsn-gst.assigns') }}" class="aiz-side-nav-link">
+                                <span class="aiz-side-nav-text">{{translate('Wholesale Products')}}</span>
+                            </a>
+                        </li>
+                        @endif
+                        @if (addon_is_activated('preorder'))
+                        <li class="aiz-side-nav-item">
+                            <a href="{{ route('products.preorder-hsn-gst.assigns') }}" class="aiz-side-nav-link">
+                                <span class="aiz-side-nav-text">{{translate('Preorder Products')}}</span>
+                            </a>
+                        </li>
+                        @endif
+                        @if (addon_is_activated('auction'))
+                        <li class="aiz-side-nav-item">
+                            <a href="{{ route('products.auction-hsn-gst.assigns') }}" class="aiz-side-nav-link">
+                                <span class="aiz-side-nav-text">{{translate('Auction Products')}}</span>
+                            </a>
+                        </li>
+                        @endif
                         @endcan
+                        
                     </ul>
                 </li>
-                @endcanany
                 @endif
+                
 
-                <!-- Website Setup -->
-                @canany(['header_setup','footer_setup','view_all_website_pages','website_appearance','authentication_layout_settings'])
+                @canany(['payment_methods_configurations','african_pg_configuration','african_pg_credentials_configuration','view_all_manual_payment_methods','view_all_offline_payment_orders',
+                        'view_all_offline_wallet_recharges','view_all_offline_customer_package_payments','view_all_offline_seller_package_payments','asian_payment_gateway_configuration'])
                 <li class="aiz-side-nav-item">
-                    <a href="#" class="aiz-side-nav-link {{ areActiveRoutes(['website.footer', 'website.header'])}}">
+                    
+                    <a href="javascript:void(0);" class="aiz-side-nav-link">
                         <div class="aiz-side-nav-icon">
-                            <svg id="Group_28315" data-name="Group 28315" xmlns="http://www.w3.org/2000/svg" width="16"
-                                height="16" viewBox="0 0 16 16">
-                                <circle id="Ellipse_893" data-name="Ellipse 893" cx="0.625" cy="0.625" r="0.625"
-                                    transform="translate(7.375 6.125)" fill="#575b6a" />
-                                <path id="Path_40777" data-name="Path 40777"
-                                    d="M13.5,0H2.5A2.5,2.5,0,0,0,0,2.5V11a2.5,2.5,0,0,0,2.5,2.5H7.375v1.25H5.5A.625.625,0,0,0,5.5,16h5a.625.625,0,0,0,0-1.25H8.625V12.875A.625.625,0,0,0,8,12.25H2.5A1.251,1.251,0,0,1,1.25,11V2.5A1.251,1.251,0,0,1,2.5,1.25h11A1.251,1.251,0,0,1,14.75,2.5V11a1.251,1.251,0,0,1-1.25,1.25h-3a.625.625,0,0,0,0,1.25h3A2.5,2.5,0,0,0,16,11V2.5A2.5,2.5,0,0,0,13.5,0Z"
-                                    fill="#575b6a" />
-                                <path id="Path_40778" data-name="Path 40778"
-                                    d="M120.375,84.75a.625.625,0,0,0,.625-.625v-.688a3.107,3.107,0,0,0,1.1-.456l.487.487a.625.625,0,0,0,.884-.884l-.487-.487a3.108,3.108,0,0,0,.456-1.1h.688a.625.625,0,1,0,0-1.25h-.688a3.108,3.108,0,0,0-.456-1.1l.487-.487a.625.625,0,0,0-.884-.884l-.487.487a3.107,3.107,0,0,0-1.1-.456v-.688a.625.625,0,0,0-1.25,0v.688a3.108,3.108,0,0,0-1.1.456l-.487-.487a.625.625,0,0,0-.884.884l.487.487a3.108,3.108,0,0,0-.456,1.1h-.688a.625.625,0,0,0,0,1.25h.688a3.108,3.108,0,0,0,.456,1.1l-.487.487a.625.625,0,0,0,.884.884l.487-.487a3.107,3.107,0,0,0,1.1.456v.688A.625.625,0,0,0,120.375,84.75ZM118.5,80.375a1.875,1.875,0,1,1,1.875,1.875A1.877,1.877,0,0,1,118.5,80.375Z"
-                                    transform="translate(-112.375 -73.625)" fill="#575b6a" />
+                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 16 16">
+                                <g id="Payment_1_" transform="translate(0 -16)">
+                                    <path id="Path_40758" data-name="Path 40758"
+                                        d="M316.375,220h-2.5a.668.668,0,0,1,0-1.333h3.75a.668.668,0,0,0,0-1.333H315.75v-.667a.626.626,0,1,0-1.25,0v.667h-.625a2,2,0,0,0,0,4h2.5a.668.668,0,0,1,0,1.333h-3.75a.668.668,0,0,0,0,1.333H314.5v.667a.626.626,0,1,0,1.25,0V224h.625a2,2,0,0,0,0-4Z"
+                                        transform="translate(-302.25 -193.333)" fill="#575b6a" />
+                                    <g id="Group_28296" data-name="Group 28296" transform="translate(0 16)">
+                                        <path id="Path_40759" data-name="Path 40759"
+                                            d="M13.5,16H2.5A2.59,2.59,0,0,0,0,18.667v6.667A2.59,2.59,0,0,0,2.5,28H7.875a.668.668,0,0,0,0-1.333H2.5a1.3,1.3,0,0,1-1.25-1.333v-4h13.5V22A.626.626,0,1,0,16,22V18.667A2.59,2.59,0,0,0,13.5,16ZM1.25,20V18.667A1.3,1.3,0,0,1,2.5,17.333h11a1.3,1.3,0,0,1,1.25,1.333V20Z"
+                                            transform="translate(0 -16)" fill="#575b6a" />
+                                        <path id="Path_40760" data-name="Path 40760"
+                                            d="M80.625,256a.668.668,0,0,0,0,1.333H81.75a.668.668,0,0,0,0-1.333Z"
+                                            transform="translate(-77.5 -248)" fill="#575b6a" />
+                                        <path id="Path_40761" data-name="Path 40761"
+                                            d="M196.625,256a.668.668,0,0,0,0,1.333h1.125a.668.668,0,0,0,0-1.333Z"
+                                            transform="translate(-189.875 -248)" fill="#575b6a" />
+                                    </g>
+                                </g>
                             </svg>
                         </div>
-                        <span class="aiz-side-nav-text">{{translate('Website Setup')}}</span>
+                        <span class="aiz-side-nav-text">{{translate('Payment Gateways')}}</span>
                         <span class="aiz-side-nav-arrow"></span>
                     </a>
                     <ul class="aiz-side-nav-list level-2">
-                        @can('select_homepage')
+                        @can('payment_methods_configurations')
                         <li class="aiz-side-nav-item">
-                            <a href="{{ route('website.select-homepage') }}" class="aiz-side-nav-link">
-                                <span class="aiz-side-nav-text">{{translate('Select Homepage')}}</span>
+                            <a href="{{ route('payment_method.index')}}" class="aiz-side-nav-link">
+                                <span class="aiz-side-nav-text">{{translate('Payment Methods')}}</span>
                             </a>
                         </li>
                         @endcan
-                        @can('edit_website_page')
+
+                        
+                        <!-- Cybersource Addon -->
+                        @if (addon_is_activated('cybersource')  && auth()->user()->can('cybersource_pg_configuration'))
                         <li class="aiz-side-nav-item">
-                            <a href="{{ route('custom-pages.edit', ['id'=>'home', 'lang'=>env('DEFAULT_LANGUAGE'), 'page'=>'home']) }}"
-                                class="aiz-side-nav-link {{ (url()->current() == url('/admin/website/custom-pages/edit/home')) ? 'active' : '' }}">
-                                <span class="aiz-side-nav-text">{{translate('Homepage Settings')}}</span>
+                            <a href="{{route('cybersource_configuration')}}" class="aiz-side-nav-link">
+                                <span class="aiz-side-nav-text">{{translate('Cybersource Payment Gateway')}}</span>
+                                @if (env("DEMO_MODE") == "On")
+                                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="14.001" viewBox="0 0 16 14.001"
+                                    class="mx-2">
+                                    <path id="Union_49" data-name="Union 49"
+                                        d="M-19322,3342.5v-5a2.007,2.007,0,0,0-2-2v1.5a3,3,0,0,1-3,3h-4v-10h4a3,3,0,0,1,3,3v1.5a3,3,0,0,1,3,3v5a.506.506,0,0,1-.5.5A.5.5,0,0,1-19322,3342.5Zm-11-2V3339h-3a1,1,0,0,1-1-1,1,1,0,0,1,1-1h3v-7.5a.5.5,0,0,1,.5-.5.5.5,0,0,1,.5.5v11a.5.5,0,0,1-.5.5A.506.506,0,0,1-19333,3340.5Zm-3-7.5a1,1,0,0,1-1-1,1,1,0,0,1,1-1h3v2Z"
+                                        transform="translate(19337 -3329)" fill="#f51350" />
+                                </svg>
+                                @endif
                             </a>
                         </li>
-                        @endcan
-                        @can('authentication_layout_settings')
+                        @endif
+
+                       
+
+
+                       
+                        <!-- Paytm Addon -->
+                        @if (addon_is_activated('paytm') && auth()->user()->can('asian_payment_gateway_configuration'))
                         <li class="aiz-side-nav-item">
-                            <a href="{{ route('website.authentication-layout-settings') }}" class="aiz-side-nav-link">
-                                <span class="aiz-side-nav-text">{{translate('Authentication Layout & Settings')}}</span>
+                            <a href="{{route('paytm.index')}}" class="aiz-side-nav-link">
+                                <span class="aiz-side-nav-text">{{translate('Asian Payment Gateway')}}</span>
+                                @if (env("DEMO_MODE") == "On")
+                                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="14.001" viewBox="0 0 16 14.001"
+                                    class="mx-2">
+                                    <path id="Union_49" data-name="Union 49"
+                                        d="M-19322,3342.5v-5a2.007,2.007,0,0,0-2-2v1.5a3,3,0,0,1-3,3h-4v-10h4a3,3,0,0,1,3,3v1.5a3,3,0,0,1,3,3v5a.506.506,0,0,1-.5.5A.5.5,0,0,1-19322,3342.5Zm-11-2V3339h-3a1,1,0,0,1-1-1,1,1,0,0,1,1-1h3v-7.5a.5.5,0,0,1,.5-.5.5.5,0,0,1,.5.5v11a.5.5,0,0,1-.5.5A.506.506,0,0,1-19333,3340.5Zm-3-7.5a1,1,0,0,1-1-1,1,1,0,0,1,1-1h3v2Z"
+                                        transform="translate(19337 -3329)" fill="#f51350" />
+                                </svg>
+                                @endif
                             </a>
                         </li>
-                        @endcan
-                        @can('header_setup')
-                        <li class="aiz-side-nav-item">
-                            <a href="{{ route('website.header') }}" class="aiz-side-nav-link">
-                                <span class="aiz-side-nav-text">{{translate('Header')}}</span>
+                        @endif
+
+                         <!-- African Payment Gateway -->
+                        @if(addon_is_activated('african_pg'))
+                        @canany(['african_pg_configuration','african_pg_credentials_configuration'])
+                         <li class="aiz-side-nav-item">
+                            <a href="{{route('african_credentials.index')}}" class="aiz-side-nav-link">
+                                <span class="aiz-side-nav-text">{{translate('African Payment Gateway')}}</span>
+                                @if (env("DEMO_MODE") == "On")
+                                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="14.001" viewBox="0 0 16 14.001"
+                                    class="mx-2">
+                                    <path id="Union_49" data-name="Union 49"
+                                        d="M-19322,3342.5v-5a2.007,2.007,0,0,0-2-2v1.5a3,3,0,0,1-3,3h-4v-10h4a3,3,0,0,1,3,3v1.5a3,3,0,0,1,3,3v5a.506.506,0,0,1-.5.5A.5.5,0,0,1-19322,3342.5Zm-11-2V3339h-3a1,1,0,0,1-1-1,1,1,0,0,1,1-1h3v-7.5a.5.5,0,0,1,.5-.5.5.5,0,0,1,.5.5v11a.5.5,0,0,1-.5.5A.506.506,0,0,1-19333,3340.5Zm-3-7.5a1,1,0,0,1-1-1,1,1,0,0,1,1-1h3v2Z"
+                                        transform="translate(19337 -3329)" fill="#f51350" />
+                                </svg>
+                                @endif
                             </a>
                         </li>
-                        @endcan
-                        @can('footer_setup')
+                        @endcanany
+                        @endif
+
+
+
+                        <!-- Offline Payment Addon-->
+                        @if (addon_is_activated('offline_payment'))
+                        @canany(['view_all_manual_payment_methods','view_all_offline_payment_orders',
+                        'view_all_offline_wallet_recharges','view_all_offline_customer_package_payments','view_all_offline_seller_package_payments'])
                         <li class="aiz-side-nav-item">
-                            <a href="{{ route('website.footer', ['lang'=>  App::getLocale()] ) }}"
-                                class="aiz-side-nav-link {{ areActiveRoutes(['website.footer'])}}">
-                                <span class="aiz-side-nav-text">{{translate('Footer')}}</span>
+                            <a href="#" class="aiz-side-nav-link">
+                                <span class="aiz-side-nav-text">{{translate('Offline Payment System')}}</span>
+                                @if (env("DEMO_MODE") == "On")
+                                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="14.001" viewBox="0 0 16 14.001"
+                                    class="mx-2">
+                                    <path id="Union_49" data-name="Union 49"
+                                        d="M-19322,3342.5v-5a2.007,2.007,0,0,0-2-2v1.5a3,3,0,0,1-3,3h-4v-10h4a3,3,0,0,1,3,3v1.5a3,3,0,0,1,3,3v5a.506.506,0,0,1-.5.5A.5.5,0,0,1-19322,3342.5Zm-11-2V3339h-3a1,1,0,0,1-1-1,1,1,0,0,1,1-1h3v-7.5a.5.5,0,0,1,.5-.5.5.5,0,0,1,.5.5v11a.5.5,0,0,1-.5.5A.506.506,0,0,1-19333,3340.5Zm-3-7.5a1,1,0,0,1-1-1,1,1,0,0,1,1-1h3v2Z"
+                                        transform="translate(19337 -3329)" fill="#f51350" />
+                                </svg>
+                                @endif
+                                <span class="aiz-side-nav-arrow"></span>
                             </a>
+                            <ul class="aiz-side-nav-list level-3">
+                                @can('view_all_manual_payment_methods')
+                                <li class="aiz-side-nav-item">
+                                    <a href="{{ route('manual_payment_methods.index') }}"
+                                        class="aiz-side-nav-link {{ areActiveRoutes(['manual_payment_methods.index', 'manual_payment_methods.create', 'manual_payment_methods.edit'])}}">
+                                        <span class="aiz-side-nav-text">{{translate('Manual Payment Methods')}}</span>
+                                    </a>
+                                </li>
+                                @endcan
+                                @can('view_all_offline_payment_orders')
+                                <li class="aiz-side-nav-item">
+                                    <a href="{{ route('offline_payment_orders.index') }}" class="aiz-side-nav-link">
+                                        <span class="aiz-side-nav-text">{{translate('Offline Payment Orders')}}</span>
+                                    </a>
+                                </li>
+                                @endcan
+                                @can('view_all_offline_wallet_recharges')
+                                <li class="aiz-side-nav-item">
+                                    <a href="{{ route('offline_wallet_recharge_request.index') }}" class="aiz-side-nav-link">
+                                        <span class="aiz-side-nav-text">{{translate('Offline Wallet Recharge')}}</span>
+                                    </a>
+                                </li>
+                                @endcan
+
+                                @if(get_setting('classified_product') == 1 &&
+                                auth()->user()->can('view_all_offline_customer_package_payments'))
+                                <li class="aiz-side-nav-item">
+                                    <a href="{{ route('offline_customer_package_payment_request.index') }}"
+                                        class="aiz-side-nav-link">
+                                        <span class="aiz-side-nav-text">{{translate('Offline Customer Package
+                                            Payments')}}</span>
+                                    </a>
+                                </li>
+                                @endif
+                                @if (addon_is_activated('seller_subscription') &&
+                                auth()->user()->can('view_all_offline_seller_package_payments'))
+                                <li class="aiz-side-nav-item">
+                                    <a href="{{ route('offline_seller_package_payment_request.index') }}"
+                                        class="aiz-side-nav-link">
+                                        <span class="aiz-side-nav-text">{{translate('Offline Seller Package Payments')}}</span>
+                                    </a>
+                                </li>
+                                @endif
+                            </ul>
                         </li>
-                        @endcan
-                        @can('view_all_website_pages')
-                        <li class="aiz-side-nav-item">
-                            <a href="{{ route('website.pages') }}"
-                                class="aiz-side-nav-link {{ areActiveRoutes(['website.pages', 'custom-pages.create' ,'custom-pages.edit'])}}">
-                                <span class="aiz-side-nav-text">{{translate('Pages')}}</span>
-                            </a>
-                        </li>
-                        @endcan
-                        @can('website_appearance')
-                        <li class="aiz-side-nav-item">
-                            <a href="{{ route('website.appearance') }}" class="aiz-side-nav-link">
-                                <span class="aiz-side-nav-text">{{translate('Appearance')}}</span>
-                            </a>
-                        </li>
-                        @endcan
+                        @endcanany
+                        @endif
+
+                        @if (addon_is_activated('knet'))
+                            @can('knet_configuration')
+                                <li class="aiz-side-nav-item">
+                                    <a href="{{ route('knet.configuration')}}" class="aiz-side-nav-link">
+                                        <span class="aiz-side-nav-text">{{translate('Knet Payment Gateway')}}</span>
+                                    </a>
+                                </li>
+                            @endcan
+                        @endif
+
                     </ul>
                 </li>
                 @endcanany
+
+                
+
+                <!-- Website Setup -->
+                @canany(['header_setup', 'footer_setup', 'view_all_website_pages', 'website_appearance', 'authentication_layout_settings', 'top_banner_setting', 'view_top_banner'])
+                    <li class="aiz-side-nav-item">
+                        <a href="#" class="aiz-side-nav-link {{ (areActiveRoutes(['website.footer', 'website.header', 'website.pages', 'website.appearance']) && request('id') != 'portfolio' && request('page') != 'portfolio') ? 'active' : '' }}">
+                            <div class="aiz-side-nav-icon">
+                                <svg id="Group_28315" data-name="Group 28315" xmlns="http://www.w3.org/2000/svg" width="16"
+                                    height="16" viewBox="0 0 16 16">
+                                    <circle id="Ellipse_893" data-name="Ellipse 893" cx="0.625" cy="0.625" r="0.625"
+                                        transform="translate(7.375 6.125)" fill="#575b6a" />
+                                    <path id="Path_40777" data-name="Path 40777"
+                                        d="M13.5,0H2.5A2.5,2.5,0,0,0,0,2.5V11a2.5,2.5,0,0,0,2.5,2.5H7.375v1.25H5.5A.625.625,0,0,0,5.5,16h5a.625.625,0,0,0,0-1.25H8.625V12.875A.625.625,0,0,0,8,12.25H2.5A1.251,1.251,0,0,1,1.25,11V2.5A1.251,1.251,0,0,1,2.5,1.25h11A1.251,1.251,0,0,1,14.75,2.5V11a1.251,1.251,0,0,1-1.25,1.25h-3a.625.625,0,0,0,0,1.25h3A2.5,2.5,0,0,0,16,11V2.5A2.5,2.5,0,0,0,13.5,0Z"
+                                        fill="#575b6a" />
+                                    <path id="Path_40778" data-name="Path 40778"
+                                        d="M120.375,84.75a.625.625,0,0,0,.625-.625v-.688a3.107,3.107,0,0,0,1.1-.456l.487.487a.625.625,0,0,0,.884-.884l-.487-.487a3.108,3.108,0,0,0,.456-1.1h.688a.625.625,0,1,0,0-1.25h-.688a3.108,3.108,0,0,0-.456-1.1l.487-.487a.625.625,0,0,0-.884-.884l-.487.487a3.107,3.107,0,0,0-1.1-.456v-.688a.625.625,0,0,0-1.25,0v.688a3.108,3.108,0,0,0-1.1.456l-.487-.487a.625.625,0,0,0-.884.884l.487.487a3.108,3.108,0,0,0-.456,1.1h-.688a.625.625,0,0,0,0,1.25h.688a3.108,3.108,0,0,0,.456,1.1l-.487.487a.625.625,0,0,0,.884.884l.487-.487a3.107,3.107,0,0,0,1.1.456v.688A.625.625,0,0,0,120.375,84.75ZM118.5,80.375a1.875,1.875,0,1,1,1.875,1.875A1.877,1.877,0,0,1,118.5,80.375Z"
+                                        transform="translate(-112.375 -73.625)" fill="#575b6a" />
+                                </svg>
+                            </div>
+                            <span class="aiz-side-nav-text">{{translate('Website Setup')}}</span>
+                            <span class="aiz-side-nav-arrow"></span>
+                        </a>
+                        <ul class="aiz-side-nav-list level-2">
+                            @can('select_homepage')
+                                <li class="aiz-side-nav-item">
+                                    <a href="{{ route('website.select-homepage') }}" class="aiz-side-nav-link {{ areActiveRoutes(['website.select-homepage'])}}">
+                                        <span class="aiz-side-nav-text">{{translate('Select Homepage')}}</span>
+                                    </a>
+                                </li>
+                            @endcan
+                            @can('edit_website_page')
+                                <li class="aiz-side-nav-item">
+                                    <a href="{{ route('custom-pages.edit', ['id' => 'home', 'lang' => env('DEFAULT_LANGUAGE'), 'page' => 'home']) }}"
+                                        class="aiz-side-nav-link {{ (request('id') == 'home' || request('page') == 'home') ? 'active' : '' }}">
+                                        <span class="aiz-side-nav-text">{{translate('Homepage Settings')}}</span>
+                                    </a>
+                                </li>
+                            @endcan
+                            @can('select_font_family')
+                                <li class="aiz-side-nav-item">
+                                    <a href="{{ route('website.select-font-family') }}" class="aiz-side-nav-link {{ areActiveRoutes(['website.select-font-family'])}}">
+                                        <span class="aiz-side-nav-text">{{translate('Font Family')}}</span>
+                                    </a>
+                                </li>
+                            @endcan
+                            @can('authentication_layout_settings')
+                                <li class="aiz-side-nav-item">
+                                    <a href="{{ route('website.authentication-layout-settings') }}" class="aiz-side-nav-link {{ areActiveRoutes(['website.authentication-layout-settings'])}}">
+                                        <span class="aiz-side-nav-text">{{translate('Authentication Layout & Settings')}}</span>
+                                    </a>
+                                </li>
+                            @endcan
+                            <!-- @can('show_element')
+                                <li class="aiz-side-nav-item">
+                                    <a href="javascript:void(0);" class="aiz-side-nav-link">
+                                        <span class="aiz-side-nav-text">{{translate('Element')}}</span>
+                                        <span class="aiz-side-nav-arrow"></span>
+                                    </a>
+                                    <ul class="aiz-side-nav-list level-3">
+                                        <li class="aiz-side-nav-item">
+                                            <a href="{{ route('elements.index') }}" class="aiz-side-nav-link">
+                                                <span class="aiz-side-nav-text">{{translate('All Elements')}}</span>
+                                            </a>
+                                        </li>
+                                    </ul>
+                                </li>
+                            @endcan -->
+                            @can('select_header')
+                                <li class="aiz-side-nav-item">
+                                    <a href="{{ route('website.select-header') }}" class="aiz-side-nav-link {{ areActiveRoutes(['website.select-header'])}}">
+                                        <span class="aiz-side-nav-text">{{translate('Select Header')}}</span>
+                                    </a>
+                                </li>
+                            @endcan
+                            @can('header_setup')
+                                <li class="aiz-side-nav-item">
+                                    <a href="{{ route('website.header') }}" class="aiz-side-nav-link {{ (Route::is('website.header') && request('id') != 'portfolio') ? 'active' : '' }}">
+                                        <span class="aiz-side-nav-text">{{translate('Header Settings')}}</span>
+                                    </a>
+                                </li>
+                            @endcan
+                            @canany(['view_top_banner'])
+                                <li class="aiz-side-nav-item">
+                                    <a href="#" class="aiz-side-nav-link {{ areActiveRoutes(['top_banner.index', 'top_banner.setting', 'top_banner.create', 'top_banner.edit'])}}">
+                                        <span class="aiz-side-nav-text">{{translate('Top Bar')}}</span>
+                                        <span class="aiz-side-nav-arrow"></span>
+                                    </a>
+                                    <!--Submenu-->
+                                    <ul class="aiz-side-nav-list level-3">
+                                        @can('view_top_banner')
+                                            <li class="aiz-side-nav-item">
+                                                <a class="aiz-side-nav-link {{ areActiveRoutes(['top_banner.index', 'top_banner.create', 'top_banner.edit'])}}" href="{{route('top_banner.index')}}">
+                                                    <span class="aiz-side-nav-text">{{translate('Top Bar List')}}</span>
+                                                </a>
+                                            </li>
+                                        @endcan
+                                        @can('top_banner_setting')
+                                            <li class="aiz-side-nav-item">
+                                                <a class="aiz-side-nav-link {{ areActiveRoutes(['top_banner.setting'])}}" href="{{route('top_banner.setting')}}">
+                                                    <span class="aiz-side-nav-text">{{translate('Top Bar Settings')}}</span>
+                                                </a>
+                                            </li>
+                                        @endcan
+                                    </ul>
+                                </li>
+                            @endcanany
+                            @can('footer_setup')
+                                <li class="aiz-side-nav-item">
+                                    <a href="{{ route('website.footer', ['lang' => App::getLocale()]) }}" class="aiz-side-nav-link {{ (Route::is('website.footer') && request('id') != 'portfolio') ? 'active' : '' }}">
+                                        <span class="aiz-side-nav-text">{{translate('Footer Settings')}}</span>
+                                    </a>
+                                </li>
+                            @endcan
+                            @can('view_all_website_pages')
+                                <li class="aiz-side-nav-item">
+                                    <a href="{{ route('website.pages') }}"
+                                        class="aiz-side-nav-link {{ (areActiveRoutes(['website.pages', 'custom-pages.create', 'custom-pages.edit']) && request('id') != 'portfolio' && request('page') != 'portfolio') ? 'active' : '' }}">
+                                        <span class="aiz-side-nav-text">{{translate('Pages')}}</span>
+                                    </a>
+                                </li>
+                            @endcan
+                            @can('website_appearance')
+                                <li class="aiz-side-nav-item">
+                                    <a href="{{ route('website.appearance') }}" class="aiz-side-nav-link {{ areActiveRoutes(['website.appearance'])}}">
+                                        <span class="aiz-side-nav-text">{{translate('Appearance')}}</span>
+                                    </a>
+                                </li>
+                            @endcan
+                        </ul>
+                    </li>
+                @endcanany
+
+                @if(addon_is_activated('portfolio_system'))
+                <li class="aiz-side-nav-item">
+                    <a href="#" class="aiz-side-nav-link {{ (request('id') == 'portfolio' || request('page') == 'portfolio' || Route::is('website.portfolioheader')) ? 'active' : '' }}">
+                        <div class="aiz-side-nav-icon">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 16 16">
+                                <path id="landing_portfolio" data-name="Path 1" d="M81.6-784a1.406,1.406,0,0,1-1.13-.588A2.191,2.191,0,0,1,80-786v-12a2.191,2.191,0,0,1,.47-1.412A1.406,1.406,0,0,1,81.6-800H94.4a1.406,1.406,0,0,1,1.13.588A2.191,2.191,0,0,1,96-798v12a2.191,2.191,0,0,1-.47,1.412A1.406,1.406,0,0,1,94.4-784Zm0-2H90v-3.5H81.6Zm10,0h2.8v-9H91.6Zm-10-5.5H90V-795H81.6Z" transform="translate(-80 800)" fill="#575b6a"/>
+                            </svg>
+                        </div>
+                        <span class="aiz-side-nav-text">{{translate('Landing Page Setup')}}</span>
+                        <span class="aiz-side-nav-arrow"></span>
+                    </a>
+                    <ul class="aiz-side-nav-list level-2">
+
+                        <li class="aiz-side-nav-item">
+                            <a href="{{ route('website.portfolioheader') }}"
+                                class="aiz-side-nav-link">
+                                <span class="aiz-side-nav-text">{{translate('Header Nav')}}</span>
+                            </a>
+                        </li>
+                        <li class="aiz-side-nav-item">
+                            <a href="{{ route('custom-pages.edit', ['id' => 'portfolio', 'lang' => env('DEFAULT_LANGUAGE'), 'page' => 'portfolio']) }}"
+                                class="aiz-side-nav-link {{ (request('id') == 'portfolio' || request('page') == 'portfolio') ? 'active' : '' }}">
+                                <span class="aiz-side-nav-text">{{translate('Landing Page')}}</span>
+                            </a>
+                        </li>
+                        @can('footer_setup')
+                            <li class="aiz-side-nav-item">
+                                <a href="{{ route('website.footer', ['lang' => App::getLocale(), 'id' => 'portfolio']) }}" class="aiz-side-nav-link {{ (Route::is('website.footer') && request('id') == 'portfolio') ? 'active' : '' }}">
+                                    <span class="aiz-side-nav-text">{{translate('Footer Settings')}}</span>
+                                </a>
+                            </li>
+                        @endcan
+                    </ul>
+                </li>
+                @endif
 
                 <!-- Setup & Configurations -->
                 @canany(['general_settings','features_activation','language_setup','currency_setup','vat_&_tax_setup',
                 'pickup_point_setup','smtp_settings','payment_methods_configurations','order_configuration','file_system_&_cache_configuration',
                 'social_media_logins','facebook_chat','facebook_comment','analytics_tools_configuration','google_recaptcha_configuration','google_map_setting',
-                'google_firebase_setting','shipping_configuration','shipping_country_setting','manage_shipping_states','manage_shipping_cities','manage_zones','manage_carriers'])
+                'google_firebase_setting','shipping_configuration','shipping_country_setting','manage_shipping_states','manage_shipping_cities','manage_zones','manage_carriers','select_shipping_methods'])
                 <li class="aiz-side-nav-item">
                     <a href="#" class="aiz-side-nav-link">
                         <div class="aiz-side-nav-icon">
@@ -1886,6 +2142,15 @@
                         <span class="aiz-side-nav-arrow"></span>
                     </a>
                     <ul class="aiz-side-nav-list level-2">
+
+                        @can('business_settings')
+                        <li class="aiz-side-nav-item">
+                            <a href="{{route('business_settings.index')}}" class="aiz-side-nav-link">
+                                <span class="aiz-side-nav-text">{{translate('Business Settings')}}</span>
+                            </a>
+                        </li>
+                        @endcan
+
                         @can('features_activation')
                         <li class="aiz-side-nav-item">
                             <a href="{{route('activation.index')}}" class="aiz-side-nav-link">
@@ -1931,13 +2196,7 @@
                             </a>
                         </li>
                         @endcan
-                        @can('payment_methods_configurations')
-                        <li class="aiz-side-nav-item">
-                            <a href="{{ route('payment_method.index') }}" class="aiz-side-nav-link">
-                                <span class="aiz-side-nav-text">{{translate('Payment Methods')}}</span>
-                            </a>
-                        </li>
-                        @endcan
+
                         @can('order_configuration')
                         <li class="aiz-side-nav-item">
                             <a href="{{ route('order_configuration.index') }}" class="aiz-side-nav-link">
@@ -2032,13 +2291,23 @@
                             </ul>
                         </li>
                         @endcanany
-                        @canany(['shipping_configuration','shipping_country_setting','manage_shipping_states','manage_shipping_cities','manage_zones','manage_carriers'])
+                        @canany(['shipping_configuration','select_shipping_methods','shipping_country_setting','manage_shipping_states','manage_shipping_cities','manage_zones','manage_carriers', 'shipping_box_size_index', 'pickup_address_index'])
                         <li class="aiz-side-nav-item">
                             <a href="javascript:void(0);" class="aiz-side-nav-link">
                                 <span class="aiz-side-nav-text">{{translate('Shipping')}}</span>
                                 <span class="aiz-side-nav-arrow"></span>
                             </a>
                             <ul class="aiz-side-nav-list level-3">
+
+
+                                @can('select_shipping_methods')
+                                    <li class="aiz-side-nav-item">
+                                        <a href="{{route('shipping_configuration.shipping_method')}}"
+                                            class="aiz-side-nav-link {{ areActiveRoutes(['shipping_configuration.shipping_method'])}}">
+                                            <span class="aiz-side-nav-text">{{translate('Select Shipping Method')}}</span>
+                                        </a>
+                                    </li>
+                                @endcan
                                 @can('shipping_configuration')
                                 <li class="aiz-side-nav-item">
                                     <a href="{{route('shipping_configuration.index')}}"
@@ -2071,6 +2340,14 @@
                                     </a>
                                 </li>
                                 @endcan
+                                @can('manage_shipping_areas')
+                                <li class="aiz-side-nav-item">
+                                    <a href="{{route('areas.index')}}"
+                                        class="aiz-side-nav-link {{ areActiveRoutes(['areas.index','areas.edit','areas.update'])}}">
+                                        <span class="aiz-side-nav-text">{{translate('Shipping Areas')}}</span>
+                                    </a>
+                                </li>
+                                @endcan
                                 @can('manage_zones')
                                 <li class="aiz-side-nav-item">
                                     <a href="{{route('zones.index')}}"
@@ -2087,6 +2364,23 @@
                                     </a>
                                 </li>
                                 @endcan
+                                @if (addon_is_activated('shiprocket'))
+                                    @can('pickup_address_index')
+                                        <li class="aiz-side-nav-item">
+                                            <a href="{{ route('pickup_address.index') }}" class="aiz-side-nav-link {{ areActiveRoutes(['pickup_address.index','pickup_address.create','pickup_address.edit'])}}">
+                                                <span class="aiz-side-nav-text">{{translate('Pickup Addresses')}}</span>
+                                            </a>
+                                        </li>
+                                    @endcan
+                                    @can('shipping_box_size_index')
+                                    <li class="aiz-side-nav-item">
+                                        <a href="{{route('shipping_box_size.index')}}"
+                                            class="aiz-side-nav-link {{ areActiveRoutes(['shipping_box_size.index','shipping_box_size.create','shipping_box_size.edit'])}}">
+                                            <span class="aiz-side-nav-text">{{translate('Shipping Box Size Configuration')}}</span>
+                                        </a>
+                                    </li>
+                                    @endcan
+                                @endif
                             </ul>
                         </li>
                         @endif
@@ -2206,10 +2500,11 @@
                             </a>
                         </li>
                         @endcan
-                        @can('server_status')
+                       
+                        @can('sitemap_generator')
                         <li class="aiz-side-nav-item">
-                            <a href="{{route('import_demo_data')}}" class="aiz-side-nav-link">
-                                <span class="aiz-side-nav-text">{{translate('Import Demo Data')}}</span>
+                            <a href="{{ route('sitemap_generator') }}" class="aiz-side-nav-link">
+                                <span class="aiz-side-nav-text">{{translate('Sitemap Generator')}}</span>
                             </a>
                         </li>
                         @endcan

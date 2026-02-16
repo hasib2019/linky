@@ -66,11 +66,11 @@
                 <div class="demo-admin-links w-100 py-5 my-lg-5 px-4 mx-auto">
                     <div class="row overflow-hidden rounded-3" style="border: 1px solid #f2f2f2;">
                         <div class="col-md-6 px-0 d-none d-md-block"  style="border-right: 1px solid #f2f2f2;">
-                            <img class="img-fit h-100" src="{{ my_asset('assets/img/demo/link/link.png') }}" alt="Active eCommerce CMS">
+                            <img class="img-fit h-100" src="{{ my_asset('assets/img/demo/link/link.png') }}" alt="CreativeITbari E-Commerce CMS">
                         </div>
                         <div class="col-md-6 px-2rem py-5 d-flex flex-column justify-content-center">
                             <div class="mb-4 text-center">
-                                <img class="h-40px" src="{{ my_asset('assets/img/demo/link/logo.svg') }}" alt="Active eCommerce CMS">
+                                <img class="h-40px" src="{{ my_asset('assets/img/demo/link/logo.svg') }}" alt="CreativeITbari E-Commerce CMS">
                             </div>
                             <a href="https://demo.activeitzone.com/ecommerce/users/login" class="btn btn-block btn-lg btn-soft-primary fs-14 fw-700 mb-3 rounded-2">Login as Customer</a>
                             <a href="https://demo.activeitzone.com/ecommerce/login" class="btn btn-block btn-lg btn-soft-info fs-14 fw-700 mb-3 rounded-2">Login as Admin</a>
@@ -80,14 +80,14 @@
                         </div>
                     </div>
                     <div class="text-center" style="margin-top: 40px;">
-                        <small class="d-block fs-12 text-center mb-3" style="color: #78829d;">Mobile Apps for Active eCommerce CMS</small>
+                        <small class="d-block fs-12 text-center mb-3" style="color: #78829d;">Mobile Apps for CreativeITbari E-Commerce CMS</small>
                         <div class="d-flex flex-wrap justify-content-center mb-3">
                             <a href="https://codecanyon.net/item/active-ecommerce-flutter-app/31466365" target="_blank" class="fs-14 fw-700 text-primary mx-3 animate-underline-primary">Customer Mobile App</a>
                             <a href="https://codecanyon.net/item/active-ecommerce-seller-app/38842276" target="_blank" class="fs-14 fw-700 text-primary mx-3 animate-underline-primary">Seller’s Mobile App</a>
                             <a href="https://codecanyon.net/item/active-ecommerce-delivery-boy-flutter-app/32173746" target="_blank" class="fs-14 fw-700 text-primary mx-3 animate-underline-primary">Delivery Boy Mobile App</a>
                         </div>
                         <div class="mb-5">
-                            <a href="https://codecanyon.net/user/activeitzone/portfolio" target="_blank" class="fs-12 fw-500 hov-text-primary" style="text-decoration: underline; text-transform: uppercase;color: #78829d;">View all Add-ons for Active eCommerce CMS</a>
+                            <a href="https://codecanyon.net/user/activeitzone/portfolio" target="_blank" class="fs-12 fw-500 hov-text-primary" style="text-decoration: underline; text-transform: uppercase;color: #78829d;">View all Add-ons for CreativeITbari E-Commerce CMS</a>
                         </div>
                         <div class="d-flex flex-wrap justify-content-center mb-2">
                             <a href="https://activeitzone.com/docs/active-ecommerce-cms/" target="_blank" class="fs-14 fw-700 text-primary mx-4 d-flex align-items-center">

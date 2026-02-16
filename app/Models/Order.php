@@ -28,6 +28,11 @@ class Order extends Model
         return $this->hasOne(Shop::class, 'user_id', 'seller_id');
     }
 
+    public function seller()
+    {
+        return $this->belongsTo(User::class, 'seller_id');
+    }
+
     public function pickup_point()
     {
         return $this->belongsTo(PickupPoint::class);

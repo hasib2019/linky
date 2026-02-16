@@ -11,6 +11,7 @@ use App\Http\Controllers\CustomerPackageController;
 use App\Http\Controllers\SellerPackageController;
 use App\Http\Controllers\WalletController;
 use App\Http\Controllers\CheckoutController;
+use App\Models\Order;
 use Session;
 
 class BkashController extends Controller
@@ -35,8 +36,8 @@ class BkashController extends Controller
                 $combined_order = CombinedOrder::findOrFail(Session::get('combined_order_id'));
                 $amount = round($combined_order->grand_total);
             } elseif ($paymentType == 'order_re_payment') {
-                $combined_order = CombinedOrder::findOrFail($paymentData['order_id']);
-                $amount = round($combined_order->grand_total);
+                $order = Order::findOrFail($paymentData['order_id']);
+                $amount = round($order->grand_total);
             } elseif ($paymentType == 'wallet_payment') {
                 $amount = round($paymentData['amount']);
             } elseif ($paymentType == 'customer_package_payment') {

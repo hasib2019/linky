@@ -117,5 +117,11 @@
 		localStorage.setItem('tempload_'+data_type, 'no');
 		location.reload();
     }
+
+    function savedClearTempdata() {
+        var data_type = $('#data_type').val();
+        localStorage.setItem('tempdataproduct_'+data_type, '{}');
+		localStorage.setItem('tempload_'+data_type, 'no');
+    }
 		
 </script>

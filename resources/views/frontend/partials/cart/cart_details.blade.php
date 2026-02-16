@@ -35,30 +35,30 @@
                         </div>
                         <!-- Cart Items -->
                         <ul class="list-group list-group-flush">
-                            @php
-                                $total = 0;
-                                $admin_products = array();
-                                $seller_products = array();
-                                $admin_product_variation = array();
-                                $seller_product_variation = array();
-                                foreach ($carts as $key => $cartItem){
-                                    $product = get_single_product($cartItem['product_id']);
+                        @php
+                            $total = 0;
+                            $admin_products = array();
+                            $seller_products = array();
+                            $admin_product_variation = array();
+                            $seller_product_variation = array();
+                            foreach ($carts as $key => $cartItem){
+                                $product = get_single_product($cartItem['product_id']);
 
-                                    if($product->added_by == 'admin'){
-                                        array_push($admin_products, $cartItem['product_id']);
-                                        $admin_product_variation[] = $cartItem['variation'];
-                                    }
-                                    else{
-                                        $product_ids = array();
-                                        if(isset($seller_products[$product->user_id])){
-                                            $product_ids = $seller_products[$product->user_id];
-                                        }
-                                        array_push($product_ids, $cartItem['product_id']);
-                                        $seller_products[$product->user_id] = $product_ids;
-                                        $seller_product_variation[] = $cartItem['variation'];
-                                    }
+                                if($product->added_by == 'admin'){
+                                    array_push($admin_products, $cartItem['product_id']);
+                                    $admin_product_variation[] = $cartItem['variation'];
                                 }
-                            @endphp
+                                else{
+                                    $product_ids = array();
+                                    if(isset($seller_products[$product->user_id])){
+                                        $product_ids = $seller_products[$product->user_id];
+                                    }
+                                    array_push($product_ids, $cartItem['product_id']);
+                                    $seller_products[$product->user_id] = $product_ids;
+                                    $seller_product_variation[$product->user_id][] = $cartItem['variation'];
+                                }
+                            }
+                        @endphp
 
                             <!-- Inhouse Products -->
                             @if (!empty($admin_products))
@@ -116,9 +116,15 @@
                                             <div class="col-md col-4 ml-4 ml-sm-0 my-3 my-md-0 d-flex flex-column ml-sm-5 ml-md-0">
                                                 <span class="fs-12 text-secondary">{{ translate('Price')}}</span>
                                                 <span class="fw-700 fs-14 mb-2">{{ cart_product_price($cartItem, $product, true, false) }}</span>
+                                                 @if (addon_is_activated('gst_system')  && $product->gst_rate > 0 && $product->hsn_code != '')
+                                                <span>
+                                                    <span class="opacity-90 fs-12">{{ translate('GST')}}: {{ cart_product_gst($cartItem, $product) }}</span>
+                                                </span>
+                                                @else
                                                 <span>
                                                     <span class="opacity-90 fs-12">{{ translate('Tax')}}: {{ cart_product_tax($cartItem, $product) }}</span>
                                                 </span>
+                                                @endif
                                             </div>
                                             <!-- Quantity & Total -->
                                             <div class="col-xl-4 col-md-3 col d-flex flex-column flex-xl-row justify-content-xl-between align-items-xl-center">
@@ -192,7 +198,7 @@
                                     @foreach ($seller_product as $key2 => $product_id)
                                         @php
                                             $product = get_single_product($product_id);
-                                            $cartItem = $carts->toQuery()->where('product_id', $product_id)->where('variation', $seller_product_variation[$key2])->first();
+                                            $cartItem = $carts->toQuery()->where('product_id', $product_id)->where('variation', $seller_product_variation[$key][$key2])->first();
                                             $product_stock = $product->stocks->where('variant', $cartItem->variation)->first();
                                             $total = $total + cart_product_price($cartItem, $product, false) * $cartItem->quantity;
                                         @endphp
@@ -217,8 +223,8 @@
                                                     </span>
                                                     <span>
                                                         <span class="fs-14 fw-400 text-dark text-truncate-2 mb-2">{{ $product->getTranslation('name') }}</span>
-                                                        @if ($seller_product_variation[$key2] != '')
-                                                            <span class="fs-12 text-secondary">{{ translate('Variation') }}: {{ $seller_product_variation[$key2] }}</span>
+                                                        @if ($seller_product_variation[$key][$key2] != '')
+                                                            <span class="fs-12 text-secondary">{{ translate('Variation') }}: {{ $seller_product_variation[$key][$key2] }}</span>
                                                         @endif
                                                     </span>
                                                 </div>
@@ -226,9 +232,16 @@
                                                 <div class="col-md col-4 ml-4 ml-sm-0 my-3 my-md-0 d-flex flex-column ml-sm-5 ml-md-0">
                                                     <span class="fs-12 text-secondary">{{ translate('Price')}}</span>
                                                     <span class="fw-700 fs-14 mb-2">{{ cart_product_price($cartItem, $product, true, false) }}</span>
+                                                    @if (addon_is_activated('gst_system'))
+                                                    <span>
+                                                        <span class="opacity-90 fs-12">{{ translate('GST')}}: {{ cart_product_gst($cartItem, $product) }}</span>
+                                                    </span>
+                                                    @else
                                                     <span>
                                                         <span class="opacity-90 fs-12">{{ translate('Tax')}}: {{ cart_product_tax($cartItem, $product) }}</span>
                                                     </span>
+                                                    @endif
+                                                    
                                                 </div>
                                                 <!-- Quantity & Total -->
                                                 <div class="col-xl-4 col-md-3 col d-flex flex-column flex-xl-row justify-content-xl-between align-items-xl-center">

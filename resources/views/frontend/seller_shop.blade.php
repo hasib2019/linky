@@ -158,9 +158,12 @@
                                             @endif
                                             @if ($shop->twitter)
                                             <li class="list-inline-item mr-2">
-                                                <a href="{{ $shop->twitter }}" class="twitter"
+                                                <a href="{{ $shop->twitter }}" class="x-twitter"
                                                     target="_blank">
-                                                    <i class="lab la-twitter"></i>
+                                                    <svg xmlns="http://www.w3.org/2000/svg" width="10" height="10" fill="#ffffff" viewBox="0 0 16 16" class="mb-1">
+                                                        <path d="M12.6.75h2.454l-5.36 6.142L16 15.25h-4.937l-3.867-5.07-4.425 5.07H.316l5.733-6.57L0 
+                                                        .75h5.063l3.495 4.633L12.601.75Zm-.86 13.028h1.36L4.323 2.145H2.865z"/>
+                                                    </svg>
                                                 </a>
                                             </li>
                                             @endif
@@ -225,7 +228,7 @@
                     </div>
                     <!-- Products Section -->
                     <div class="px-sm-3">
-                        <div class="aiz-carousel sm-gutters-16 arrow-none" data-items="6" data-xl-items="5" data-lg-items="4"  data-md-items="3" data-sm-items="2" data-xs-items="2" data-arrows='true' data-autoplay='true' data-infinute="true">
+                        <div class="aiz-carousel sm-gutters-16 arrow-none featured-products" data-items="6" data-xl-items="5" data-lg-items="4"  data-md-items="3" data-sm-items="2.5" data-xs-items="2.5" data-arrows='true' data-autoplay='true' data-infinute="true">
                             @foreach ($feature_products as $key => $product)
                             <div class="carousel-box px-3 position-relative has-transition hov-animate-outline border-right border-top border-bottom @if($key == 0) border-left @endif">
                                 @include('frontend.'.get_setting('homepage_select').'.partials.product_box_1',['product' => $product])
@@ -380,7 +383,7 @@
             @if (!isset($type))
                 <!-- New Arrival Products Section -->
                 <div class="px-sm-3 pb-3">
-                    <div class="aiz-carousel sm-gutters-16 arrow-none" data-items="6" data-xl-items="5" data-lg-items="4"  data-md-items="3" data-sm-items="2" data-xs-items="2" data-arrows='true' data-infinite='false'>
+                    <div class="aiz-carousel sm-gutters-16 arrow-none featured-products" data-items="6" data-xl-items="5" data-lg-items="4"  data-md-items="3" data-sm-items="2.5" data-xs-items="2.5" data-arrows='true' data-infinite='false'>
                         @foreach ($products as $key => $product)
                         <div class="carousel-box px-3 position-relative has-transition hov-animate-outline border-right border-top border-bottom @if($key == 0) border-left @endif">
                             @include('frontend.'.get_setting('homepage_select').'.partials.product_box_1',['product' => $product])

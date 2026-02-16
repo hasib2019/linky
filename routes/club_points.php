@@ -18,6 +18,7 @@ use App\Http\Controllers\ClubPointController;
 Route::group(['prefix' =>'admin', 'middleware' => ['auth', 'admin']], function(){
     Route::controller(ClubPointController::class)->group(function () {
         Route::get('club-points/configuration', 'configure_index')->name('club_points.configs');
+        Route::post('business-settings/point-convert-rate-store', 'updateBusinessSettings')->name('business_settings.point_convert_rate_store');
         Route::get('club-points/index', 'index')->name('club_points.index');
         Route::get('set-club-points', 'set_point')->name('set_product_points');
         Route::post('set-club-points/store', 'set_products_point')->name('set_products_point.store');
@@ -26,6 +27,7 @@ Route::group(['prefix' =>'admin', 'middleware' => ['auth', 'admin']], function()
         Route::get('club-point-details/{id}', 'club_point_detail')->name('club_point.details');
         Route::post('set-club-points/update/{id}', 'update_product_point')->name('product_point.update');
         Route::post('club-point-convert-rate/store', 'convert_rate_store')->name('point_convert_rate_store');
+        Route::post('club-point-for-review/store', 'point_for_review_store')->name('point_for_review_store');
     });
 });
 

@@ -1,14 +1,23 @@
 @extends('backend.layouts.app')
 
 @section('content')
-    <div class="aiz-titlebar text-left mt-2 mb-3">
-        <div class="align-items-center">
-            <h1 class="h3">{{ translate('All Attributes') }}</h1>
-        </div>
-    </div>
 
     <div class="row">
-        <div class="@if (auth()->user()->can('add_product_attribute')) col-lg-7 @else col-lg-12 @endif">
+        <div class="col-lg-10 mx-auto">
+            <div class="aiz-titlebar text-left mt-2 mb-3">
+                <div class="row align-items-center">
+                    <div class="col-md-6">
+                        <h1 class="h3">{{translate('All Attributes')}}</h1>
+                    </div>
+                    @can('add_product_attribute')
+                        <div class="col-md-6 text-md-right">
+                            <a href="{{ route('attributes.create') }}" class="btn btn-circle btn-info">
+                                <span>{{translate('Add New Attributes')}}</span>
+                            </a>
+                        </div>
+                    @endcan
+                </div>
+            </div>
             <div class="card">
                 <div class="card-header">
                     <h5 class="mb-0 h6">{{ translate('Attributes') }}</h5>
@@ -34,14 +43,7 @@
                                                 class="badge badge-inline badge-md bg-light">{{ $value->value }}</span>
                                         @endforeach
                                     </td>
-                                    <td class="text-right w-140px">
-                                        @can('view_product_attribute_values')
-                                            <a class="btn btn-soft-info btn-icon btn-circle btn-sm"
-                                                href="{{ route('attributes.show', $attribute->id) }}"
-                                                title="{{ translate('Attribute values') }}">
-                                                <i class="las la-cog"></i>
-                                            </a>
-                                        @endcan
+                                    <td class="text-right w-140px"> 
                                         @can('edit_product_attribute')
                                             <a class="btn btn-soft-primary btn-icon btn-circle btn-sm"
                                                 href="{{ route('attributes.edit', ['id' => $attribute->id, 'lang' => env('DEFAULT_LANGUAGE')]) }}"
@@ -68,31 +70,24 @@
                 </div>
             </div>
         </div>
-        @can('add_product_attribute')
-            <div class="col-lg-5">
-                <div class="card">
-                    <div class="card-header">
-                        <h5 class="mb-0 h6">{{ translate('Add New Attribute') }}</h5>
-                    </div>
-                    <div class="card-body">
-                        <form action="{{ route('attributes.store') }}" method="POST">
-                            @csrf
-                            <div class="form-group mb-3">
-                                <label for="name">{{ translate('Name') }}</label>
-                                <input type="text" placeholder="{{ translate('Name') }}" id="name" name="name"
-                                    class="form-control" required>
-                            </div>
-                            <div class="form-group mb-3 text-right">
-                                <button type="submit" class="btn btn-primary">{{ translate('Save') }}</button>
-                            </div>
-                        </form>
-                    </div>
-                </div>
-            </div>
-        @endcan
     </div>
 @endsection
 
 @section('modal')
-    @include('modals.delete_modal')
+   <div id="delete-modal" class="modal fade">
+    <div class="modal-dialog modal-sm modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h4 class="modal-title h6">{{translate('Delete Confirmation')}}</h4>
+                <button type="button" class="close" data-dismiss="modal" aria-hidden="true"></button>
+            </div>
+            <div class="modal-body text-center">
+                <p class="mt-1 mb-0 fs-14"> {{ translate('Are you sure you want to delete this attribute?') }}</p>
+                <p class="fs-14 text-danger"> {{ translate('All associated attribute values will also be permanently deleted.') }}</p>
+                <button type="button" class="btn btn-secondary btn-sm rounded-0 mt-2" data-dismiss="modal">{{translate('Cancel')}}</button>
+                <a href="" id="delete-link" class="btn btn-primary btn-sm rounded-0 mt-2">{{translate('Delete')}}</a>
+            </div>
+        </div>
+    </div>
+</div>
 @endsection

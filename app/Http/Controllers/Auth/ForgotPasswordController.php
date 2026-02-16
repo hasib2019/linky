@@ -10,6 +10,8 @@ use Illuminate\Support\Facades\Password;
 use Illuminate\Auth\Events\PasswordReset;
 use App\Models\User;
 use App\Models\EmailTemplate;
+use App\Rules\Recaptcha;
+use Illuminate\Validation\Rule;
 use App\Utility\SmsUtility;
 use Mail;
 
@@ -46,6 +48,13 @@ class ForgotPasswordController extends Controller
      */
     public function sendResetLinkEmail(Request $request)
     {
+
+        // validate recaptcha
+        $request->validate([
+            'g-recaptcha-response' => [
+                Rule::when(get_setting('google_recaptcha') == 1 && get_setting('recaptcha_forgot_password') == 1, ['required', new Recaptcha()], ['sometimes'])
+            ],
+        ]);
         
         $phone = "+{$request['country_code']}{$request['phone']}";
         if (filter_var($request->email, FILTER_VALIDATE_EMAIL)) {
@@ -67,7 +76,8 @@ class ForgotPasswordController extends Controller
                 $array['content'] = $email_body;
                 Mail::to($user->email)->queue(new MailManager($array));
 
-                return view('auth.'.get_setting('authentication_layout_select').'.reset_password');
+                $email = $user->email;
+                return view('auth.'.get_setting('authentication_layout_select').'.reset_password', compact('email'));
             }
             else {
                 flash(translate('No account exists with this email'))->error();
@@ -80,7 +90,8 @@ class ForgotPasswordController extends Controller
                 $user->verification_code = rand(100000,999999);
                 $user->save();
                 SmsUtility::password_reset($user);
-                return view('otp_systems.frontend.auth.'.get_setting('authentication_layout_select').'.reset_with_phone');
+                $country_code= $request['country_code'];
+                return view('otp_systems.frontend.auth.'.get_setting('authentication_layout_select').'.reset_with_phone', compact('phone','country_code'));
             }
             else {
                 flash(translate('No account exists with this phone number'))->error();

@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
 use App\Models\Wallet;
+use App\Utility\EmailUtility;
 use Auth;
 use Session;
 
@@ -48,6 +49,13 @@ class WalletController extends Controller
         $wallet->payment_details = $payment_details;
         $wallet->save();
 
+        // customer Account Opening Email to Admin
+        if ( $user != null && (get_email_template_data('wallet_recharge_email_to_customer', 'status') == 1)) {
+            try {
+                EmailUtility::wallet_recharge_email('wallet_recharge_email_to_customer', $user, $payment_data['amount'], $payment_data['payment_method']);
+            } catch (\Exception $e) {}
+        }
+
         Session::forget('payment_data');
         Session::forget('payment_type');
 
@@ -55,6 +63,37 @@ class WalletController extends Controller
         return redirect()->route('wallet.index');
     }
 
+    public function wallet_payment_done1($payment_data, $payment_details)
+    {
+        $user = Auth::user();
+        $user->balance = $user->balance + $payment_data['amount'];
+        $user->save();
+
+        $wallet = new Wallet;
+        $wallet->user_id = $user->id;
+        $wallet->amount = $payment_data['amount'];
+        $wallet->payment_method = $payment_data['payment_method'];
+        $wallet->payment_details = $payment_details;
+        $wallet->save();
+        
+        // customer Account Opening Email to Admin
+        if ( $user != null && (get_email_template_data('wallet_recharge_email_to_customer', 'status') == 1)) {
+            try {
+                EmailUtility::wallet_recharge_email('wallet_recharge_email_to_customer', $user, $payment_data['amount'], $payment_data['payment_method']);
+            } catch (\Exception $e) {}
+        }
+        
+        Session::forget('payment_data');
+        Session::forget('payment_type');
+        flash(translate('Recharge completed'))->success();
+    }
+
+    public function wallet_payment_email_test(){
+        $user = Auth::user();
+        EmailUtility::wallet_recharge_email('wallet_recharge_email_to_customer', $user, 500, 'Votku');
+        echo 'OK';
+    }
+    
     public function offline_recharge(Request $request)
     {
         $wallet = new Wallet;

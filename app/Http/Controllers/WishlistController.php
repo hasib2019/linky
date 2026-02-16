@@ -45,7 +45,11 @@ class WishlistController extends Controller
                 $wishlist->product_id = $request->id;
                 $wishlist->save();
             }
-            return view('frontend.partials.wishlist');
+            if(get_setting('header_element') ==5){
+                return view('frontend.partials.wishlistText');
+            }else{
+                return view('frontend.partials.wishlist');
+            }
         }
         return 0;
     }
@@ -55,7 +59,11 @@ class WishlistController extends Controller
         $wishlist = Wishlist::findOrFail($request->id);
         if($wishlist!=null){
             if(Wishlist::destroy($request->id)){
-                return view('frontend.partials.wishlist');
+                if(get_setting('header_element') ==5){
+                    return view('frontend.partials.wishlistText');
+                }else{
+                    return view('frontend.partials.wishlist');
+                }
             }
         }
     }

@@ -40,6 +40,11 @@
                         <th>{{translate('Title')}}</th>
                         <th data-breakpoints="lg">{{translate('Category')}}</th>
                         <th data-breakpoints="lg">{{translate('Short Description')}}</th>
+                        @if(addon_is_activated('portfolio_system'))
+                        <th data-breakpoints="lg">{{translate('News')}}</th>
+                        <th data-breakpoints="lg">{{translate('Event')}}</th>
+                        <th data-breakpoints="lg" class="w-80px">{{translate('Going On')}}</th>
+                        @endif
                         <th data-breakpoints="lg">{{translate('Status')}}</th>
                         <th class="text-right">{{translate('Options')}}</th>
                     </tr>
@@ -63,9 +68,46 @@
                         <td>
                             {{ $blog->short_description }}
                         </td>
+                        @if(addon_is_activated('portfolio_system'))
                         <td>
                             <label class="aiz-switch aiz-switch-success mb-0">
-                                <input type="checkbox"
+                                <input data-field="news" type="checkbox"
+                                    @can('publish_blog') onchange="change_status(this)" @endcan
+                                    value="{{ $blog->id }}"
+                                    <?php if($blog->news == 1) echo "checked";?>
+                                    @cannot('publish_blog') disabled @endcan
+                                >
+                                <span></span>
+                            </label>
+                        </td>
+
+                        <td>
+                            <label class="aiz-switch aiz-switch-success mb-0">
+                                <input data-field="event" type="checkbox"
+                                    @can('publish_blog') onchange="change_status(this)" @endcan
+                                    value="{{ $blog->id }}"
+                                    <?php if($blog->event == 1) echo "checked";?>
+                                    @cannot('publish_blog') disabled @endcan
+                                >
+                                <span></span>
+                            </label>
+                        </td>
+
+                        <td>
+                            <label class="aiz-switch aiz-switch-success mb-0">
+                                <input data-field="going_on" type="checkbox"
+                                    @can('publish_blog') onchange="change_status(this)" @endcan
+                                    value="{{ $blog->id }}"
+                                    <?php if($blog->going_on == 1) echo "checked";?>
+                                    @cannot('publish_blog') disabled @endcan
+                                >
+                                <span></span>
+                            </label>
+                        </td>
+                        @endif
+                        <td>
+                            <label class="aiz-switch aiz-switch-success mb-0">
+                                <input data-field="status" type="checkbox"
                                     @can('publish_blog') onchange="change_status(this)" @endcan
                                     value="{{ $blog->id }}"
                                     <?php if($blog->status == 1) echo "checked";?>
@@ -114,18 +156,20 @@
             }
 
             var status = 0;
+            let field  = el.dataset.field;
             if(el.checked){
                 var status = 1;
             }
-            $.post('{{ route('blog.change-status') }}', {_token:'{{ csrf_token() }}', id:el.value, status:status}, function(data){
+            $.post('{{ route('blog.change-status') }}', {_token:'{{ csrf_token() }}', id:el.value,field: field, status:status}, function(data){
                 if(data == 1){
-                    AIZ.plugins.notify('success', '{{ translate('Change blog status successfully') }}');
+                    AIZ.plugins.notify('success', '{{ translate('Blog') }} ' + field + ' {{ translate('updated successfully') }}');
                 }
                 else{
                     AIZ.plugins.notify('danger', '{{ translate('Something went wrong') }}');
                 }
             });
         }
+
     </script>
 
 @endsection

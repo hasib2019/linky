@@ -3,15 +3,22 @@
 @section('panel_content')
     <div class="aiz-titlebar mt-2 mb-4">
         <div class="row align-items-center">
+            @if(addon_is_activated('gst_system') && !auth()->user()->shop->gst_verification)
+                <div class="col-md-12 alert alert-info text-center ">
+                    <p class="font-weight-bold text-danger m-0">{{ translate('GST is being enabled on our platform. Please upload and complete the required documents from ') }} <a class="text-info" href="{{ route('seller.shop.index') }}">{{ translate('here') }}</a>.  {{translate('Products will not be published unless the form is completed and HSN codes and GST values are properly assigned.')}}</p>
+                </div>
+            
+            @else
             <div class="col-md-6">
                 <h1 class="h3 text-primary">{{ translate('Dashboard') }}</h1>
             </div>
+            @endif
         </div>
     </div>
     @php $authUser = auth()->user(); @endphp
     <div class="row">
         <div class="col-sm-6 col-md-6 col-xxl-3">
-            <div class="card shadow-none mb-4 bg-primary py-4">
+            <div class="card shadow-none mb-4 bg-primary ">
                 <div class="card-body">
                     <div class="row align-items-center">
                         <div class="col">
@@ -32,6 +39,15 @@
                             </svg>
                         </div>
                     </div>
+
+                     <div class="d-flex justify-content-between mt-3">
+                        <a href="{{ route('seller.products.create') }}">
+                        <div class="d-flex align-items-center">
+                            <i class="las la-plus la-1x text-white"></i>
+                            <p class="fs-12 text-light my-2 ml-1">{{ translate('Add New Product') }}</p>
+                        </div>
+                        </a>
+                     </div>
                 </div>
             </div>
         </div>
@@ -57,7 +73,7 @@
                         </div> 
                     </div>
                     <div class="d-flex justify-content-between mt-3">
-                        <div class="d-flex align-items-center">
+                        <div class="d-flex align-items-center pt-1">
                             <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 16 16">
                                 <g id="Group_38928" data-name="Group 38928" transform="translate(-9435 -1195)">
                                     <g id="Layer_2" data-name="Layer 2" transform="translate(9435 1195)">
@@ -92,7 +108,7 @@
             </div>
         </div>
         <div class="col-sm-6 col-md-6 col-xxl-3">
-            <div class="card shadow-none mb-4 bg-primary py-4">
+            <div class="card shadow-none mb-4 bg-primary">
                 <div class="card-body">
                     <div class="row align-items-center">
                         <div class="col">
@@ -144,11 +160,19 @@
                             </svg>
                         </div>
                     </div>
+                    <div class="d-flex justify-content-between mt-3">
+                        <a href="{{ route('seller.orders.index') }}">
+                        <div class="d-flex align-items-center">
+                            <i class="las la-eye la-1x text-white"></i>
+                            <p class="fs-12 text-light my-2 ml-1">{{ translate('View All Order') }}</p>
+                        </div>
+                        </a>
+                     </div>
                 </div>
             </div>
         </div>
         <div class="col-sm-6 col-md-6 col-xxl-3">
-            <div class="card shadow-none mb-4 bg-primary py-4">
+            <div class="card shadow-none mb-4 bg-primary ">
                 <div class="card-body">
                     <div class="row align-items-center">
                         <div class="col">
@@ -189,6 +213,13 @@
                             </svg>
                         </div>
                     </div>
+                    <div class="d-flex justify-content-between mt-3">
+                        <a href="{{ route('seller.orders.index') }}">
+                        <div class="d-flex align-items-center">
+                            <p class="fs-12 text-light my-2 ml-1"> {{ translate('Last Month') }}: {{ single_price($previous_month_sold_amount) }}</p>
+                        </div>
+                        </a>
+                     </div>
                 </div>
             </div>
         </div>
@@ -456,6 +487,66 @@
     </div>
 
     <div class="row">
+
+      @if(get_setting('vendor_commission_activation') == 1)
+            <div class="col-sm-6 col-md-6 col-lg-3 mb-4">
+                <div class="card shadow-none h-450px mb-0 h-100">
+                    <div class="card-body">
+                        <div class="card-title text-primary fs-16 fw-600">
+                            {{ translate('Commission Type & Rate') }}
+                        </div>
+                        <hr>
+                        <ul class="list-group">
+                            @if(get_setting('seller_commission_type') == 'fixed_rate')
+                            <li class="d-flex justify-content-between align-items-center my-2 text-primary fs-13">
+                            {{ translate('You are Under Fixed Commission. Commission Rate') }}
+                                <span class="">
+                                    {{ get_setting('vendor_commission') }} %
+                                </span>
+                            </li>
+                            @elseif(get_setting('seller_commission_type') == 'seller_based')
+                            <li class="d-flex justify-content-between align-items-center my-2 text-primary fs-13">
+                            {{ translate('You are Under Seller Based Commission. Commission Rate') }}
+                                <span class="">
+                                    {{ \App\Models\Shop::where('user_id', $authUser->id)->first()->commission_percentage }} %
+                                </span>
+                            </li>
+                            @elseif(get_setting('seller_commission_type') == 'category_based')
+                            <li class="d-flex justify-content-between align-items-center my-2 text-primary fs-13">
+                             {{ translate('You are Under Category Wise Commission Rate ') }}
+                                <span class="">
+                                    <a class="btn btn-primary btn-xs " href="{{ route('seller.categories-wise-commission') }}" >{{ translate('Details') }}</a>
+                                </span>
+                            </li>
+                            @endif
+                        </ul>
+                    </div>
+                </div>
+            </div>
+
+        @else
+
+        <div class="col-sm-6 col-md-6 col-lg-3 mb-4">
+                <div class="card shadow-none h-450px mb-0 h-100">
+                    <div class="card-body">
+                        <div class="card-title text-primary fs-16 fw-600">
+                            {{ translate('Commission Type & Rate') }}
+                        </div>
+                        <hr>
+                        <ul class="list-group">
+                            
+                            <li class="d-flex justify-content-between align-items-center my-2 text-primary fs-13">
+                             {{ translate('Currently No Commeision System is Set by Admin') }}
+                            </li>
+                           
+                        </ul>
+                    </div>
+                </div>
+            </div>
+
+        @endif
+        
+
         <div class="col-sm-6 col-md-6 col-lg-3">
             <a href="{{ route('seller.money_withdraw_requests.index') }}"
                 class="card mb-4 p-4 text-center bg-soft-primary h-180px">
@@ -479,23 +570,7 @@
                 </div>
             </a>
         </div>
-        <div class="col-sm-6 col-md-6 col-lg-3">
-            <a href="{{ route('seller.products') }}" class="card mb-4 p-4 text-center h-180px">
-                <div class="fs-16 fw-600 text-primary">
-                    {{ translate('Add New Product') }}
-                </div>
-                <div class="m-3">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 48 48">
-                        <g id="Group_22724" data-name="Group 22724" transform="translate(-1284 -875)">
-                            <rect id="Rectangle_17080" data-name="Rectangle 17080" width="2" height="48" rx="1"
-                                transform="translate(1307 875)" fill="#2E294E" />
-                            <rect id="Rectangle_17081" data-name="Rectangle 17081" width="2" height="48" rx="1"
-                                transform="translate(1332 898) rotate(90)" fill="#2E294E" />
-                        </g>
-                    </svg>
-                </div>
-            </a>
-        </div>
+       
         <div class="col-sm-6 col-md-6 col-lg-3">
             <div class="card mb-4 p-4 text-center bg-soft-primary">
                 <div class="fs-16 fw-600 text-primary">
@@ -552,6 +627,7 @@
                 </a>
             </div>
         </div>
+      
     </div>
 
     <div class="card">
@@ -596,6 +672,199 @@
         </div>
     </div>
 
+@endsection
+
+@section('modal')
+    <div class="modal fade" id="varification_pending_modal" tabindex="-1" role="dialog"
+        aria-hidden="true"  data-bs-backdrop="static" data-bs-keyboard="false">
+
+        <div class="modal-dialog modal-dialog-centered modal-lg" role="document">
+            <div class="modal-content text-center p-4">
+
+
+                @if($authUser->shop?->business_info == null || $authUser->shop?->business_info == '')
+                <h4 class="mb-3">{{ translate('Complete your verification') }}</h4>
+
+                <p class="text-muted">
+                    {{ translate('Your account is pending verification. Please complete verification to continue.') }}
+                </p>
+
+                <a href="javascript:void(0)"
+                    class="btn btn-primary"
+                    id="openSellerVerification">
+                        Click here to verify
+                </a>
+                @else
+                <h4 class="mb-3">{{ translate('Verification is under review') }}</h4>
+                <p class="text-muted">
+                    {{ translate('Your submitted verification documents are under review. We will notify you once the review is complete.') }}
+                </p>
+                @endif
+
+                <!--  go to home or contact us page -->
+                <div class="mt-3 d-flex justify-content-center gap-2">
+                    <a href="{{ route('home') }}" class="mr-2">
+                        {{ translate('Go to Home') }}
+                    </a> |
+                    <a href="{{ route('custom-pages.show_custom_page', 'contact-us') }}" class="ml-2">
+                        {{ translate('Contact Us') }}
+                    </a>
+                </div>
+
+            </div>
+        </div>
+    </div>
+
+
+    <!-- Verification Modal -->
+    <div id="seller_verification_modal" class="modal fade">
+        <div class="modal-dialog modal-lg modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h4 class="modal-title fw-bold h6">{{ translate('Seller Verification') }}</h4>
+                    <button type="button" class="close" data-dismiss="modal" aria-hidden="true"></button>
+                </div>
+                <div class="modal-body c-scrollbar-light seller-verification-form">
+
+                    <form action="{{ route('seller.shop.update') }}" method="POST" enctype="multipart/form-data" id="seller-verification-form">
+                        @csrf
+                        <input type="hidden" name="shop_id" value="{{ auth()->user()->shop->id }}">
+                        <div class="form-group">
+                            <label for="company-type" class="fs-13 fw-bold">{{ translate('Company Type (Dropdown Selection):') }}</label>
+                            <select
+                                class="form-control aiz-selectpicker bg-soft-light rounded-2"
+                                data-live-search="true" name="shop_type" required>
+                                <option value="installer">Installer</option>
+                                <option value="developer">Developer</option>
+                                <option value="om">O&M</option>
+                                <option value="supplier">Supplier / Reseller</option>
+                                <option value="distributor">Distributor</option>
+                                <option value="manufacturer">Manufacturer</option>
+                                <option value="broker">Broker</option>
+                                <option value="other">Other</option>
+
+                            </select>
+                            <small id="type-error" class="text-danger d-none"> {{ translate('Please select a company type') }}</small>
+                        </div>
+
+
+                        <div class="form-group">
+                            <label for="certificate-number" class="fs-13 fw-bold">{{ translate('Licence Number') }}</label>
+                            <input type="text" name="certificate_number"
+                                class="form-control text-gray fs-13 fw-300 rounded-2 bg-soft-light"
+                                id="certificate-number" placeholder="Licence number" required>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="tax-id-documents" class="fs-13 fw-bold">{{translate('Tax Identification Document')}}</label>
+                            <div class="input-group rounded-2 bg-soft-light overflow-hidden">
+                                <div class="input-group-prepend rounded-2 bg-soft-light">
+                                    <span class="input-group-text  bg-soft-light">{{translate('Browse')}}</span>
+                                </div>
+                                <div class="custom-file">
+                                    <label class="custom-file-label  cursor-pointer">
+                                        <input type="file" class="custom-file-input preview-input " data-preview="#certificate_preview" name="certificate" id="certificate"  accept=".jpg,.jpeg,.png,.bmp,application/pdf">
+                                        <span class="custom-file-name  cursor-pointer">{{ translate('Choose file') }}</span>
+                                    </label>
+                                </div>
+                            </div>
+                            <small id="certificate-error" class="text-danger d-none"> {{ translate('Please upload a valid certificate') }}</small>
+                        </div>
+                        
+                        <div id="certificate_preview" class="mb-2"></div>
+
+                        <div class="form-group">
+                            <label for="valid-id-card" class="fs-13 fw-bold">{{translate('Valid ID Card')}}</label>
+                            <div class="input-group rounded-2 bg-soft-light overflow-hidden">
+                                <div class="input-group-prepend rounded-2 bg-soft-light">
+                                    <span class="input-group-text  bg-soft-light">{{translate('Browse')}}</span>
+                                </div>
+                                <div class="custom-file">
+                                    <label class="custom-file-label  cursor-pointer">
+                                        <input type="file" class="custom-file-input preview-input " data-preview="#id_card_preview" name="id_card" id="id_card"  accept=".jpg,.jpeg,.png,.bmp,application/pdf" >
+                                        <span class="custom-file-name  cursor-pointer">{{ translate('Choose file') }}</span>
+                                    </label>
+                                </div>
+                            </div>
+                            <small id="id_card-error" class="text-danger d-none"> {{ translate('Please upload a valid ID card') }}</small>
+                        </div>
+                        
+                        <div id="id_card_preview" class="mb-2"></div>
+
+                        
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="form-group">
+                                    <label for="valid-id-card" class="fs-13 fw-bold">{{translate('Photo')}}</label>
+                                    <div class="input-group rounded-2 bg-soft-light overflow-hidden">
+                                        <div class="input-group-prepend rounded-2 bg-soft-light">
+                                            <span class="input-group-text  bg-soft-light">{{translate('Browse')}}</span>
+                                        </div>
+                                        <div class="custom-file">
+                                            <label class="custom-file-label  cursor-pointer">
+                                                <input type="file" class="custom-file-input preview-input " data-preview="#seller_photo_preview" name="seller_photo" id="seller_photo"  accept=".jpg,.jpeg,.png,.bmp,application/pdf" >
+                                                <span class="custom-file-name  cursor-pointer">{{ translate('Choose file') }}</span>
+                                            </label>
+                                        </div>
+                                    </div>
+                                
+                                </div>
+
+                                <div id="seller_photo_preview" class="mb-2"></div>
+                            </div>
+
+                            <div class="col-md-6">
+
+                                <div class="form-group">
+                                    <label class="fs-13 fw-bold">{{translate('Live Selfie Photo')}}</label>
+
+                                    <!-- Camera Preview -->
+                                    <video id="selfieVideo" class="w-100 rounded d-none" autoplay playsinline></video>
+
+                                    <!-- Captured Image -->
+                                    <canvas id="selfieCanvas" class="w-100 rounded d-none mt-2"></canvas>
+
+                                    <!-- Hidden input to send selfie -->
+                                    <input type="hidden" name="live_selfie" id="liveSelfieInput">
+
+                                    <div class="text-center">
+                                        <button type="button" id="openCameraBtn" class="btn btn-outline-primary w-100">
+                                            {{translate('Take Selfie')}}
+                                        </button>
+
+                                        <button type="button" id="captureSelfieBtn"
+                                            class="btn btn-success d-none mt-2">
+                                            {{translate('Capture')}}
+                                        </button>
+
+                                        <button type="button" id="retakeSelfieBtn"
+                                            class="btn btn-warning d-none mt-2">
+                                            {{translate('Retake')}}
+                                        </button>
+                                    </div>
+                                </div>
+                                
+                            </div>
+                        </div>
+
+                         <div class="alert alert-danger d-none mb-4" id="photoSelfieRequiredAlert">
+                            {{ translate('At least one of Photo or Live Selfie is required!') }}
+                        </div>
+
+                        
+
+                        <div class="form-group mt-5">
+                            <button type="submit" value="Create Account"
+                                class="d-block w-100 border-0 fs-13 fw-bold btn btn-primary rounded-2 py-3">
+                            {{ translate('Submit') }}
+                            </button>
+                        </div>
+                    </form>
+                    
+                </div>
+            </div>
+        </div>
+    </div>
 @endsection
 
 @section('script')
@@ -659,4 +928,194 @@
             }
         });
     </script>
+
+    @if(addon_is_activated('portfolio_system') && ($authUser->shop?->verification_status == 0))
+    <script>
+        $(document).ready(function () {
+            $('body').addClass('verification-lock');
+
+            $('#varification_pending_modal').modal({
+                backdrop: 'static',
+                keyboard: false
+            });
+
+            $('#varification_pending_modal').modal('show');
+        });
+    </script>
+    @endif
+
+<script>
+     // Verification modal handling
+    @if(addon_is_activated('portfolio_system') && ($authUser->shop?->verification_status == 0))
+        $('body').addClass('verification-lock');
+        $('#varification_pending_modal').modal({
+            backdrop: 'static',
+            keyboard: false
+        }).modal('show');
+    @endif
+
+    // Open verification form
+    $('#openSellerVerification').on('click', function () {
+        $('#varification_pending_modal').modal('hide');
+        $('#seller_verification_modal').modal({
+            backdrop: 'static',
+            keyboard: false
+        }).modal('show');
+    });
+
+    // File preview function
+    $(document).on('change', '.preview-input', function () {
+        const input = this;
+        const previewBox = $($(this).data('preview'));
+        const file = input.files[0];
+        
+        $(this).next('.custom-file-label').html(file?.name || '');
+        previewBox.html('');
+
+        if (file) {
+            if (file.type.startsWith('image/')) {
+                const reader = new FileReader();
+                reader.onload = function (e) {
+                    previewBox.html(
+                        `<img src="${e.target.result}" class="preview-img img-fluid h-100px w-100-px">`
+                    );
+                };
+                reader.readAsDataURL(file);
+            } else if (file.type === 'application/pdf') {
+                previewBox.html(`
+                    <div class="pdf-preview d-flex align-items-end justify-content-center border rounded text-center" 
+                        style="width:100px; height:100px; background-color:#f8f9fa; position:relative;">
+                        <i class="las la-file-pdf" style="position:absolute; top:50%; left:50%; transform:translate(-50%, -50%); opacity:0.2; font-size:50px; color:#e74c3c;"></i>
+                        <small class="text-truncate-1 fs-10" style="position:absolute; bottom:5px; left:0;" title="${file.name}">${file.name}</small>
+                    </div>
+                `);
+            }
+        }
+    });
+
+    // Camera functionality
+    let selfieStream;
+    const video = document.getElementById('selfieVideo');
+    const canvas = document.getElementById('selfieCanvas');
+    const ctx = canvas.getContext('2d');
+
+    $('#openCameraBtn').on('click', takeSelfie);
+    $('#captureSelfieBtn').on('click', captureSelfie);
+    $('#retakeSelfieBtn').on('click', retakeSelfie);
+
+    function captureSelfie() {
+        canvas.width = video.videoWidth;
+        canvas.height = video.videoHeight;
+        ctx.drawImage(video, 0, 0);
+
+        stopCamera();
+        
+        const imageData = canvas.toDataURL('image/png');
+        $('#liveSelfieInput').val(imageData);
+
+        video.classList.add('d-none');
+        canvas.classList.remove('d-none');
+
+        $('#captureSelfieBtn').addClass('d-none');
+        $('#retakeSelfieBtn').removeClass('d-none');
+        
+        // Mark as valid
+        $('#photoSelfieRequiredAlert').addClass('d-none');
+    }
+
+    function retakeSelfie() {
+        $('#retakeSelfieBtn').addClass('d-none');
+        $('#openCameraBtn').removeClass('d-none');
+        $('#liveSelfieInput').val('');
+        
+        canvas.classList.add('d-none');
+        takeSelfie();
+    }
+
+    async function takeSelfie() {
+        try {
+            selfieStream = await navigator.mediaDevices.getUserMedia({
+                video: { facingMode: "user" },
+                audio: false
+            });
+
+            video.srcObject = selfieStream;
+            video.classList.remove('d-none');
+
+            $('#openCameraBtn').addClass('d-none');
+            $('#captureSelfieBtn').removeClass('d-none');
+        } catch (e) {
+            alert('Camera access denied or not supported!');
+        }
+    }
+
+    function stopCamera() {
+        if (selfieStream) {
+            selfieStream.getTracks().forEach(track => track.stop());
+            selfieStream = null;
+        }
+    }
+
+    // Handle modal close - stop camera
+    $('#seller_verification_modal').on('hide.bs.modal', function () {
+        stopCamera();
+        if (video && video.srcObject) {
+            video.srcObject = null;
+        }
+    });
+
+    // Form validation
+    const form = document.getElementById('seller-verification-form');
+    
+    form.addEventListener('submit', function(event) {
+        event.preventDefault();
+        event.stopPropagation();
+
+        let isValid = true;
+
+        // Reset states
+        $('#photoSelfieRequiredAlert').addClass('d-none');
+
+        // Check photo or selfie
+        const hasPhoto = $('#seller_photo')[0].files.length > 0;
+        const hasSelfie = $('#liveSelfieInput').val().trim() !== '';
+
+        if (!hasPhoto && !hasSelfie) {
+            isValid = false;
+            $('#photoSelfieRequiredAlert').removeClass('d-none');
+            $('html, body').animate({
+                scrollTop: $("#seller_photo").offset().top - 100
+            }, 400);
+        }
+
+        // Required file validations
+        const requiredFields = [
+            { id: 'certificate', errorId: '#certificate-error' },
+            { id: 'id_card', errorId: '#id_card-error' }
+        ];
+
+        requiredFields.forEach(field => {
+            const input = document.getElementById(field.id);
+            if ( input.files.length === 0) {
+                isValid = false;
+                $(field.errorId).removeClass('d-none');
+            }
+        });
+
+        if (isValid) {
+            form.submit();
+        }
+    });
+
+    // Real-time validation for photo/selfie
+    $('#seller_photo, #liveSelfieInput').on('change input', function() {
+        const hasPhoto = $('#seller_photo')[0].files.length > 0;
+        const hasSelfie = $('#liveSelfieInput').val().trim() !== '';
+        
+        if (hasPhoto || hasSelfie) {
+            $('#photoSelfieRequiredAlert').addClass('d-none');
+        }
+    });
+</script>
+
 @endsection

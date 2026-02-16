@@ -26,10 +26,13 @@
     <link rel="stylesheet" href="{{ static_asset('assets/css/bootstrap-rtl.min.css') }}">
     @endif
 	<link rel="stylesheet" href="{{ static_asset('assets/css/aiz-seller.css') }}">
+    <link rel="stylesheet" href="{{ static_asset('assets/css/custom-style.css') }}">
+    <link rel="stylesheet" href="{{ static_asset('assets/css/seller-custom-style.css') }}">
 
     <style>
         body {
             font-size: 12px;
+            font-family: {!! !empty(get_setting('system_font_family')) ? get_setting('system_font_family') : "'Public Sans', sans-serif" !!}, sans-serif;
         }
         #map{
             width: 100%;
@@ -88,6 +91,7 @@
 		</div><!-- .aiz-content-wrapper -->
 	</div><!-- .aiz-main-wrapper -->
 
+    @include('modals.bulk_action_modal')
     @yield('modal')
 
 

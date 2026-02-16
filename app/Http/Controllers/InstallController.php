@@ -10,6 +10,7 @@ use App\Models\BusinessSetting;
 use App\Models\User;
 use Artisan;
 use Session;
+use ZipArchive;
 
 class InstallController extends Controller
 {
@@ -30,7 +31,6 @@ class InstallController extends Controller
     }
 
     public function step3($error = "") {
-        
         if($error == ""){
             return view('installation.step3');
         }else {
@@ -95,6 +95,7 @@ class InstallController extends Controller
             $business_settings->save();
             Session::forget('purchase_code');
         }
+        Artisan::call('optimize:clear');
         return view('installation.step6');
     }
     public function database_installation(Request $request) {
@@ -117,6 +118,22 @@ class InstallController extends Controller
     public function import_sql() {
         $sql_path = base_path('shop.sql');
         DB::unprepared(file_get_contents($sql_path));
+        return redirect('step5');
+    }
+
+    public function import_sql_with_demo() {
+        $sql_path = base_path('shop.sql');
+        DB::unprepared(file_get_contents($sql_path));
+
+        // import sql
+        $sql_path = base_path('public/demo.sql');
+        DB::unprepared(file_get_contents($sql_path));
+
+        // extract images
+        $zip = new ZipArchive;
+        $zip->open(base_path('public/uploads.zip'));
+        $zip->extractTo('public/uploads/all/');
+        flash(translate('Demo data uploaded successfully'))->success();
         return redirect('step5');
     }
 

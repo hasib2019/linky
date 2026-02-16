@@ -26,7 +26,7 @@
                             <!-- Login form -->
                             <div class="pt-3 pt-lg-4 bg-white">
                                 <div class="">
-                                    <form class="form-default" role="form" action="{{ route('login') }}" method="POST">
+                                    <form class="form-default" id="login-form" role="form" action="{{ route('login') }}" method="POST">
                                         @csrf
                                         
                                         <!-- Email-->
@@ -48,6 +48,16 @@
                                                 <i class="password-toggle las la-2x la-eye"></i>
                                             </div>
                                         </div>
+
+                                        <!-- Recaptcha -->
+                                        @if(get_setting('google_recaptcha') == 1 && get_setting('recaptcha_admin_login') == 1)
+                                            
+                                            @if ($errors->has('g-recaptcha-response'))
+                                                <span class="border invalid-feedback rounded p-2 mb-3 bg-danger text-white" role="alert" style="display: block;">
+                                                    <strong>{{ $errors->first('g-recaptcha-response') }}</strong>
+                                                </span>
+                                            @endif
+                                        @endif
 
                                         <div class="row mb-2">
                                             <!-- Remember Me -->

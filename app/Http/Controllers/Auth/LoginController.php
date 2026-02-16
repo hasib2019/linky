@@ -16,6 +16,8 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Http;
 use GuzzleHttp\Client;
 use Storage;
+use App\Rules\Recaptcha;
+use Illuminate\Validation\Rule;
 
 class LoginController extends Controller
 {
@@ -236,6 +238,9 @@ class LoginController extends Controller
             'email'    => 'required_without:phone',
             'phone'    => 'required_without:email',
             'password' => 'required|string',
+              'g-recaptcha-response' => [
+                Rule::when(get_setting('google_recaptcha') == 1  && get_setting($request['recaptcha_action']) == 1 , ['required', new Recaptcha()], ['sometimes'])
+            ],
         ]);
     }
 
@@ -279,6 +284,18 @@ class LoginController extends Controller
         if (auth()->user()->user_type == 'admin' || auth()->user()->user_type == 'staff') {
             return redirect()->route('admin.dashboard');
         } elseif (auth()->user()->user_type == 'seller') {
+            
+            if (auth()->user()->shop->registration_approval  == 0) {
+                auth()->logout();
+                flash(translate("Your seller account is under review. We will notify you once approved."));
+                return redirect()->route('home');
+            }
+            //save the seller login log
+            \Log::channel('seller_login')->info('Seller Logged In', [
+                'user_id' => auth()->user()->id,
+                'email' => auth()->user()->email,
+                'time' => now()->toDateTimeString(),
+            ]);
             return redirect()->route('seller.dashboard');
         } else {
 

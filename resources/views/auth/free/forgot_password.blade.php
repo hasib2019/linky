@@ -31,14 +31,14 @@
                             <!-- Send password reset link or code form -->
                             <div class="pt-3 pt-lg-4 bg-white">
                                 <div class="">
-                                    <form class="form-default" role="form" action="{{ route('password.email') }}" method="POST">
+                                    <form class="form-default" id="forgot-pass-form" role="form" action="{{ route('password.email') }}" method="POST">
                                         @csrf
                                         
                                         <!-- Email or Phone -->
                                         @if (addon_is_activated('otp_system'))
                                             <div class="form-group phone-form-group mb-1">
                                                 <label for="phone" class="fs-12 fw-700 text-soft-dark">{{  translate('Phone') }}</label>
-                                                <input type="tel" id="phone-code" class="form-control{{ $errors->has('phone') ? ' is-invalid' : '' }} rounded-0" value="{{ old('phone') }}" placeholder="" name="phone" autocomplete="off">
+                                                <input type="tel" phone-number id="phone-code" class="form-control{{ $errors->has('phone') ? ' is-invalid' : '' }} rounded-0" value="{{ old('phone') }}" placeholder="" name="phone" autocomplete="off">
                                             </div>
 
                                             <input type="hidden" name="country_code" value="">
@@ -66,6 +66,16 @@
                                                     </span>
                                                 @endif
                                             </div>
+                                        @endif
+
+                                        <!-- Recaptcha -->
+                                        @if(get_setting('google_recaptcha') == 1 && get_setting('recaptcha_forgot_password') == 1)
+                                            
+                                            @if ($errors->has('g-recaptcha-response'))
+                                                <span class="border invalid-feedback rounded p-2 mb-3 bg-danger text-white" role="alert" style="display: block;">
+                                                    <strong>{{ $errors->first('g-recaptcha-response') }}</strong>
+                                                </span>
+                                            @endif
                                         @endif
 
                                         <!-- Submit Button -->

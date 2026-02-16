@@ -288,7 +288,12 @@
 						<!-- Twitter Link -->
                         <div class="input-group form-group">
                             <div class="input-group-prepend">
-                                <span class="input-group-text"><i class="lab la-twitter"></i></span>
+                                <span class="input-group-text">
+									<svg xmlns="http://www.w3.org/2000/svg" width="9" height="10" fill="#5d6161" viewBox="0 0 16 16" class="ml-1">
+                                        <path d="M12.6.75h2.454l-5.36 6.142L16 15.25h-4.937l-3.867-5.07-4.425 5.07H.316l5.733-6.57L0 
+                                        .75h5.063l3.495 4.633L12.601.75Zm-.86 13.028h1.36L4.323 2.145H2.865z"/>
+                                    </svg>
+								</span>
                             </div>
                             <input type="hidden" name="types[]" value="twitter_link">
                             <input type="text" class="form-control" placeholder="http://" name="twitter_link" value="{{ get_setting('twitter_link')}}">

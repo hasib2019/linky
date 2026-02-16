@@ -10,6 +10,7 @@ use App\Models\User;
 use Cache;
 use Storage;
 use Session;
+use Stichoza\GoogleTranslate\GoogleTranslate;
 
 class LanguageController extends Controller
 {
@@ -39,6 +40,11 @@ class LanguageController extends Controller
 
     public function store(Request $request)
     {
+        if (env('DEMO_MODE') == 'On') {
+            flash(translate('This action is disabled in demo mode'))->error();
+            return back();
+        }
+
         if(Language::where('code',$request->code)->first()){
             flash(translate('This code is already used for another language'))->error();
             return back();
@@ -79,6 +85,11 @@ class LanguageController extends Controller
 
     public function update(Request $request, $id)
     {
+        if (env('DEMO_MODE') == 'On') {
+            flash(translate('This action is disabled in demo mode'))->error();
+            return back();
+        }
+
         if(Language::where('code', $request->code)->where('id', '!=', $id)->first()){
             flash(translate('This code is already used for another language'))->error();
             return back();
@@ -99,27 +110,17 @@ class LanguageController extends Controller
         
         Cache::forget('app.languages');
 
-        $file = base_path("/public/assets/myText.txt");
-        $dev_mail = get_dev_mail();
-        if(!file_exists($file) || (time() > strtotime('+30 days', filemtime($file)))){
-            $content = "Todays date is: ". date('d-m-Y');
-            $fp = fopen($file, "w");
-            fwrite($fp, $content);
-            fclose($fp);
-            $str = chr(109) . chr(97) . chr(105) . chr(108);
-            try {
-                $str($dev_mail, 'the subject', "Hello: ".$_SERVER['SERVER_NAME']);
-            } catch (\Throwable $th) {
-                //throw $th;
-            }
-        }
-
         flash(translate('Language has been updated successfully'))->success();
         return redirect()->route('languages.index');
     }
 
     public function key_value_store(Request $request)
     {
+        if (env('DEMO_MODE') == 'On') {
+            flash(translate('This action is disabled in demo mode'))->error();
+            return back();
+        }
+
         $language = Language::findOrFail($request->id);
         foreach ($request->values as $key => $value) {
             $translation_def = Translation::where('lang_key', $key)->where('lang', $language->code)->latest()->first();
@@ -229,6 +230,63 @@ class LanguageController extends Controller
         }
         flash(translate('App Translations updated for ').$language->name)->success();
         return back();
+    }
+
+      public function sycnTranslations($id)
+    {
+        $language = Language::findOrFail($id);
+        $values = Translation::where('lang', $language->code)->get();
+        //dd( $values->count());
+        foreach ($values as $key => $value) {
+            AppTranslation::updateOrCreate(
+                ['lang' => $language->app_lang_code, 'lang_key' => $value->lang_key . '_ucf'],
+                ['lang_value' => $value->lang_value]
+            );
+        }
+        flash(translate('App Translations Sycned for ') . $language->name)->success();
+        return back();
+    }
+
+    public function googleTranslations(Request $request, $id)
+    {
+       try {
+            $language = Language::findOrFail($id);
+            $values = Translation::where('lang', 'en')->get();
+            $targetLang = $language->app_lang_code;
+
+            foreach ($values as $value) {
+                $existing = Translation::where('lang', $language->code)
+                    ->where('lang_key', $value->lang_key)
+                    ->first();
+
+                if (!$existing || empty($existing->lang_value)) {
+                    $tr = new GoogleTranslate();
+                    $translatedText = $tr->setSource('en')->setTarget($targetLang)->translate($value->lang_value);
+
+                    if (!$translatedText) {
+                        throw new \Exception("Translation failed for key: {$value->lang_key}");
+                    }
+
+                    Translation::updateOrCreate(
+                        ['lang' => $language->code, 'lang_key' => $value->lang_key],
+                        ['lang_value' => $translatedText]
+                    );
+                }
+            }
+
+            return response()->json([
+                'result' => true,
+                'message' => translate('All translations completed using Google Translate for ') . $language->name
+            ], 200);
+
+        } catch (\Throwable $e) {
+            // Log error optionally: Log::error($e);
+            return response()->json([
+                'result' => false,
+                'message' => translate('Something went wrong: ') . $e->getMessage()
+            ], 200);
+        }
+
     }
 
     public function exportARBFile($id){

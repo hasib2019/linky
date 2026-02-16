@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Requests\CategoryRequest;
 use Illuminate\Http\Request;
 use App\Models\Category;
 use App\Models\Product;
@@ -10,6 +11,7 @@ use App\Models\User;
 use App\Utility\CategoryUtility;
 use Illuminate\Support\Str;
 use Cache;
+use Illuminate\Support\Facades\Log;
 
 class CategoryController extends Controller
 {
@@ -29,13 +31,14 @@ class CategoryController extends Controller
     public function index(Request $request)
     {
         $sort_search =null;
+        $category_tabs = ['All Categories', 'Physical Categories', 'Digital Categories'];
         $categories = Category::orderBy('order_level', 'desc');
         if ($request->has('search')){
             $sort_search = $request->search;
             $categories = $categories->where('name', 'like', '%'.$sort_search.'%');
         }
         $categories = $categories->paginate(15);
-        return view('backend.product.categories.index', compact('categories', 'sort_search'));
+        return view('backend.product.categories.index', compact('categories', 'sort_search', 'category_tabs'));
     }
 
     /**
@@ -59,7 +62,7 @@ class CategoryController extends Controller
      * @param  \Illuminate\Http\Request  $request
      * @return \Illuminate\Http\Response
      */
-    public function store(Request $request)
+    public function store(CategoryRequest $request)
     {
         $category = new Category;
         $category->name = $request->name;
@@ -73,6 +76,7 @@ class CategoryController extends Controller
         $category->cover_image = $request->cover_image;
         $category->meta_title = $request->meta_title;
         $category->meta_description = $request->meta_description;
+        $category->meta_keywords = $request->meta_keywords;
 
         if ($request->parent_id != "0") {
             $category->parent_id = $request->parent_id;
@@ -99,8 +103,11 @@ class CategoryController extends Controller
         $category_translation->name = $request->name;
         $category_translation->save();
 
-        flash(translate('Category has been inserted successfully'))->success();
-        return redirect()->route('categories.index');
+        return response()->json([
+                'success' => true,
+                'message' => translate('Category has been inserted successfully'),
+                'redirect' => route('categories.index')
+            ]);
     }
 
     /**
@@ -145,7 +152,7 @@ class CategoryController extends Controller
      * @param  int  $id
      * @return \Illuminate\Http\Response
      */
-    public function update(Request $request, $id)
+    public function update(CategoryRequest $request, $id)
     {
         $category = Category::findOrFail($id);
         if($request->lang == env("DEFAULT_LANGUAGE")){
@@ -160,6 +167,7 @@ class CategoryController extends Controller
         $category->cover_image = $request->cover_image;
         $category->meta_title = $request->meta_title;
         $category->meta_description = $request->meta_description;
+        $category->meta_keywords = $request->meta_keywords;
 
         $previous_level = $category->level;
 
@@ -205,8 +213,12 @@ class CategoryController extends Controller
         $category_translation->save();
 
         Cache::forget('featured_categories');
-        flash(translate('Category has been updated successfully'))->success();
-        return back();
+        //flash(translate('Category has been updated successfully'))->success();
+        return response()->json([
+                'success' => true,
+                'message' => translate('Category has been updated successfully'),
+                'redirect' => route('categories.index')
+            ]);
     }
 
     /**
@@ -233,8 +245,7 @@ class CategoryController extends Controller
         CategoryUtility::delete_category($id);
         Cache::forget('featured_categories');
 
-        flash(translate('Category has been deleted successfully'))->success();
-        return redirect()->route('categories.index');
+        return 1;
     }
 
     public function updateFeatured(Request $request)
@@ -243,6 +254,15 @@ class CategoryController extends Controller
         $category->featured = $request->status;
         $category->save();
         Cache::forget('featured_categories');
+        return 1;
+    }
+
+    public function updateHot(Request $request)
+    {
+        $category = Category::findOrFail($request->id);
+        $category->hot_category = $request->status;
+        $category->save();
+        Cache::forget('hot_categories');
         return 1;
     }
 
@@ -258,12 +278,140 @@ class CategoryController extends Controller
 
     public function categoriesWiseProductDiscount(Request $request){
         $sort_search =null;
-        $categories = Category::orderBy('order_level', 'desc');
+        $categories = Category::with('sellerDiscounts')->orderBy('order_level', 'desc');
         if ($request->has('search')){
             $sort_search = $request->search;
             $categories = $categories->where('name', 'like', '%'.$sort_search.'%');
         }
         $categories = $categories->paginate(15);
         return view('backend.product.category_wise_discount.set_discount', compact('categories', 'sort_search'));
+    }
+    
+    public function categoriesWiseCommission(Request $request){
+        $sort_search =null;
+        $categories = Category::orderBy('order_level', 'desc');
+        if ($request->has('search')){
+            $sort_search = $request->search;
+            $categories = $categories->where('name', 'like', '%'.$sort_search.'%');
+        }
+        $categories = $categories->paginate(15);
+        return view('backend.sellers.category_wise_commission.set_commission', compact('categories', 'sort_search'));
+    }
+
+    public function categoriesWiseCommissionUpdate(Request $request)
+    {
+     
+        $categoryId = $request->input('category_id');
+        $commissionRate = $request->input('commission');
+    
+        $category = Category::findOrFail($categoryId);
+    
+        // Update the main category
+        $category->commision_rate = $commissionRate;
+        $category->save();
+    
+        // Recursively update all children
+        $this->updateChildrenCommissionRate($category, $commissionRate);
+    
+       
+        return 1;
+    }
+    
+    private function updateChildrenCommissionRate(Category $category, $commissionRate)
+    {
+        foreach ($category->categories as $child) {
+            $child->commision_rate = $commissionRate;
+            $child->save();
+    
+            if ($child->categories->isNotEmpty()) {
+                $this->updateChildrenCommissionRate($child, $commissionRate);
+            }
+        }
+    }
+
+    public function get_categories_by_filter(Request $request)
+    {
+        Log::info('Filter Category Request: ', $request->all());
+         $categories = Category::orderBy('order_level', 'desc');
+         $sort_search =null;
+         if($request->category_type=='physical_categories'){
+            $categories= $categories->where('digital',0);
+         }
+         else if($request->category_type=='digital_categories'){
+            $categories= $categories->where('digital',1);
+         }
+
+        if ($request->search != null){
+            $sort_search = $request->search;
+            $categories = $categories->where('name', 'like', '%'.$sort_search.'%');
+        }
+
+        $categories=$categories->paginate(15);
+        $view = view('backend.product.categories.categories_table',
+            compact('categories', 'sort_search')
+        )->render();
+        return response()->json(['html' => $view]);
+    }
+
+    public function category_details($id)
+    {
+        $category = Category::withCount('productCategories')->findOrFail($id);
+        return view('backend.product.categories.details', compact('category'));
+    }
+
+    public function bulk_categories_featured(Request $request)
+    {
+        if ($request->id) {
+            foreach ($request->id as $category_id) {
+                $category = Category::findOrFail($category_id);
+                if (!$category) {
+                    continue;
+                }
+                $category->featured = 1;
+                $category->save();
+            }
+            Cache::forget('featured_categories');
+            return 1;
+        }
+    }
+
+    public function bulk_categories_hot(Request $request)
+    {
+        if ($request->id) {
+            foreach ($request->id as $category_id) {
+                $category = Category::findOrFail($category_id);
+                if (!$category) {
+                    continue;
+                }
+                $category->hot_category = '1';
+                $category->save();
+            }
+            Cache::forget('hot_categories');
+            return 1;
+        }
+    }
+
+    public function bulk_categories_delete(Request $request)
+    {
+        if ($request->id) {
+            foreach ($request->id as $category_id) {
+                $category = Category::findOrFail($category_id);
+                if (!$category) {
+                    continue;
+                }
+                $category->attributes()->detach();
+                foreach ($category->category_translations as $key => $category_translation) {
+                    $category_translation->delete();
+                }
+                foreach (Product::where('category_id', $category->id)->get() as $product) {
+                    $product->category_id = null;
+                    $product->save();
+                }
+
+                CategoryUtility::delete_category($category_id);
+            }
+            Cache::forget('featured_categories');
+            return 1;
+        }
     }
 }

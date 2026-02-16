@@ -40,76 +40,38 @@
                                             @endif
                                         </div>
 
-                                        <!-- Email or Phone -->
-                                        {{-- @if (addon_is_activated('otp_system'))
-                                            <div class="form-group phone-form-group mb-1">
-                                                <label for="phone" class="fs-12 fw-700 text-soft-dark">{{  translate('Phone') }}</label>
-                                                <input type="tel" id="phone-code" class="form-control rounded-0{{ $errors->has('phone') ? ' is-invalid' : '' }}" value="{{ old('phone') }}" placeholder="" name="phone" autocomplete="off">
-                                            </div>
-
-                                            <input type="hidden" name="country_code" value="">
-
-                                            <div class="form-group email-form-group mb-1 d-none">
-                                                <label for="email" class="fs-12 fw-700 text-soft-dark">{{  translate('Email') }}</label>
-                                                <input type="email" class="form-control rounded-0 {{ $errors->has('email') ? ' is-invalid' : '' }}" value="{{ old('email') }}" placeholder="{{  translate('Email') }}" name="email"  autocomplete="off">
-                                                @if ($errors->has('email'))
-                                                    <span class="invalid-feedback" role="alert">
-                                                        <strong>{{ $errors->first('email') }}</strong>
-                                                    </span>
-                                                @endif
-                                            </div>
-
-                                            <div class="form-group text-right">
-                                                <button class="btn btn-link p-0 text-primary fs-12 fw-400" type="button" onclick="toggleEmailPhone(this)"><i>*{{ translate('Use Email Instead') }}</i></button>
-                                            </div>
-                                        @else
-                                            <div class="form-group">
-                                                <label for="email" class="fs-12 fw-700 text-soft-dark">{{  translate('Email') }}</label>
-                                                <input type="email" class="form-control rounded-0{{ $errors->has('email') ? ' is-invalid' : '' }}" value="{{ old('email') }}" placeholder="{{  translate('Email') }}" name="email">
-                                                @if ($errors->has('email'))
-                                                    <span class="invalid-feedback" role="alert">
-                                                        <strong>{{ $errors->first('email') }}</strong>
-                                                    </span>
-                                                @endif
-                                            </div>
-                                        @endif --}}
-
                                         @if (addon_is_activated('otp_system'))
-                                            @if($phone)
-                                                {{-- Show only the phone field if $phone exists --}}
-                                                <div class="form-group phone-form-group mb-1">
-                                                    <label for="phone" class="fs-12 fw-700 text-soft-dark">{{ translate('Phone') }}</label>
-                                                    <input type="tel" id="phone-code" class="form-control rounded-0{{ $errors->has('phone') ? ' is-invalid' : '' }}" 
-                                                           value="{{ $phone }}" placeholder="" name="phone" autocomplete="off" readonly>
-                                                    {{-- <input type="hidden" name="country_code" value="{{ $country_code ?? '' }}">  --}}
-                                                    <input type="hidden" name="country_code" value="">
-                                                </div>
-                                            @elseif($email)
-                                                {{-- Show only the email field if $email exists --}}
-                                                <div class="form-group email-form-group mb-1">
-                                                    <label for="email" class="fs-12 fw-700 text-soft-dark">{{ translate('Email') }}</label>
-                                                    <input type="email" class="form-control rounded-0 {{ $errors->has('email') ? ' is-invalid' : '' }}" 
-                                                           value="{{ $email }}" placeholder="{{ translate('Email') }}" name="email" autocomplete="off" readonly>
-                                                    @if ($errors->has('email'))
-                                                        <span class="invalid-feedback" role="alert">
-                                                            <strong>{{ $errors->first('email') }}</strong>
-                                                        </span>
-                                                    @endif
-                                                </div>
-                                            @else
+                                        <div>
+                                            <div id="emailOrPhoneDiv">
                                                 {{-- Show both fields with the toggle button if neither email nor phone is set --}}
-                                                <div class="form-group phone-form-group mb-1">
+                                                <div class="form-group phone-form-group mb-1 ">
                                                     <label for="phone" class="fs-12 fw-700 text-soft-dark">{{ translate('Phone') }}</label>
-                                                    <input type="tel" id="phone-code" class="form-control rounded-0{{ $errors->has('phone') ? ' is-invalid' : '' }}" 
-                                                           value="{{ old('phone') }}" placeholder="" name="phone" autocomplete="off">
+                                                    <div class="input-group registration-iti">
+                                                        <input type="tel" phone-number id="phone-code" class="form-control rounded-0{{ $errors->has('phone') ? ' is-invalid' : '' }}"
+                                                        value="{{ old('phone') }}" placeholder="" name="phone"
+                                                        autocomplete="off">
+                                                        @if(get_setting('customer_registration_verify') == '1')
+                                                        <button class="btn btn-primary" type="button" id="sendOtpPhoneBtn" onclick="sendVerificationCode(this)">
+                                                                    {{ translate('Verify') }} 
+                                                        </button>
+                                                        @endif
+                                                    </div>
                                                 </div>
                                         
                                                 <input type="hidden" id="country_code" name="country_code" value="{{ old('country_code', 'US') }}"> {{-- Default to 'US' --}}
                                         
                                                 <div class="form-group email-form-group mb-1 d-none">
                                                     <label for="email" class="fs-12 fw-700 text-soft-dark">{{ translate('Email') }}</label>
-                                                    <input type="email" class="form-control rounded-0 {{ $errors->has('email') ? ' is-invalid' : '' }}" 
-                                                           value="{{ old('email') }}" placeholder="{{ translate('Email') }}" name="email" autocomplete="off">
+                                                    <div class="input-group">
+                                                        <input type="email" class="form-control rounded-0 {{ $errors->has('email') ? ' is-invalid' : '' }} "
+                                                        value="{{ old('email') }}" placeholder="{{ translate('Email') }}" name="email" id="signinAddonEmail"
+                                                        autocomplete="off">
+                                                        @if(get_setting('customer_registration_verify') == '1')
+                                                        <button class="btn btn-primary ml-2" type="button" id="sendOtpBtn" onclick="sendVerificationCode(this)">
+                                                                {{ translate('Verify') }} 
+                                                        </button>
+                                                        @endif
+                                                    </div>
                                                     @if ($errors->has('email'))
                                                         <span class="invalid-feedback" role="alert">
                                                             <strong>{{ $errors->first('email') }}</strong>
@@ -117,23 +79,70 @@
                                                     @endif
                                                 </div>
                                         
-                                                <div class="form-group text-right">
+                                                <div class="form-group text-right mb-0" id="mail_phone_toggle_btn">
                                                     <button class="btn btn-link p-0 text-primary" type="button" onclick="toggleEmailPhone(this)">
                                                         <i>*{{ translate('Use Email Instead') }}</i>
                                                     </button>
                                                 </div>
-                                            @endif
+                                            
+                                            </div>
+                                            <div class="form-group mb-3 d-none">
+                                                <label class="form-label" for="verification_code">{{ translate('Verification Code') }}</label>
+                                                <div class="input-group">
+                                                    <input type="text"
+                                                        class="form-control @error('verification_code') is-invalid @enderror border-right-0"
+                                                        name="code" id="verification_code"
+                                                        placeholder="{{ translate('Verification Code') }}"
+                                                        maxlength="6">
+                                                    <span class="btn border border-left-0" id="verifyOtpBtn">
+                                                        <i class="las la-lg la-arrow-right"></i> 
+                                                    </span>
+                                                    @error('otp')
+                                                    <span class="invalid-feedback" role="alert">{{ $message }}</span>
+                                                    @enderror
+                                                </div>
+                                            </div>
+                                        </div>
                                         @else
                                             {{-- If OTP system is disabled, show only the email field --}}
-                                            <div class="form-group">
+                                            <div class="form-group email-phone-div  email-form-group" id="emailOrPhoneDiv">
                                                 <label for="email" class="fs-12 fw-700 text-soft-dark">{{ translate('Email') }}</label>
-                                                <input type="email" class="form-control rounded-0{{ $errors->has('email') ? ' is-invalid' : '' }}" 
-                                                       value="{{ $email ?? old('email') }}" placeholder="{{ translate('Email') }}" name="email" {{$email  ? 'readonly' : ''}}>
+                                                {{--<input type="email" class="form-control rounded-0{{ $errors->has('email') ? ' is-invalid' : '' }}" 
+                                                       value="{{ $email ?? old('email') }}" placeholder="{{ translate('Email') }}" name="email" {{$email  ? 'readonly' : ''}} >--}}
+
+                                                <div class="input-group">
+                                                    <input type="email"
+                                                        class="form-control rounded-0 {{ $errors->has('email') ? ' is-invalid' : '' }}"
+                                                        name="email" id="signinSrEmail"
+                                                        placeholder="{{ translate('Email Address') }}">
+                                                        @if(get_setting('customer_registration_verify') == '1')
+                                                        <button class="btn btn-primary ml-2" type="button" id="sendOtpBtn" onclick="sendVerificationCode()">
+                                                            {{ translate('Verify') }} 
+                                                        </button>
+                                                        @endif
+                                                </div>
                                                 @if ($errors->has('email'))
                                                     <span class="invalid-feedback" role="alert">
                                                         <strong>{{ $errors->first('email') }}</strong>
                                                     </span>
                                                 @endif
+                                            </div>
+
+                                            <div class="form-group mb-3 d-none">
+                                                <label class="form-label" for="verification_code">{{ translate('Verification Code') }}</label>
+                                                <div class="input-group">
+                                                    <input type="text"
+                                                        class="form-control @error('verification_code') is-invalid @enderror border-right-0"
+                                                        name="code" id="verification_code"
+                                                        placeholder="{{ translate('Verification Code') }}"
+                                                        maxlength="6">
+                                                    <span class="btn border border-left-0" id="verifyOtpBtn">
+                                                        <i class="las la-lg la-arrow-right"></i> 
+                                                    </span>
+                                                    @error('otp')
+                                                    <span class="invalid-feedback" role="alert">{{ $message }}</span>
+                                                    @enderror
+                                                </div>
                                             </div>
                                         @endif
 
@@ -164,16 +173,14 @@
                                         </div>
 
                                         <!-- Recaptcha -->
-                                        @if(get_setting('google_recaptcha') == 1)
-                                            <div class="form-group">
-                                                <div class="g-recaptcha" data-sitekey="{{ env('CAPTCHA_KEY') }}"></div>
-                                            </div>
-                                            @if ($errors->has('g-recaptcha-response'))
-                                                <span class="invalid-feedback" role="alert" style="display: block;">
-                                                    <strong>{{ $errors->first('g-recaptcha-response') }}</strong>
-                                                </span>
+                                            @if(get_setting('google_recaptcha') == 1 && get_setting('recaptcha_customer_register') == 1)
+                                                
+                                                @if ($errors->has('g-recaptcha-response'))
+                                                    <span class="border invalid-feedback rounded p-2 mb-3 bg-danger text-white" role="alert" style="display: block;">
+                                                        <strong>{{ $errors->first('g-recaptcha-response') }}</strong>
+                                                    </span>
+                                                @endif
                                             @endif
-                                        @endif
 
                                         <!-- Terms and Conditions -->
                                         <div class="mb-3">
@@ -186,7 +193,7 @@
 
                                         <!-- Submit Button -->
                                         <div class="mb-4 mt-4">
-                                            <button type="submit" class="btn btn-primary btn-block fw-600 rounded-0">{{  translate('Create Account') }}</button>
+                                            <button type="submit" id="createAccountBtn" class="btn btn-primary btn-block fw-600 rounded-0">{{  translate('Create Account') }}</button>
                                         </div>
                                     </form>
                                     
@@ -203,17 +210,20 @@
                                                     </a>
                                                 </li>
                                             @endif
+                                            @if (get_setting('twitter_login') == 1)
+                                                <li class="list-inline-item">
+                                                    <a href="{{ route('social.login', ['provider' => 'twitter']) }}" class="x-twitter">
+                                                        <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" fill="#ffffff" viewBox="0 0 16 16" class="mb-2 pb-1">
+                                                            <path d="M12.6.75h2.454l-5.36 6.142L16 15.25h-4.937l-3.867-5.07-4.425 5.07H.316l5.733-6.57L0 
+                                                            .75h5.063l3.495 4.633L12.601.75Zm-.86 13.028h1.36L4.323 2.145H2.865z"/>
+                                                        </svg>
+                                                    </a>
+                                                </li>
+                                            @endif
                                             @if(get_setting('google_login') == 1)
                                                 <li class="list-inline-item">
                                                     <a href="{{ route('social.login', ['provider' => 'google']) }}" class="google">
                                                         <i class="lab la-google"></i>
-                                                    </a>
-                                                </li>
-                                            @endif
-                                            @if (get_setting('twitter_login') == 1)
-                                                <li class="list-inline-item">
-                                                    <a href="{{ route('social.login', ['provider' => 'twitter']) }}" class="twitter">
-                                                        <i class="lab la-twitter"></i>
                                                     </a>
                                                 </li>
                                             @endif
@@ -248,29 +258,47 @@
 @endsection
 
 @section('script')
-    @if(get_setting('google_recaptcha') == 1)
-        <script src="https://www.google.com/recaptcha/api.js" async defer></script>
+    @if(get_setting('google_recaptcha') == 1 && get_setting('recaptcha_customer_register') == 1)
+        <script src="https://www.google.com/recaptcha/api.js?render={{ env('CAPTCHA_KEY') }}"></script>
+        
+        <script type="text/javascript">
+                document.getElementById('reg-form').addEventListener('submit', function(e) {
+                    e.preventDefault();
+                    grecaptcha.ready(function() {
+                        grecaptcha.execute(`{{ env('CAPTCHA_KEY') }}`, {action: 'register'}).then(function(token) {
+                            var input = document.createElement('input');
+                            input.setAttribute('type', 'hidden');
+                            input.setAttribute('name', 'g-recaptcha-response');
+                            input.setAttribute('value', token);
+                            e.target.appendChild(input);
+                            e.target.submit();
+                        });
+                    });
+                });
+        </script>
     @endif
+    @include('auth.verifyEmailOrPhone')
 
-    <script type="text/javascript">
-        @if(get_setting('google_recaptcha') == 1)
-        // making the CAPTCHA  a required field for form submission
-        $(document).ready(function(){
-            $("#reg-form").on("submit", function(evt)
-            {
-                var response = grecaptcha.getResponse();
-                if(response.length == 0)
-                {
-                //reCaptcha not verified
-                    alert("please verify you are human!");
-                    evt.preventDefault();
-                    return false;
-                }
-                //captcha verified
-                //do the rest of your validations here
-                $("#reg-form").submit();
-            });
+    <script>
+        const regVerifyRequired = {{get_setting('customer_registration_verify') ? 'true' : 'false' }};
+        //user registerbtn disable
+        const createBtn   = $('#createAccountBtn');
+        const termsCheckbox = $('input[name="checkbox_example_1"]');
+        function toggleCreateBtn() {
+            const termsChecked = termsCheckbox.is(':checked');
+            const regVerified  = regVerifyRequired ? (verifyBtn && verifyBtn.classList.contains('disabled')) : true;
+            let enableBtn = false;
+            if (regVerifyRequired) {
+                enableBtn = termsChecked && regVerified;
+            } else {
+                enableBtn = termsChecked;
+            }
+            createBtn.prop('disabled', !enableBtn);
+        }
+
+        document.addEventListener('DOMContentLoaded', function() {
+            toggleCreateBtn(); 
+            termsCheckbox.on('change', toggleCreateBtn); 
         });
-        @endif
     </script>
 @endsection

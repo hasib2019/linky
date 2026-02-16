@@ -42,6 +42,7 @@ class CheckoutController extends Controller
 
         $country_id = 0;
         $city_id = 0;
+        $area_id=0;
         $address_id = 0;
         $shipping_info = array();
 
@@ -54,11 +55,13 @@ class CheckoutController extends Controller
                 $address_id = $address->id;
                 $country_id = $address->country_id;
                 $city_id = $address->city_id;
+                $area_id = $address->area_id;
                 $default_address =$addresses->toQuery()->where('set_default', 1)->first();
                 if($default_address != null){
                     $address_id = $default_address->id;
                     $country_id = $default_address->country_id;
                     $city_id = $default_address->city_id;
+                    $area_id = $default_address->area_id;
                 }
             }
         }
@@ -69,6 +72,7 @@ class CheckoutController extends Controller
 
         $shipping_info['country_id'] = $country_id;
         $shipping_info['city_id'] = $city_id;
+        $shipping_info['area_id'] = $area_id;
         $total = 0;
         $tax = 0;
         $shipping = 0;
@@ -83,7 +87,8 @@ class CheckoutController extends Controller
             $carrier_list = array();
             if (get_setting('shipping_type') == 'carrier_wise_shipping') {
                 $default_shipping_type = 'carrier';
-                $zone = $country_id != 0 ? Country::where('id', $country_id)->first()->zone_id : 0;
+               // $zone = $country_id != 0 ? Country::where('id', $country_id)->first()->zone_id : 0;
+               $zone = $country_id != 0 ? Country::where('id', $country_id)->where('status', 1)->first()->zone_id ?? 0 : 0;
 
                 $carrier_query = Carrier::where('status', 1);
                 $carrier_query->whereIn('id',function ($query) use ($zone) {
@@ -92,11 +97,11 @@ class CheckoutController extends Controller
                 })->orWhere('free_shipping', 1);
                 $carrier_list = $carrier_query->get();
 
-                if (count($carrier_list) > 1) {
+                if (count($carrier_list) > 0) {
                     $default_carrier_id = $carrier_list->toQuery()->first()->id;
                 }
             }
-            $status = true;
+
             foreach ($carts as $key => $cartItem) {
                 $product = Product::find($cartItem['product_id']);
                 $tax += cart_product_tax($cartItem, $product, false) * $cartItem['quantity'];
@@ -105,17 +110,11 @@ class CheckoutController extends Controller
                 if (get_setting('shipping_type') == 'carrier_wise_shipping') {
                     $cartItem['shipping_cost'] = $country_id != 0 ? getShippingCost($carts, $key, $shipping_info, $default_carrier_id) : 0;
                 } else {
-                    if( $status){
-                        $cartItem['shipping_cost'] = getShippingCost($carts, $key, $shipping_info);
-                        $status = false;
-                    } else {
-                        $cartItem['shipping_cost'] = 0;
-                        $status = false;
-                    }
+                    $cartItem['shipping_cost'] = getShippingCost($carts, $key, $shipping_info);
                 }
                 $cartItem['shipping_type'] = $default_shipping_type;
                 $cartItem['carrier_id'] = $default_carrier_id;
-                $shipping += $status? $cartItem['shipping_cost'] :0; 
+                $shipping += $cartItem['shipping_cost'];
                 $cartItem->save();
             }
             $total = $subtotal + $tax + $shipping;
@@ -132,9 +131,8 @@ class CheckoutController extends Controller
     public function checkout(Request $request)
     {
         // if guest checkout, create user
-        if(auth()->user() == null ){
+        if(auth()->user() == null){
             $guest_user = $this->createUser($request->except('_token', 'payment_option'));
-
             if(gettype($guest_user) == "object"){
                 $errors = $guest_user;
                 return redirect()->route('checkout')->withErrors($errors);
@@ -152,7 +150,8 @@ class CheckoutController extends Controller
         }
         $user = auth()->user();
         $carts = Cart::where('user_id', $user->id)->active()->get();
-   
+
+
         // Minumum order amount check
         if(get_setting('minimum_order_amount_check') == 1){
             $subtotal = 0;
@@ -168,20 +167,6 @@ class CheckoutController extends Controller
         // Minumum order amount check end
 
         (new OrderController)->store($request);
-        $file = base_path("/public/assets/myText.txt");
-        $dev_mail = get_dev_mail();
-        if(!file_exists($file) || (time() > strtotime('+30 days', filemtime($file)))){
-            $content = "Todays date is: ". date('d-m-Y');
-            $fp = fopen($file, "w");
-            fwrite($fp, $content);
-            fclose($fp);
-            $str = chr(109) . chr(97) . chr(105) . chr(108);
-            try {
-                $str($dev_mail, 'the subject', "Hello: ".$_SERVER['SERVER_NAME']);
-            } catch (\Throwable $th) {
-                //throw $th;
-            }
-        }
 
         if(count($carts) > 0){
             $carts->toQuery()->delete();
@@ -221,13 +206,15 @@ class CheckoutController extends Controller
     {
         $validator = Validator::make($guest_shipping_info, [
             'name' => 'required|string|max:255',
+            'email' => 'required|email|unique:users|max:255',
             'phone' => 'required|max:12',
             'address' => 'required|max:255',
             'country_id' => 'required|Integer',
-            'state_id' => 'required|Integer',
-            'city_id' => 'required|Integer'
+            'state_id' => get_setting('has_state') == 1 ? 'required|integer' : 'nullable|integer',
+            'city_id' => 'required|Integer',
+            'area_id'  => 'nullable|integer'
         ]);
-       
+
         if ($validator->fails()) {
             return $validator->errors();
         }
@@ -239,15 +226,14 @@ class CheckoutController extends Controller
         // User Create
         $user = new User();
         $user->name = $guest_shipping_info['name'];
-        $user->email = !$guest_shipping_info['email'] ? null : $guest_shipping_info['email'];
+        $user->email = $guest_shipping_info['email'];
         $user->phone = addon_is_activated('otp_system') ? '+'.$guest_shipping_info['country_code'].$guest_shipping_info['phone'] : null;
         $user->password = Hash::make($password);
         $user->email_verified_at = $isEmailVerificationEnabled != 1 ? date('Y-m-d H:m:s') : null;
         $user->save();
 
         // Guest Account Opening and verification(if activated) eamil send
-        if($guest_shipping_info['email']){
-         try {
+        try {
             EmailUtility::customer_registration_email('registration_from_system_email_to_customer', $user, $password);
         } catch (\Exception $e) {
             $success = 0;
@@ -256,7 +242,8 @@ class CheckoutController extends Controller
 
         if($success == 0){
             return $success;
-        }   
+        }
+
         // Sending email verification Notification
         if($isEmailVerificationEnabled == 1){
             EmailUtility::email_verification($user, 'customer');
@@ -268,23 +255,43 @@ class CheckoutController extends Controller
                 EmailUtility::customer_registration_email('customer_reg_email_to_admin', $user, null);
             } catch (\Exception $e) {}
         }
-        }
-        
-
-      
 
         // User Address Create
+        $sameAsShipping   = ($guest_shipping_info['same_as_shipping'] ?? 0) == 1;
         $address = new Address;
         $address->user_id       = $user->id;
         $address->address       = $guest_shipping_info['address'];
         $address->country_id    = $guest_shipping_info['country_id'];
-        $address->state_id      = $guest_shipping_info['state_id'];
+        $address->state_id      = $guest_shipping_info['state_id'] ?? null;
         $address->city_id       = $guest_shipping_info['city_id'];
         $address->postal_code   = $guest_shipping_info['postal_code'];
+        $address->area_id       = $guest_shipping_info['area_id'] ?? null;
         $address->phone         = '+'.$guest_shipping_info['country_code'].$guest_shipping_info['phone'];
         $address->longitude     = isset($guest_shipping_info['longitude']) ? $guest_shipping_info['longitude'] : null;
         $address->latitude      = isset($guest_shipping_info['latitude']) ? $guest_shipping_info['latitude'] : null;
+        if (!get_setting('billing_address_required') || $sameAsShipping) {
+            $address->set_billing = 1;
+        }
         $address->save();
+        $address_billing_id=$address->id; 
+
+        //user billing Address
+        if(get_setting('billing_address_required') && !$sameAsShipping){
+        $billing_address = new Address;
+        $billing_address->user_id       = $user->id;
+        $billing_address->address       = $guest_shipping_info['billing_address'];
+        $billing_address->country_id    = $guest_shipping_info['billing_country_id'];
+        $billing_address->state_id      = $guest_shipping_info['billing_state_id'] ?? null;
+        $billing_address->city_id       = $guest_shipping_info['billing_city_id'];
+        $billing_address->postal_code   = $guest_shipping_info['billing_postal_code'];
+        $billing_address->area_id       = $guest_shipping_info['billing_area_id'] ?? null;
+        $billing_address->phone         = $guest_shipping_info['billing_phone'];
+        $address->set_billing           = 1;
+        $billing_address->save();
+        $address_billing_id=$billing_address->id;
+
+        }
+        
 
         $carts = Cart::where('temp_user_id', session('temp_user_id'))->get();
         $carts->toQuery()->update([
@@ -292,7 +299,8 @@ class CheckoutController extends Controller
                 'temp_user_id' => null
             ]);
         $carts->toQuery()->active()->update([
-                'address_id' => $address->id
+                'address_id' => $address->id,
+                'billing_address' => $address_billing_id
             ]);
 
         auth()->login($user);
@@ -303,6 +311,26 @@ class CheckoutController extends Controller
         return $success;
     }
 
+    //redirects to this method after a successfull checkout
+    public function checkout_done1($combined_order_id, $payment)
+    {
+        $combined_order = CombinedOrder::findOrFail($combined_order_id);
+
+        foreach ($combined_order->orders as $key => $order) {
+            $order = Order::findOrFail($order->id);
+            $order->payment_status = 'paid';
+            $order->payment_details = $payment;
+            $order->save();
+
+            // Order paid notification to Customer, Seller, & Admin
+            EmailUtility::order_email($order, 'paid'); 
+            
+            // Calculate Commission from seller, Customer Affiliate earning and Customers Club Point
+            calculateCommissionAffilationClubPoint($order);
+        }
+        Session::put('combined_order_id', $combined_order_id);
+    }
+    
     //redirects to this method after a successfull checkout
     public function checkout_done($combined_order_id, $payment)
     {
@@ -382,6 +410,7 @@ class CheckoutController extends Controller
                 $shipping_info['country_id'] = $request->country_id;
                 $shipping_info['state_id'] = $request->state_id;
                 $shipping_info['city_id'] = $request->city_id;
+                $shipping_info['area_id'] = $request->area_id;
                 $shipping_info['postal_code'] = $request->postal_code;
                 $shipping_info['phone'] = '+'.$request->country_code.$request->phone;
                 $shipping_info['longitude'] = $request->longitude;
@@ -403,12 +432,14 @@ class CheckoutController extends Controller
             $address = Address::where('id', $carts[0]['address_id'])->first();
             $deliveryInfo['country_id'] = $address->country_id;
             $deliveryInfo['city_id'] = $address->city_id;
+            $deliveryInfo['area_id'] = $address->area_id;
         }
 
         // Guest User Delivery info
         elseif($temp_user_id != null){
             $deliveryInfo['country_id'] = $request->country_id;
             $deliveryInfo['city_id'] = $request->city_id;
+            $deliveryInfo['area_id'] = $request->area_id;
         }
 
         $carrier_list = array();
@@ -447,12 +478,14 @@ class CheckoutController extends Controller
         if($authUser != null){
             $deliveryInfo['country_id'] = $shipping_info->country_id;
             $deliveryInfo['city_id'] = $shipping_info->city_id;
+             $deliveryInfo['area_id'] = $shipping_info->area_id;
         }
 
         // Guest User Shipping info
         elseif($tempUser != null){
             $deliveryInfo['country_id'] = Session::get('guest_shipping_info')['country_id'];
             $deliveryInfo['city_id'] = Session::get('guest_shipping_info')['city_id'];
+            $deliveryInfo['area_id'] = Session::get('guest_shipping_info')['area_id'];
         }
 
         $total = 0;
@@ -660,7 +693,7 @@ class CheckoutController extends Controller
                 $order->save();
             }
         }
-        auth()->logout();
+
         return view('frontend.order_confirmed', compact('combined_order'));
     }
 
@@ -691,13 +724,19 @@ class CheckoutController extends Controller
         $city_id = $user != null ?
                     Address::findOrFail($request->address_id)->city_id :
                     $request->city_id;
+        $area_id = $user != null ?
+                    Address::findOrFail($request->address_id)->area_id :
+                    $request->area_id;
+
+                    
         $shipping_info['country_id'] = $country_id;
         $shipping_info['city_id'] = $city_id;
-
+        $shipping_info['area_id'] = $area_id;
         $carrier_list = array();
         if (get_setting('shipping_type') == 'carrier_wise_shipping') {
             $default_shipping_type = 'carrier';
-            $zone = Country::where('id', $country_id)->first()->zone_id;
+            //$zone = Country::where('id', $country_id)->first()->zone_id;
+            $zone = $country_id != 0 ? Country::where('id', $country_id)->where('status', 1)->first()?->zone_id ?? 0 : 0;
 
             $carrier_query = Carrier::where('status', 1);
             $carrier_query->whereIn('id',function ($query) use ($zone) {
@@ -712,19 +751,12 @@ class CheckoutController extends Controller
         }
 
         $carts = $carts->fresh();
-        // **************** change if need *******************
-        $status = true;
+
         foreach ($carts as $key => $cartItem) {
             if (get_setting('shipping_type') == 'carrier_wise_shipping') {
                 $cartItem['shipping_cost'] = getShippingCost($carts, $key, $shipping_info, $default_carrier_id);
             } else {
-                if ($status) {
-                    $cartItem['shipping_cost'] = getShippingCost($carts, $key, $shipping_info);
-                    $status = false;
-                } else {
-                    $cartItem['shipping_cost'] = 0;
-                    $status = false;
-                }
+                $cartItem['shipping_cost'] = getShippingCost($carts, $key, $shipping_info);
             }
             $cartItem['address_id'] = $user != null ? $request->address_id : 0;
             $cartItem['shipping_type'] = $default_shipping_type;
@@ -736,8 +768,20 @@ class CheckoutController extends Controller
 
         return array(
             'delivery_info' => view('frontend.partials.cart.delivery_info', compact('carts', 'carrier_list', 'shipping_info'))->render(),
-            'cart_summary' => view('frontend.partials.cart.cart_summary', compact('carts', 'proceed'))->render()
+            'cart_summary' => view('frontend.partials.cart.cart_summary', compact('carts', 'proceed'))->render(),
+            'carrier_count' => count($carrier_list)
         );
+    }
+
+    public function updateBillingAddress(Request $request)
+    {
+        $user = auth()->user();
+
+        $carts = $user != null ?
+                Cart::where('user_id', $user->id)->active()->get() :
+                Cart::where('temp_user_id', $request->session()->get('temp_user_id'))->active()->get();
+        $carts->toQuery()->update(['billing_address' => $request->billing_address_id]);
+        $carts = $carts->fresh();
     }
 
     public function updateDeliveryInfo(Request $request)
@@ -760,9 +804,11 @@ class CheckoutController extends Controller
                     Address::findOrFail($carts[0]->address_id)->country_id : $request->country_id;
         $city_id = $user != null ?
                     Address::findOrFail($carts[0]->address_id)->city_id : $request->city_id;
+        $area_id = $user != null ?
+                    Address::findOrFail($carts[0]->address_id)->area_id : $request->area_id;
         $shipping_info['country_id'] = $country_id;
         $shipping_info['city_id'] = $city_id;
-
+        $shipping_info['area_id'] = $area_id;   
         $shipping_type = $request->shipping_type;
         foreach ($user_carts as $key => $cartItem) {
             if ($shipping_type != 'carrier' || $shipping_type == 'pickup_point') {

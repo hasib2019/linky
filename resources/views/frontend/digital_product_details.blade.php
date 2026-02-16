@@ -455,9 +455,12 @@
                                             </a>
                                         </li>
                                         <li class="list-inline-item mr-2">
-                                            <a href="{{ $detailedProduct->user->shop->twitter }}" class="twitter"
+                                            <a href="{{ $detailedProduct->user->shop->twitter }}" class="x-twitter"
                                                 target="_blank">
-                                                <i class="lab la-twitter opacity-60"></i>
+                                                <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" fill="#5d6161" viewBox="0 0 16 16" class="mb-2 pb-1">
+                                                    <path d="M12.6.75h2.454l-5.36 6.142L16 15.25h-4.937l-3.867-5.07-4.425 5.07H.316l5.733-6.57L0 
+                                                    .75h5.063l3.495 4.633L12.601.75Zm-.86 13.028h1.36L4.323 2.145H2.865z"/>
+                                                </svg>
                                             </a>
                                         </li>
                                         <li class="list-inline-item">
@@ -690,8 +693,7 @@
                             @guest
                                 <p class="fs-14 fw-400 mb-0 px-4 mt-3"><a
                                         href="{{ route('user.login') }}">{{ translate('Login') }}</a> or <a class="mr-1"
-                                        href="{{ route(get_setting('customer_registration_verify') === '1' ? 'registration.verification' : 'user.registration') }}">{{ translate('Register ') }}</a>{{ translate(' to submit your questions to seller') }}
-                                        {{-- href="{{ route('user.registration') }}">{{ translate('Register ') }}</a>{{ translate(' to submit your questions to seller') }} --}}
+                                        href="{{ route('user.registration') }}">{{ translate('Register ') }}</a>{{ translate(' to submit your questions to seller') }}
                                 </p>
                             @endguest
 
@@ -873,8 +875,7 @@
 
                         <div class="text-center mb-3">
                             <p class="text-muted mb-0">{{ translate('Dont have an account?')}}</p>
-                            <a href="{{ route('registration.verification') }}">{{ translate('Register Now')}}</a>
-                            {{-- <a href="{{ route('user.registration') }}">{{ translate('Register Now')}}</a> --}}
+                            <a href="{{ route('user.registration') }}">{{ translate('Register Now')}}</a>
                         </div>
                         @if(get_setting('google_login') == 1 ||
                             get_setting('facebook_login') == 1 ||
@@ -891,17 +892,20 @@
                                         </a>
                                     </li>
                                 @endif
+                                @if (get_setting('twitter_login') == 1)
+                                    <li class="list-inline-item">
+                                        <a href="{{ route('social.login', ['provider' => 'twitter']) }}" class="x-twitter">
+                                            <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" fill="#ffffff" viewBox="0 0 16 16" class="mb-2 pb-1">
+                                                <path d="M12.6.75h2.454l-5.36 6.142L16 15.25h-4.937l-3.867-5.07-4.425 5.07H.316l5.733-6.57L0 
+                                                .75h5.063l3.495 4.633L12.601.75Zm-.86 13.028h1.36L4.323 2.145H2.865z"/>
+                                            </svg>
+                                        </a>
+                                    </li>
+                                @endif
                                 @if(get_setting('google_login') == 1)
                                     <li class="list-inline-item">
                                         <a href="{{ route('social.login', ['provider' => 'google']) }}" class="google">
                                             <i class="lab la-google"></i>
-                                        </a>
-                                    </li>
-                                @endif
-                                @if (get_setting('twitter_login') == 1)
-                                    <li class="list-inline-item">
-                                        <a href="{{ route('social.login', ['provider' => 'twitter']) }}" class="twitter">
-                                            <i class="lab la-twitter"></i>
                                         </a>
                                     </li>
                                 @endif

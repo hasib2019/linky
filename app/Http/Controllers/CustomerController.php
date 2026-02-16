@@ -174,7 +174,13 @@ class CustomerController extends Controller
      */
     public function update(Request $request, $id)
     {
-        //
+        
+        $user = User::findOrFail(decrypt($id));
+        if($request->verification_status){
+           $user->verification_status = $request->verification_status;
+        }
+        $user->save();
+        return response()->json(['success' => true]);
     }
 
     /**
@@ -243,5 +249,23 @@ class CustomerController extends Controller
         $user->save();
         
         return back();
+    }
+
+    public function unverifiedCustomers(Request $request)
+    {
+        $sort_search = null;
+        $docs_submited =  $request->docs_submited ?? null;
+        $users = User::where('user_type', 'customer')->where('verification_status', 0)->orderBy('created_at', 'desc');
+        if($docs_submited != null){
+            $users = $docs_submited == 'submitted' ? $users->where('verification_info', '!=', null) : $users->where('verification_info', null);
+        }
+        if ($request->has('search')){
+            $sort_search = $request->search;
+            $users->where(function ($q) use ($sort_search){
+                $q->where('name', 'like', '%'.$sort_search.'%')->orWhere('email', 'like', '%'.$sort_search.'%');
+            });
+        }
+        $users = $users->paginate(15);
+        return view('backend.customer.customers.unverified', compact('users', 'sort_search', 'docs_submited'));
     }
 }

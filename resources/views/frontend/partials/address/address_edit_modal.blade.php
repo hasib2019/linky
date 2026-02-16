@@ -11,6 +11,7 @@
             </div>
         </div>
 
+        @if (get_active_countries()->count() > 1)
         <!-- Country -->
         <div class="row">
             <div class="col-md-2">
@@ -29,7 +30,11 @@
                 </div>
             </div>
         </div>
+        @elseif(get_active_countries()->count() == 1)
+        <input type="hidden" name="country_id" value="{{get_active_countries()[0]->id }}">
+        @endif
 
+        @if (get_setting('has_state') == 1)
         <!-- State -->
         <div class="row">
             <div class="col-md-2">
@@ -37,7 +42,8 @@
             </div>
             <div class="col-md-10">
                 <select class="form-control mb-3 aiz-selectpicker rounded-0" name="state_id" id="edit_state"  data-live-search="true" required>
-                    @foreach ($states as $key => $state)
+                <option value="" disabled>{{ translate('Select State') }}</option>
+                @foreach ($states as $key => $state)
                         <option value="{{ $state->id }}" @if($address_data->state_id == $state->id) selected @endif>
                             {{ $state->name }}
                         </option>
@@ -45,6 +51,7 @@
                 </select>
             </div>
         </div>
+        @endif
 
         <!-- City -->
         <div class="row">
@@ -53,9 +60,26 @@
             </div>
             <div class="col-md-10">
                 <select class="form-control mb-3 aiz-selectpicker rounded-0" data-live-search="true" name="city_id" required>
+                    <option value="">{{ translate('Select City') }}</option>
                     @foreach ($cities as $key => $city)
                         <option value="{{ $city->id }}" @if($address_data->city_id == $city->id) selected @endif>
                             {{ $city->name }}
+                        </option>
+                    @endforeach
+                </select>
+            </div>
+        </div>
+
+       
+        <div class="row area-field {{ ($areas->count() == 0) ? 'd-none' : '' }}">
+            <div class="col-md-2">
+                <label>{{ translate('Area')}}</label>
+            </div>
+            <div class="col-md-10">
+                <select class="form-control mb-3 aiz-selectpicker rounded-0" data-live-search="true" name="area_id">
+                    @foreach ($areas as $key => $area)
+                        <option value="{{ $area->id }}" @if($address_data->area_id == $area->id) selected @endif>
+                            {{ $area->name }}
                         </option>
                     @endforeach
                 </select>

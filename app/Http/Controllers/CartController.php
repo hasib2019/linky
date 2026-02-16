@@ -50,6 +50,13 @@ class CartController extends Controller
         return view('frontend.partials.cart.addToCart', compact('product'));
     }
 
+    public function selectVariantCanvas(Request $request)
+    {
+        $product = Product::find($request->id);
+        return view('frontend.partials.cart.selectVariantCanvas', compact('product'));
+    }
+
+
     public function showCartModalAuction(Request $request)
     {
         $product = Product::find($request->id);

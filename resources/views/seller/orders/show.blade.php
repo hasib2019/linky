@@ -14,6 +14,7 @@
                 @php
                     $delivery_status = $order->delivery_status;
                     $payment_status = $order->orderDetails->where('seller_id', Auth::user()->id)->first()->payment_status;
+				    $first_order = $order->orderDetails->first();
                 @endphp
                 @if (get_setting('product_manage_by_admin') == 0)
                     <div class="col-md-3 ml-auto">
@@ -94,7 +95,32 @@
                             target="_blank"><img
                                 src="{{ uploaded_asset(json_decode($order->manual_payment_data)->photo) }}" alt=""
                                 height="100"></a>
+                        <br>
                     @endif
+
+                    
+                     <!-- Sold BY -->
+                    <strong class="text-main">{{ translate('Sold By') }}: </strong>
+                    <br>
+                    {{ $order->shop->name ?? get_setting('site_name') }}
+
+                    @if(!empty($order->seller->phone))
+                        <br>
+                        <strong class="text-main">{{ $order->seller->phone}}</strong>
+                    @endif
+
+                    @php 
+                        $gstin = get_seller_gstin($order);
+                    @endphp
+
+                    @if($gstin && is_numeric($first_order->gst_amount))
+                        <br>
+                        <strong class="text-main">{{ translate('GSTIN') }}:</strong> {{ $gstin }}
+                    @endif
+
+                    <br>
+                    <strong class="text-main">{{ get_seller_address($order) }} </strong>
+
                 </div>
                 <div class="col-md-4">
                     <table class="ml-auto">
@@ -153,8 +179,22 @@
                                 <th data-breakpoints="lg" class="min-col text-uppercase text-center">
                                     {{ translate('Qty') }}
                                 </th>
+                                @if(is_numeric($first_order->gst_amount))
+                                <th data-breakpoints="lg">{{ translate('Gross Amount')}}</th>
+                                <th data-breakpoints="lg">{{ translate('Discount/ Coupon')}}</th>
+                                <th data-breakpoints="lg">{{ translate('Taxable Value')}}</th>
+
+                                @if(same_state_shipping($order))
+                                <th data-breakpoints="lg">{{ translate('CGST') }}</th>
+                                <th data-breakpoints="lg">{{ translate('SGST') }}</th>
+                                @else
+                                <th data-breakpoints="lg">{{ translate('IGST') }}</th>
+                                @endif
+
+                                @else
                                 <th data-breakpoints="lg" class="min-col text-uppercase text-center">
                                     {{ translate('Price') }}</th>
+                                @endif
                                 <th data-breakpoints="lg" class="min-col text-uppercase text-right">
                                     {{ translate('Total') }}</th>
                             </tr>
@@ -211,10 +251,88 @@
                                         @endif
                                     </td>
                                     <td class="text-center">{{ $orderDetail->quantity }}</td>
+
+                                    @if(is_numeric($first_order->gst_amount))
                                     <td class="text-center">
-                                        {{ single_price($orderDetail->price / $orderDetail->quantity) }}</td>
+                                        {{ single_price($orderDetail->price) }}
+                                    </td>
+
+                                    <td class="text-center">
+                                        {{ single_price($orderDetail->coupon_discount) }}
+                                    </td>
+
+                                    <td class="text-center">
+                                        {{ single_price($orderDetail->price - $orderDetail->coupon_discount) }}
+                                    </td>
+                                    
+                                    @php 
+                                        $gst_amount = get_gst_by_price_and_rate($orderDetail->price - $orderDetail->coupon_discount , $orderDetail->gst_rate);
+                                        $shipping_gst = get_gst_by_price_and_rate($orderDetail->shipping_cost, $orderDetail->gst_rate);
+                                        @endphp
+
+                                    @if(same_state_shipping($order))
+                                    <td class="text-center">
+                                        {{ single_price($gst_amount/2) }}
+                                    </td>
+                                    <td class="text-center">
+                                        {{ single_price($gst_amount/2) }}
+                                    </td>
+                                    @else
+                                    <td class="text-center">
+                                        {{ single_price($gst_amount) }}
+                                    </td>	
+                                    @endif
+
+                                    @else
+                                    <td class="text-center">
+                                        {{ single_price($orderDetail->price / $orderDetail->quantity) }}
+                                    </td>
+                                    @endif
+
+                                    @if(is_numeric($first_order->gst_amount))
+                                    <td class="text-center">{{ single_price($orderDetail->price - $orderDetail->coupon_discount + $gst_amount) }}</td>
+                                    @else
                                     <td class="text-center">{{ single_price($orderDetail->price) }}</td>
+                                    @endif
                                 </tr>
+
+
+                                @if(is_numeric($first_order->gst_amount))
+                                <tr>
+                                    <td></td>
+                                    <td></td>
+                                    <td class="text-center">
+                                        {{translate('Shipping')}}
+                                    </td>
+                                    <td></td>
+                                    <td class="text-center">
+                                        1
+                                    </td>
+                                    <td class="text-center">
+                                        {{ single_price($orderDetail->shipping_cost) }}
+                                    </td>
+                                    <td class="text-center">
+                                        {{ single_price(0) }}
+                                    </td>
+                                    <td class="text-center">
+                                        {{ single_price($orderDetail->shipping_cost) }}
+                                    </td>
+                                    @if(same_state_shipping($order))
+                                    <td class="text-center">
+                                        {{ single_price($shipping_gst/2) }}
+                                    </td>
+                                    <td class="text-center">
+                                        {{ single_price($shipping_gst/2) }}
+                                    </td>
+                                    @else
+                                    <td class="text-center">
+                                        {{ single_price($shipping_gst) }}
+                                    </td>
+                                    @endif
+                                    <td class="text-center">{{ single_price($orderDetail->shipping_cost + (($orderDetail->shipping_cost* $orderDetail->gst_rate)/100)) }}
+                                    </td>
+                                </tr>
+                                @endif
                             @endforeach
                         </tbody>
                     </table>
@@ -223,6 +341,26 @@
             <div class="clearfix float-right">
                 <table class="table">
                     <tbody>
+                        @if(is_numeric($first_order->gst_amount))
+
+                        <tr>
+                            <td>
+                                <strong class="text-muted">{{ translate('Sub Total') }} :</strong>
+                            </td>
+                            <td>
+                                {{ single_price($order->orderDetails->sum('price') + $order->orderDetails->sum('shipping_cost') - $order->orderDetails->sum('coupon_discount')) }}
+                            </td>
+                        </tr>
+                        <tr>
+                            <td>
+                                <strong class="text-muted">{{ translate('GST Amount') }} :</strong>
+                            </td>
+                            <td>
+                                {{ single_price($order->orderDetails->sum('gst_amount')) }}
+                            </td>
+                        </tr>
+                        
+                        @else
                         <tr>
                             <td>
                                 <strong class="text-muted">{{ translate('Sub Total') }} :</strong>
@@ -255,6 +393,7 @@
                                 {{ single_price($order->coupon_discount) }}
                             </td>
                         </tr>
+                        @endif
                         <tr>
                             <td>
                                 <strong class="text-muted">{{ translate('TOTAL') }} :</strong>

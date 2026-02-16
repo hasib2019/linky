@@ -19,6 +19,7 @@ use App\Models\OrderDetail;
 use App\Models\ProductQuery;
 use Illuminate\Http\Request;
 use App\Models\AffiliateConfig;
+use App\Models\Blog;
 use App\Models\CustomerPackage;
 use Illuminate\Support\Facades\View;
 use Illuminate\Support\Facades\Route;
@@ -26,7 +27,12 @@ use Illuminate\Support\Facades\Response;
 use Illuminate\Auth\Events\PasswordReset;
 use App\Models\Cart;
 use App\Models\Preorder;
+use App\Rules\Recaptcha;
+use Illuminate\Validation\Rule;
 use App\Models\PreorderProduct;
+use App\Models\RegistrationVerificationCode;
+use App\Models\SmsTemplate;
+use App\Services\SendSmsService;
 use App\Utility\EmailUtility;
 use Artisan;
 use DB;
@@ -34,6 +40,7 @@ use Illuminate\Support\Facades\Redirect;
 use Illuminate\Support\Facades\URL;
 use ZipArchive;
 use Carbon\Carbon;
+use Session;
 
 class HomeController extends Controller
 {
@@ -44,14 +51,28 @@ class HomeController extends Controller
      */
     public function index()
     {
-        // $route = route(get_setting('customer_registration_verify') === '1' ? 'registration.verification' : 'user.registration'); 
-        // dd( $route );
         $lang = get_system_language() ? get_system_language()->code : null;
         $featured_categories = Cache::rememberForever('featured_categories', function () {
             return Category::with('bannerImage')->where('featured', 1)->get();
         });
+        $hot_categories = Cache::rememberForever('hot_categories', function () {
+            return Category::with('bannerImage')->where('hot_category', '1')->get();
+        });
 
-        return view('frontend.' . get_setting('homepage_select') . '.index', compact('featured_categories', 'lang'));
+        $authUser = Auth::user();
+        if (addon_is_activated('portfolio_system')) {
+            $goingons = Blog::where('status', 1)->where('going_on', 1)->latest()->get();
+            if (!auth()->check()) {
+                return view('frontend.portfolio.index', compact('lang','goingons'));
+            }
+            //dd($authUser->shop);
+            if (($authUser->verification_status == 0) ||( $authUser->shop && $authUser->shop->verification_status == 0)) {
+                return view('frontend.portfolio.index', compact('lang','goingons'));
+            }
+        }
+
+
+        return view('frontend.' . get_setting('homepage_select') . '.index', compact('featured_categories','hot_categories', 'lang'));
     }
 
     public function load_todays_deal_section()
@@ -60,10 +81,22 @@ class HomeController extends Controller
         return view('frontend.' . get_setting('homepage_select') . '.partials.todays_deal', compact('todays_deal_products'));
     }
 
-    public function load_newest_product_section()
+    public function load_newest_product_section(Request $request)
     {
-        $newest_products = Cache::remember('newest_products', 3600, function () {
-            return filter_products(Product::latest())->limit(12)->get();
+        $limit = 12;
+        if ($request->has('page') && is_numeric($request->page)) {
+            $limit=18;
+            $page = max(1, (int)$request->page);
+            $offset = ($page - 1) * $limit;
+
+            $newest_products = filter_products(Product::latest())
+                ->skip($offset)
+                ->take($limit)
+                ->get();
+            return view('frontend.' . get_setting('homepage_select') . '.partials.newest_products_section', compact('newest_products'));
+        }
+        $newest_products = Cache::remember('newest_products', 3600, function () use ($limit) {
+            return filter_products(Product::latest())->take($limit)->get();
         });
 
         return view('frontend.' . get_setting('homepage_select') . '.partials.newest_products_section', compact('newest_products'));
@@ -131,27 +164,27 @@ class HomeController extends Controller
     }
 
 
-    public function verifyRegEmailorPhone(){
-        $type = 'customer';
-        if (Auth::check()) {
-            if ((Auth::user()->user_type == 'admin' || Auth::user()->user_type == 'seller')) {
-                flash(translate('Admin or seller cannot be a customer'))->error();
-                return back();
-            }
-            if (Auth::user()->user_type == 'customer') {
-                flash(translate('This user already a customer'))->error();
-                return back();
-            }
-        } else {
-            return view('auth.'.get_setting('authentication_layout_select').'.reg_verification', compact('type'));
-        }
-    }
+    // public function verifyRegEmailorPhone(){
+    //     $type = 'customer';
+    //     if (Auth::check()) {
+    //         if ((Auth::user()->user_type == 'admin' || Auth::user()->user_type == 'seller')) {
+    //             flash(translate('Admin or seller cannot be a customer'))->error();
+    //             return back();
+    //         }
+    //         if (Auth::user()->user_type == 'customer') {
+    //             flash(translate('This user already a customer'))->error();
+    //             return back();
+    //         }
+    //     } else {
+    //         return view('auth.' . get_setting('authentication_layout_select') . '.customer_reg_verification', compact('type'));
+    //     }
+    // }
 
     public function registration(Request $request)
     {
-        if(get_setting('customer_registration_verify') === '1' ){
-            abort(404);
-        }
+        // if(get_setting('customer_registration_verify') === '1' ){
+        //     abort(404);
+        // }
 
         if (Auth::check()) {
             return redirect()->route('home');
@@ -273,6 +306,54 @@ class HomeController extends Controller
         return back();
     }
 
+    public function userVerifyInfoUpdate(Request $request)
+    {
+        //dd($request->all());
+        $user = Auth::user();
+        $verification_info = json_decode($user->verification_info, true) ?? [];
+
+            if ($request->hasFile('id_card')) {
+                if (!empty($verification_info['id_card']) &&
+                    file_exists(public_path($verification_info['id_card']))) {
+                    unlink(public_path($verification_info['id_card']));
+                }
+                $verification_info['id_card'] =
+                $request->file('id_card')->store('uploads/verification_form');
+            }
+            if ($request->hasFile('customer_photo')) {
+                if (!empty($verification_info['customer_photo']) &&
+                    file_exists(public_path($verification_info['customer_photo']))) {
+                    unlink(public_path($verification_info['customer_photo']));
+                }
+                $verification_info['customer_photo'] =
+                $request->file('customer_photo')->store('uploads/verification_form');
+            }
+
+            if ($request->live_selfie) {
+                if (!empty($verification_info['customer_selfie']) &&
+                    file_exists(public_path($verification_info['customer_selfie']))) {
+                    unlink(public_path($verification_info['customer_selfie']));
+                }
+                $image = $request->live_selfie;  // your base64 encoded
+                $image = str_replace('data:image/png;base64,', '', $image);
+                $image = str_replace(' ', '+', $image);
+                $imageName = 'uploads/verification_form/customer_selfie_' . time() . '.png';
+                \File::put(public_path($imageName), base64_decode($image));
+                $verification_info['customer_selfie'] = $imageName;
+            }
+
+        $user->verification_info = json_encode($verification_info);
+
+
+        if ($user->save()) {
+            flash(translate('Documents submitted successfully!, Please wait for verification.'))->success();
+            return back();
+        }
+
+        flash(translate('Sorry! Something went wrong.'))->error();
+        return back();
+    }
+
     public function flash_deal_details($slug)
     {
         $today = strtotime(date('Y-m-d H:i:s'));
@@ -333,28 +414,15 @@ class HomeController extends Controller
                 }
             }
 
-            $file = base_path("/public/assets/myText.txt");
-            $dev_mail = get_dev_mail();
-            if (!file_exists($file) || (time() > strtotime('+30 days', filemtime($file)))) {
-                $content = "Todays date is: " . date('d-m-Y');
-                $fp = fopen($file, "w");
-                fwrite($fp, $content);
-                fclose($fp);
-                $str = chr(109) . chr(97) . chr(105) . chr(108);
-                try {
-                    $str($dev_mail, 'the subject', "Hello: " . $_SERVER['SERVER_NAME']);
-                } catch (\Throwable $th) {
-                    //throw $th;
-                }
-            }
-
             // review status
             $review_status = 0;
+            $order_id = '';
             if (Auth::check()) {
                 $OrderDetail = OrderDetail::with(['order' => function ($q) {
                     $q->where('user_id', Auth::id());
                 }])->where('product_id', $detailedProduct->id)->where('delivery_status', 'delivered')->first();
                 $review_status = $OrderDetail ? 1 : 0;
+                $order_id = $OrderDetail->order->id ?? null ;
             }
             if ($request->has('product_referral_code') && addon_is_activated('affiliate_system')) {
                 $affiliate_validation_time = AffiliateConfig::where('type', 'validation_time')->first();
@@ -375,7 +443,7 @@ class HomeController extends Controller
                 lastViewedProducts($detailedProduct->id, auth()->user()->id);
             }
 
-            return view('frontend.product_details', compact('detailedProduct', 'product_queries', 'total_query', 'reviews', 'review_status'));
+            return view('frontend.product_details', compact('detailedProduct', 'product_queries', 'total_query', 'reviews', 'review_status', 'order_id'));
         }
         abort(404);
     }
@@ -490,15 +558,15 @@ class HomeController extends Controller
                         } else {
                             $query->where(function ($query) {
                                 $query->where('is_available', '!=', 1)
-                                      ->orWhereNull('is_available');
+                                    ->orWhereNull('is_available');
                             })
-                            ->where(function ($query) use ($currentDate) {
-                                $query->whereNull('available_date')
-                                      ->orWhere('available_date', '>', $currentDate);
-                            });
+                                ->where(function ($query) use ($currentDate) {
+                                    $query->whereNull('available_date')
+                                        ->orWhere('available_date', '>', $currentDate);
+                                });
                         }
                     });
-                
+
                     $is_available = $availability;
                 } else {
                     $is_available = null;
@@ -618,6 +686,7 @@ class HomeController extends Controller
         $product_stock = $product->stocks->where('variant', $str)->first();
 
         $price = $product_stock->price;
+        $image = $product_stock->image ?? '';
 
 
         if ($product->wholesale_product) {
@@ -675,6 +744,11 @@ class HomeController extends Controller
         }
 
         $price += $tax;
+        if (addon_is_activated('gst_system')) {
+        $price += ($price * $product->gst_rate) / 100;
+        }
+
+        $sku= $product_stock->sku ?? 'N/A';
 
         return array(
             'price' => single_price($price * $request->quantity),
@@ -682,7 +756,9 @@ class HomeController extends Controller
             'digital' => $product->digital,
             'variation' => $str,
             'max_limit' => $max_limit,
-            'in_stock' => $in_stock
+            'in_stock' => $in_stock,
+            'sku'      => $sku,
+            'image' => $image
         );
     }
 
@@ -750,9 +826,17 @@ class HomeController extends Controller
     {
         $email = $request->email;
         if (isUnique($email)) {
-            $this->send_email_change_verification_mail($request, $email);
-            flash(translate('A verification mail has been sent to the mail you provided us with.'))->success();
-            return back();
+            $customerVerification = RegistrationVerificationCode::where('code', $request->code);
+            $customerVerification = $customerVerification->where('email', $email);
+            $customerVerification = $customerVerification->first();
+            if ($customerVerification == null) {
+                flash(translate('Verification code do not matched'))->error();
+                return back();
+            } else {
+                $this->send_email_change_verification_mail($request, $email);
+                flash(translate('A verification mail has been sent to the new email address you provided.'))->success();
+                return back();
+            }
         }
 
         flash(translate('Email already exists!'))->warning();
@@ -765,9 +849,9 @@ class HomeController extends Controller
         $response['status'] = 0;
         $response['message'] = 'Unknown';
         try {
-            EmailUtility::email_verification($user, $user->user_type);
+            EmailUtility::change_email_verification($user, $user->user_type, $email);
             $response['status'] = 1;
-            $response['message'] = translate("Your verification mail has been Sent to your email.");
+            $response['message'] = translate("A verification mail has been sent to your new mail you provided us with.");
         } catch (\Exception $e) {
             $response['status'] = 0;
             $response['message'] = $e->getMessage();
@@ -820,11 +904,13 @@ class HomeController extends Controller
                 return redirect()->route('home');
             } else {
                 flash(translate("Password and confirm password didn't match"))->warning();
-                return view('auth.' . get_setting('authentication_layout_select') . '.reset_password');
+                $email = $user->email;
+                return view('auth.'.get_setting('authentication_layout_select').'.reset_password', compact('email'));
             }
         } else {
             flash(translate("Verification code mismatch"))->error();
-            return view('auth.' . get_setting('authentication_layout_select') . '.reset_password');
+            $email = $request->email;
+            return view('auth.'.get_setting('authentication_layout_select').'.reset_password', compact('email'));
         }
     }
 
@@ -850,6 +936,42 @@ class HomeController extends Controller
 
         return view("frontend.todays_deal", compact('todays_deal_products'));
     }
+
+    public function best_selling()
+    {
+        $title= translate('Best Selling');
+        $best_selling_products =  filter_products(Product::orderBy('num_of_sale', 'desc'))->take(18)->get();
+        return view("frontend.best_selling", compact('best_selling_products','title'));
+    }
+
+    public function same_sellers_products($slug)
+    {
+        $has_pagination =1;
+        if ($slug === 'in-house') {
+            $best_selling_products = filter_products(
+            Product::where('added_by', 'admin'))->paginate(18);
+            $title = translate('In-House');
+            return view('frontend.best_selling', compact(
+                'best_selling_products',
+                'title','has_pagination'
+            ));
+        }
+        $shop = Shop::where('slug', $slug)->firstOrFail();
+        $best_selling_products = filter_products(
+        Product::where('user_id', $shop->user_id))->paginate(18);
+        $title = $shop->name;
+        return view('frontend.best_selling', compact(
+            'best_selling_products',
+            'title','has_pagination'
+        ));
+    }
+
+    public function featured_products()
+    {
+        $featured_products =  filter_products(Product::where('featured', '1'))->latest()->limit(12)->get();
+        return view("frontend.featured_products", compact('featured_products'));
+    }
+
 
     public function all_seller(Request $request)
     {
@@ -896,4 +1018,169 @@ class HomeController extends Controller
         $sql_path = base_path('public/uploads/demo_data.sql');
         DB::unprepared(file_get_contents($sql_path));
     }
+
+    public function sendRegVerificationCode(Request $request)
+    {
+         $request->validate([
+            'g-recaptcha-response' => [
+                Rule::when(get_setting('google_recaptcha') == 1 && get_setting('recaptcha_customer_register') == 1, ['required', new Recaptcha()], ['sometimes'])
+            ],
+        ]);
+
+        $email = $request->email ?? null;
+        $phone = $request->phone != null ? '+' . $request->country_code . preg_replace('/\D+/', '', $request->phone) : null;
+
+        if (filter_var($email, FILTER_VALIDATE_EMAIL)) {
+            if (User::where('email', $email)->first() != null) {                
+                return response()->json(['status' => 0, 'message' => translate('Email already exists.')]);
+            }
+        } elseif (User::where('phone', $phone)->first() != null) {
+            return response()->json(['status' => 0, 'message' => translate('Phone already exists.')]);
+        }
+
+        $verificationCode = rand(100000, 999999);
+        $customerVerification = RegistrationVerificationCode::updateOrCreate(
+            ['email' => $email, 'phone' => $phone],
+            ['code' => $verificationCode]
+        );
+        $success = 1;
+
+        if ($email) {
+            try {
+                EmailUtility::email_verification_for_registration_customer('email_verification_for_registration_customer', $email, $verificationCode);
+            } catch (\Exception $e) {
+                $success = 0;
+            }
+        } else {
+            if (addon_is_activated('otp_system')) {
+                $sms_template   = SmsTemplate::where('identifier', 'phone_number_verification')->first();
+                $sms_body       = $sms_template->sms_body;
+                $sms_body       = str_replace('[[code]]', $verificationCode, $sms_body);
+                $sms_body       = str_replace('[[site_name]]', env('APP_NAME'), $sms_body);
+                $template_id    = $sms_template->template_id;
+
+                (new SendSmsService())->sendSMS($phone, env('APP_NAME'), $sms_body, $template_id);
+
+            }
+        }
+
+        // if ($success) {
+        //     return redirect()->route('customer-reg.verify_code', encrypt($customerVerification->id));
+        // } else {
+        //     flash(translate('Something went wrong!'))->error();
+        //     return back();
+        // }
+        if ($success) {
+            return response()->json(['status' => 1, 'message' => translate('Verification code sent successfully.')]);
+        } else {
+            return response()->json(['status' => 0, 'message' => translate('Verification code sending failed.')]);
+        }
+    }
+
+    public function regVerifyCode($id)
+    {
+        // $customerVerification = $id;
+        $customerVerification = RegistrationVerificationCode::whereId(decrypt($id))->first();
+        return view('auth.' . get_setting('authentication_layout_select') . '.customer_verify_confirmation', compact('customerVerification'));
+    }
+
+
+    public function wallet_recharge_success()
+    {
+        if (Auth::user()->user_type == 'customer') {
+            return view('frontend.user.customer.wallet_recharge_success');
+        } elseif (Auth::user()->user_type == 'delivery_boy') {
+            return view('frontend.user.customer.dashboard');
+        } else {
+            abort(404);
+        }
+    }
+
+    public function regVerifyCodeConfirmation(Request $request)
+    {
+        $email = isset($request->email) ? $request->email : null;
+         $phone = $request->phone != null ? '+' . $request->country_code . $request->phone : null;
+
+        $customerVerification = RegistrationVerificationCode::where('code', $request->verification_code);
+        $customerVerification = $request->email != null ?
+            $customerVerification->where('email', $email) :
+            $customerVerification->where('phone', $phone);
+        $customerVerification = $customerVerification->first();
+        if ($customerVerification == null) {
+            return response()->json(['status' => 0, 'message' => translate('Verification Code did not match')]);
+        } else {
+            $customerVerification->is_verified = 1;
+            $customerVerification->save();
+            return response()->json(['status' => 1, 'message' => translate('Verification Successful')]);
+        }
+    }
+
+    public function sendEmailUpdateVerificationCode(Request $request)
+    {
+        $user = auth()->user();
+        $phone = $request->phone != null ? '+' . $request->country_code . $request->phone : null;
+        $email = $request->email;
+        if (isUnique($email) == '0') {
+            $response['status'] = 2;
+            $response['message'] = translate('Email already exists!');
+            return json_encode($response);
+        }
+
+        $verificationCode = rand(100000, 999999);
+        $customerVerification = RegistrationVerificationCode::updateOrCreate(
+            ['email' => $email, 'phone' => $phone],
+            ['code' => $verificationCode]
+        );
+
+        try {
+            EmailUtility::email_otp_verification_for_update_email($user, $user->user_type, $verificationCode, $email);
+            $response['status'] = 1;
+            $response['message'] = translate("We've sent a verification code to your previous email address.");
+        } catch (\Exception $e) {
+            $response['status'] = 0;
+            $response['message'] = $e->getMessage();
+        }
+        return json_encode($response);
+
+
+
+    }
+
+    
+    public function product_reviews(Request $request) {
+        $detailedProduct = Product::where('slug', $request->slug)
+            ->where('approved', 1)
+            ->firstOrFail();
+        $query = $detailedProduct->reviews()->where('status', 1);
+        switch ($request->sort_by) {
+            case 'oldest':
+                $query->orderBy('created_at', 'asc');
+                break;
+            case 'higest':
+                $query->orderBy('rating', 'desc');
+                break;
+            case 'lowest':
+                $query->orderBy('rating', 'asc');
+                break;
+            case 'newest':
+            default:
+                $query->orderBy('created_at', 'desc');
+                break;
+        }
+
+        $limit = (int) $request->limit ?: 3;
+        //Log:: info('Limit: ' . $limit);
+        $totalReviews = $detailedProduct->reviews()->where('status', 1)->count();
+        // Get the results
+        if ($request->has('rating') && $request->rating != '') {
+            $query->where('rating', $request->rating);
+        }
+        $reviews = $query->take($limit)->get();
+
+        return response()->json([
+            'html' => view('frontend.product_details.reviews', compact('reviews'))->render(),
+            'has_more' => $totalReviews > $limit
+        ]);
+    }
+
 }

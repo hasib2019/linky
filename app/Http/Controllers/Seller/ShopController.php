@@ -3,8 +3,11 @@
 namespace App\Http\Controllers\Seller;
 
 use App\Models\BusinessSetting;
+use App\Models\Category;
+use App\Models\Country;
 use Illuminate\Http\Request;
 use App\Models\Shop;
+use App\Models\State;
 use App\Models\User;
 use App\Notifications\ShopVerificationNotification;
 use Auth;
@@ -49,6 +52,70 @@ class ShopController extends Controller
             $shop->twitter = $request->twitter;
             $shop->youtube = $request->youtube;
         }
+
+        $business_info = json_decode($shop->business_info, true) ?? [];
+        if ($request->has('certificate_number')) {
+
+            $business_info['certificate_number'] = $request->certificate_number;
+            // Replace certificate file
+            if ($request->hasFile('certificate')) {
+                    if (!empty($business_info['certificate']) && file_exists(public_path($business_info['certificate']))) {
+                        unlink(public_path($business_info['certificate']));
+                    }
+                    $business_info['certificate'] =
+                    $request->file('certificate')->store('uploads/verification_form');
+                }
+            $business_info['country'] = Country::find($request->country_id)?->name;
+            $business_info['state']   = State::find($request->state_id)?->name;
+        }
+
+        if ($request->has('seller_photo') || $request->has('live_selfie') || $request->has('id_card')) {
+
+           
+            // Replace seller_photo file
+            if ($request->hasFile('seller_photo')) {
+                if (!empty($business_info['seller_photo']) && file_exists(public_path($business_info['seller_photo']))) {
+                    unlink(public_path($business_info['seller_photo']));
+                }
+                $business_info['seller_photo'] =
+                $request->file('seller_photo')->store('uploads/verification_form');
+            }
+
+            if ($request->hasFile('id_card')) {
+                if (!empty($business_info['id_card']) && file_exists(public_path($business_info['id_card']))) {
+                    unlink(public_path($business_info['id_card']));
+                }
+                $business_info['id_card'] =
+                $request->file('id_card')->store('uploads/verification_form');
+            }
+
+            if ($request->live_selfie) {
+                if (!empty($business_info['seller_selfie']) &&
+                    file_exists(public_path($business_info['seller_selfie']))) {
+                    unlink(public_path($business_info['seller_selfie']));
+                }
+                $image = $request->live_selfie;  // your base64 encoded
+                $image = str_replace('data:image/png;base64,', '', $image);
+                $image = str_replace(' ', '+', $image);
+                $imageName = 'uploads/verification_form/seller_selfie_' . time() . '.png';
+                \File::put(public_path($imageName), base64_decode($image));
+                $business_info['seller_selfie'] = $imageName;
+            }
+        }
+
+        if (addon_is_activated('gst_system') && $request->has('gstin_number')) {
+            $business_info['gstin'] = $request->gstin_number;
+            if ($request->hasFile('gstin_certificate')) {
+                if (!empty($business_info['gstin_certificate']) &&
+                    file_exists(public_path($business_info['gstin_certificate']))) {
+                    unlink(public_path($business_info['gstin_certificate']));
+                }
+                $business_info['gstin_certificate'] =
+                $request->file('gstin_certificate')->store('uploads/verification_form');
+            }
+        }
+        $shop->business_info = json_encode($business_info);
+
 
         if ($shop->save()) {
             flash(translate('Your Shop has been updated successfully!'))->success();
@@ -137,5 +204,16 @@ class ShopController extends Controller
 
     public function show()
     {
+    }
+
+    public function categoriesWiseCommission(Request $request){
+        $sort_search =null;
+        $categories = Category::orderBy('order_level', 'desc');
+        if ($request->has('search')){
+            $sort_search = $request->search;
+            $categories = $categories->where('name', 'like', '%'.$sort_search.'%');
+        }
+        $categories = $categories->paginate(15);
+        return view('seller.categoryWise_commission', compact('categories'))->render();
     }
 }

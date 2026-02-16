@@ -3,9 +3,6 @@
 namespace App\Http\Requests;
 
 use Illuminate\Foundation\Http\FormRequest;
-use Illuminate\Contracts\Validation\Validator;
-use Illuminate\Http\Exceptions\HttpResponseException;
-use Illuminate\Validation\ValidationException;
 use Illuminate\Validation\Rule;
 
 class ProductRequest extends FormRequest
@@ -32,13 +29,13 @@ class ProductRequest extends FormRequest
         $rules['name']          = 'required|max:255';
         $rules['category_ids']  = 'required';
         $rules['category_id']   = ['required', Rule::in($this->category_ids)];
-        $rules['unit']         = 'sometimes|required';
+        $rules['unit']         = 'sometimes|required|regex:/^[A-Za-z\s]+$/';
         $rules['min_qty']      = 'sometimes|required|numeric';
         $rules['unit_price']    = 'sometimes|required|numeric|gt:0';
         if ($this->get('discount_type') == 'amount') {
-            $rules['discount'] = 'sometimes|required|numeric|lt:unit_price';
+            $rules['discount'] = 'nullable|numeric|lt:unit_price';
         } else {
-            $rules['discount'] = 'sometimes|required|numeric|lt:100';
+            $rules['discount'] = 'nullable|numeric|lt:100';
         }
         $rules['current_stock'] = 'sometimes|required|numeric';
         $rules['starting_bid']  = 'sometimes|required|numeric|min:1';
@@ -47,6 +44,9 @@ class ProductRequest extends FormRequest
         return $rules;
     }
 
+
+    
+
     /**
      * Get the validation messages of rules that apply to the request.
      *
@@ -54,12 +54,13 @@ class ProductRequest extends FormRequest
      */
     public function messages()
     {
-        return [
+        $messages = [
             'name.required'             => translate('Product name is required'),
             'category_ids.required'     => translate('Product category is required'),
             'category_id.required'      => translate('Main Category is required'),
             'category_id.in'            => translate('Main Category must be within selected categories'),
             'unit.required'             => translate('Product unit is required'),
+            'unit.regex' => 'The unit may only contain letters and spaces.',
             'min_qty.required'          => translate('Minimum purchase quantity is required'),
             'min_qty.numeric'           => translate('Minimum purchase must be numeric'),
             'unit_price.gt'             => translate('The unit price must be greater than 0'),
@@ -73,26 +74,10 @@ class ProductRequest extends FormRequest
             'starting_bid.required'     => translate('Starting Bid is required'),
             'starting_bid.numeric'      => translate('Starting Bid must be numeric'),
             'starting_bid.required'     => translate('Minimum Starting Bid is 1'),
-            'auction_date_range.required' => translate('Auction Date Range is required')
+            'auction_date_range.required' => translate('Auction Date Range is required'),
         ];
+
+        return $messages;
     }
 
-    /**
-     * Get the error messages for the defined validation rules.*
-     * @return array
-     */
-    public function failedValidation(Validator $validator)
-    {
-        // dd($this->expectsJson());
-        if ($this->expectsJson()) {
-            throw new HttpResponseException(response()->json([
-                'message' => $validator->errors()->all(),
-                'result' => false
-            ], 422));
-        } else {
-            throw (new ValidationException($validator))
-                ->errorBag($this->errorBag)
-                ->redirectTo($this->getRedirectUrl());
-        }
-    }
 }

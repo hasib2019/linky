@@ -23,6 +23,7 @@ class ProductMiniCollection extends ResourceCollection
                     'stroked_price' => home_base_price($data),
                     'main_price' => home_discounted_base_price($data),
                     'rating' => (float) $data->rating,
+                    'review_count' => $data->reviews->count(),
                     'sales' => (int) $data->num_of_sale,
                     'is_wholesale' => $wholesale_product,
                     'links' => [

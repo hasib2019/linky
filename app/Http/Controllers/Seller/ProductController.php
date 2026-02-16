@@ -68,6 +68,13 @@ class ProductController extends Controller
                 return back();
             }
         }
+        if (addon_is_activated('gst_system')) {
+            $shop = Auth::user()->shop;
+            if ($shop && !$shop->gst_verification) {
+                flash(translate('GST verification is pending for your account.'))->warning();
+                return redirect()->route('seller.products');
+            }
+        }
         $categories = Category::where('parent_id', 0)
             ->where('digital', 0)
             ->with('childrenCategories')
@@ -80,6 +87,13 @@ class ProductController extends Controller
         if (addon_is_activated('seller_subscription')) {
             if (!seller_package_validity_check()) {
                 flash(translate('Please upgrade your package.'))->warning();
+                return redirect()->route('seller.products');
+            }
+        }
+        if (addon_is_activated('gst_system')) {
+            $shop = Auth::user()->shop;
+            if ($shop && !$shop->gst_verification) {
+                flash(translate('GST verification is pending for your account.'))->warning();
                 return redirect()->route('seller.products');
             }
         }
@@ -97,6 +111,11 @@ class ProductController extends Controller
             $this->productTaxService->store($request->only([
                 'tax_id', 'tax', 'tax_type', 'product_id'
             ]));
+        }
+
+        // Delete other Taxes if GST Rate is updated
+        if ($request->filled('gst_rate') && addon_is_activated('gst_system')) {
+            $product->taxes()->delete();
         }
 
         //Product Stock
@@ -178,6 +197,11 @@ class ProductController extends Controller
             $this->productTaxService->store($request->only([
                 'tax_id', 'tax', 'tax_type', 'product_id'
             ]));
+        }
+
+        // Delete other Taxes if GST Rate is updated
+        if ($request->filled('gst_rate') && addon_is_activated('gst_system')) {
+            $product->taxes()->delete();
         }
 
         // Frequently Bought Products
@@ -285,6 +309,17 @@ class ProductController extends Controller
                 return 2;
             }
         }
+        if (addon_is_activated('gst_system') && $request->status == 1) {
+            $shop = Auth::user()->shop;
+            if ($shop && !$shop->gst_verification) {
+                return 3;
+            }
+            if($product->gst_rate==''|| $product->gst_rate==null || $product->hsn_code=='' || $product->hsn_code==null){
+                return 4;
+            }
+        }
+
+        
         $product->save();
         return 1;
     }
@@ -314,6 +349,14 @@ class ProductController extends Controller
             if (!seller_package_validity_check()) {
                 flash(translate('Please upgrade your package.'))->warning();
                 return back();
+            }
+        }
+
+        if (addon_is_activated('gst_system')) {
+            $shop = Auth::user()->shop;
+            if ($shop && !$shop->gst_verification) {
+                flash(translate('GST verification is pending for your account.'))->warning();
+                return redirect()->route('seller.products');
             }
         }
 
@@ -378,7 +421,6 @@ class ProductController extends Controller
                 $this->destroy($product_id);
             }
         }
-
         return 1;
     }
 
@@ -395,7 +437,8 @@ class ProductController extends Controller
 
     public function categoriesWiseProductDiscount(Request $request){
         $sort_search =null;
-        $categories = Category::orderBy('order_level', 'desc');
+         $categories = Category::with('sellerDiscount')
+        ->orderBy('order_level', 'desc');
         if ($request->has('search')){
             $sort_search = $request->search;
             $categories = $categories->where('name', 'like', '%'.$sort_search.'%');
@@ -409,4 +452,87 @@ class ProductController extends Controller
         $response = $this->productService->setCategoryWiseDiscount($request->except(['_token']));
         return $response;
     }
+
+        public function get_filter_products(Request $request)
+        {
+            //Log::info('Filter Products Request: ', $request->all());
+            $col_name = null;
+            $query = null;
+            $sort_search = null;
+            $products = Product::where('auction_product', 0)->where('wholesale_product', 0);  
+            $products = $products->where('user_id', auth()->user()->id);
+            if ($request->product_type == 'digital_products') {
+                $products = $products->where('digital', 1);
+            } else if ($request->product_type == 'physical_products') {
+                $products = $products->where('digital', 0);
+            } else if ($request->product_type == 'not_approved') {
+                $products = $products->where('approved', 0);
+            }
+            else if ($request->product_type == 'pos_product_list') {
+                $products = $products->where('pos', 1);
+            }
+
+            if ($request->search != null) {
+                $sort_search = $request->search;
+                $products = $products
+                    ->where('name', 'like', '%' . $sort_search . '%')
+                    ->orWhereHas('stocks', function ($q) use ($sort_search) {
+                        $q->where('sku', 'like', '%' . $sort_search . '%');
+                    });
+            }
+            if ($request->type != null) {
+                $var = explode(",", $request->type);
+                $col_name = $var[0];
+                $query = $var[1];
+                $products = $products->orderBy($col_name, $query);
+                $sort_type = $request->type;
+            }
+
+            $filters = $request->selected_filter ?? [];
+            if (!empty($filters)) {
+                if (in_array('low-stock', $filters)) {
+                    $products->where(function ($query) {
+                        $query->whereRaw("
+                            (
+                                SELECT CASE
+                                    WHEN products.variant_product = 1 
+                                        THEN (SELECT SUM(qty) FROM product_stocks WHERE product_stocks.product_id = products.id)
+                                    ELSE 
+                                        (SELECT qty FROM product_stocks WHERE product_stocks.product_id = products.id LIMIT 1)
+                                END
+                            ) <= products.low_stock_quantity
+                        ");
+                    });
+                }
+                if (in_array('all-discount', $filters)) {
+                    $products->where('discount', '>', 0);
+                }
+                if (in_array('all-publish', $filters)) {
+                    $products->where('published', 1);
+                }
+            }
+            if ( $request->filled('brand_id')) {
+                $products = $products->where('brand_id', $request->brand_id);
+            } 
+            if ($request->filled('category_id')) {
+                $products = $products->whereHas('categories', function ($query) use ($request) {
+                    $query->where('categories.id', $request->category_id);
+                });
+            }
+
+            if($request->product_type == 'pos_product_list'){
+                $products = $products->orderBy('updated_at', 'desc')->paginate(15);
+            }else{
+                $products = $products->orderBy('created_at', 'desc')->paginate(15);
+            }
+            
+            $type = $request->seller_type;
+            $ptoduct_type = $request->product_type;
+
+            $view = view('seller.product.products.products_table',
+                compact('products', 'type', 'col_name', 'query', 'sort_search','ptoduct_type')
+            )->render();
+
+            return response()->json(['html' => $view]);
+        }
 }

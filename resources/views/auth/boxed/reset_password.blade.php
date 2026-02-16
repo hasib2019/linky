@@ -35,7 +35,7 @@
                                             
                                             <!-- Email -->
                                             <div class="form-group">
-                                                <input id="email" type="email" class="form-control{{ $errors->has('email') ? ' is-invalid' : '' }}" name="email" value="{{ $email ?? old('email') }}" placeholder="{{ translate('Email') }}" required autofocus>
+                                                <input id="email" type="email" class="form-control{{ $errors->has('email') ? ' is-invalid' : '' }}" name="email" value="{{ $email ?? old('email') }}" @if(!empty($email ?? null)) readonly @endif placeholder="{{ translate('Email') }}" required autofocus>
                     
                                                 @if ($errors->has('email'))
                                                     <span class="invalid-feedback" role="alert">
@@ -46,7 +46,7 @@
                                             
                                             <!-- Code -->
                                             <div class="form-group">
-                                                <input id="code" type="text" class="form-control{{ $errors->has('code') ? ' is-invalid' : '' }}" name="code" value="{{ $email ?? old('code') }}" placeholder="{{translate('Code')}}" required autofocus>
+                                                <input id="code" type="text" class="form-control{{ $errors->has('code') ? ' is-invalid' : '' }}" name="code" value="{{old('code') }}" placeholder="{{translate('Code')}}" required autofocus>
                     
                                                 @if ($errors->has('code'))
                                                     <span class="invalid-feedback" role="alert">

@@ -152,9 +152,19 @@
 @section('script')
 <script>
     function makeSlug(val) {
-        let str = val;
-        let output = str.replace(/\s+/g, '-').toLowerCase();
-        $('#slug').val(output);
+        if (!val) return;
+
+        $.ajax({
+            url: '{{ route("generate.slug") }}',
+            method: 'POST',
+            data: {
+                title: val,
+                _token: '{{ csrf_token() }}'
+            },
+            success: function (response) {
+                $('#slug').val(response.slug);
+            }
+        });
     }
 </script>
 @endsection

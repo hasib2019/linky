@@ -14,6 +14,7 @@ use App\Utility\EmailUtility;
 use Maatwebsite\Excel\Facades\Excel;
 use Auth;
 use DB;
+use Illuminate\Support\Facades\Log;
 
 class OrderController extends Controller
 {
@@ -24,37 +25,9 @@ class OrderController extends Controller
      */
     public function index(Request $request)
     {
-        $payment_status = null;
-        $delivery_status = null;
-        $sort_search = null;
-        $orders = DB::table('orders')
-            ->orderBy('id', 'desc')
-            ->where('seller_id', Auth::user()->id)
-            ->select('orders.id')
-            ->distinct();
-
-        if ($request->payment_status != null) {
-            $orders = $orders->where('payment_status', $request->payment_status);
-            $payment_status = $request->payment_status;
-        }
-        if ($request->delivery_status != null) {
-            $orders = $orders->where('delivery_status', $request->delivery_status);
-            $delivery_status = $request->delivery_status;
-        }
-        if ($request->has('search')) {
-            $sort_search = $request->search;
-            $orders = $orders->where('code', 'like', '%' . $sort_search . '%');
-        }
-
-        $orders = $orders->paginate(15);
-
-        foreach ($orders as $key => $value) {
-            $order = Order::find($value->id);
-            $order->viewed = 1;
-            $order->save();
-        }
-
-        return view('seller.orders.index', compact('orders', 'payment_status', 'delivery_status', 'sort_search'));
+        $order_from = '';
+        $order_types = translate('All Orders');
+        return view('seller.orders.index', compact('order_from', 'order_types'));
     }
 
     public function show($id)
@@ -211,5 +184,57 @@ class OrderController extends Controller
         }
         return back();
     }
+
+    public function get_filter_orders(Request $request)
+    {
+        $date= $request->date;
+        //Log::info('Filter Orders Request: ', $request->all());
+        $col_name = null;
+        $query = null;
+        $sort_search = null;
+        $orders = Order::orderBy('id', 'desc')->where('seller_id', Auth::user()->id);
+        if ($request->order_from) {
+            $orders= $orders->where('order_from','pos');
+        }
+        
+        if ($request->search != null) {
+            $sort_search = $request->search;
+
+            $orders = $orders->where(function ($query) use ($sort_search) {
+                $query->where('code', 'like', '%' . $sort_search . '%')
+                    ->orWhereHas('user', function ($q) use ($sort_search) {
+                        $q->where('name', 'like', '%' . $sort_search . '%');
+                });
+            });
+        }
+
+        if ($date != null) {
+            $orders = $orders->where('created_at', '>=', date('Y-m-d', strtotime(explode(" to ", $date)[0])) . '  00:00:00')
+                ->where('created_at', '<=', date('Y-m-d', strtotime(explode(" to ", $date)[1])) . '  23:59:59');
+        }
+
+        if ($request->payment_status != null) {
+            $var = explode(",", $request->payment_status);
+            $col_name = $var[0];
+            $query = $var[1];
+            $orders = $orders->where($col_name, $query);
+        }
+
+        $filters = $request->selected_filter ?? [];
+        if (!empty($filters)) {
+            if (!empty($filters)) {
+                $orders->whereIn('delivery_status', $filters);
+            }
+        }
+
+        $orders = $orders->paginate(15);
+        $type = $request->seller_type;
+        $view = view('seller.orders.orders_table',
+            compact('orders', 'type', 'col_name', 'query', 'sort_search')
+        )->render();
+
+        return response()->json(['html' => $view]);
+    }
+
 
 }

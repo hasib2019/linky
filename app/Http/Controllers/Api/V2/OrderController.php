@@ -49,9 +49,11 @@ class OrderController extends Controller
         if ($address != null) {
             $shippingAddress['name']        = $user->name;
             $shippingAddress['email']       = $user->email;
-            $shippingAddress['address']     = $address->address;
+            $shippingAddress['address']     = $address->address. (isset($address->area) ? ', ' . $address->area->name : '');
             $shippingAddress['country']     = $address->country->name;
+            if(get_setting('has_state') == 1){
             $shippingAddress['state']       = $address->state->name;
+            }
             $shippingAddress['city']        = $address->city->name;
             $shippingAddress['postal_code'] = $address->postal_code;
             $shippingAddress['phone']       = $address->phone;
@@ -59,7 +61,6 @@ class OrderController extends Controller
                 $shippingAddress['lat_lang'] = $address->latitude . ',' . $address->longitude;
             }
         }
-
         $combined_order = new CombinedOrder;
         $combined_order->user_id = $user->id;
         $combined_order->shipping_address = json_encode($shippingAddress);
@@ -100,6 +101,7 @@ class OrderController extends Controller
             $tax = 0;
             $shipping = 0;
             $coupon_discount = 0;
+            $gst =0;
 
             //Order Details Storing
             foreach ($seller_product as $cartItem) {
@@ -138,6 +140,13 @@ class OrderController extends Controller
 
                 $shipping += $order_detail->shipping_cost;
 
+                if (addon_is_activated('gst_system')) {
+                $order_detail->gst_rate = $product->gst_rate;
+                $order_detail->gst_amount = (($order_detail->shipping_cost + $order_detail->tax + $order_detail->price - $cartItem['discount'])*$product->gst_rate)/100;
+                $gst+=$order_detail->gst_amount;
+                }
+                
+
                 //End of storing shipping cost
                 if (addon_is_activated('club_point')) {
                     $order_detail->earn_point = $product->earn_point;
@@ -175,7 +184,7 @@ class OrderController extends Controller
                 }
             }
 
-            $order->grand_total = $subtotal + $tax + $shipping;
+            $order->grand_total = $subtotal + $tax + $shipping + $gst;
 
             if ($seller_product[0]->coupon_code != null) {
                 $order->coupon_discount = $coupon_discount;

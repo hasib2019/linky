@@ -1,6 +1,9 @@
 <?php
 
 use App\Http\Controllers\AizUploadController;
+use App\Http\Controllers\Seller\CustomLabelController;
+use App\Http\Controllers\Seller\DashboardController;
+use App\Http\Controllers\Seller\GSTController;
 
 //Upload
 Route::group(['prefix' => 'seller', 'middleware' => ['seller', 'verified', 'user', 'prevent-back-history'], 'as' => 'seller.'], function () {
@@ -39,7 +42,10 @@ Route::group(['namespace' => 'App\Http\Controllers\Seller', 'prefix' => 'seller'
         // category-wise discount set
         Route::get('/categories-wise-product-discount', 'categoriesWiseProductDiscount')->name('categories_wise_product_discount');
         Route::post('/set-product-discount', 'setProductDiscount')->name('set_product_discount');
+        Route::get('/filter-products', 'get_filter_products')->name('products.filter');
     });
+
+
 
     // Product Bulk Upload
     Route::controller(ProductBulkUploadController::class)->group(function () {
@@ -62,6 +68,17 @@ Route::group(['namespace' => 'App\Http\Controllers\Seller', 'prefix' => 'seller'
         Route::get('/digitalproducts/download/{id}', 'download')->name('digitalproducts.download');
     });
 
+    // custom label
+    Route::controller(CustomLabelController::class)->group(function () {
+        Route::get('/custom-label-list', 'index')->name('custom_label.index');
+        Route::get('/custom-label-create', 'create')->name('custom_label.create');
+        Route::post('/custom-label-store', 'store')->name('custom_label.store');
+        Route::get('/custom-label-edit/{id}', 'edit')->name('custom_label.edit');
+        Route::post('/custom-label-update/{id}', 'update')->name('custom_label.update');
+        Route::get('/custom-label-delete/{id}', 'destroy')->name('custom_label.delete');
+        Route::post('/custom-label/products', 'products')->name('custom_label.products');
+    });
+    
     // Note
     Route::resource('note', NoteController::class);
     Route::controller(NoteController::class)->group(function () {
@@ -85,6 +102,7 @@ Route::group(['namespace' => 'App\Http\Controllers\Seller', 'prefix' => 'seller'
 
         // Order bulk export
         Route::get('/order-bulk-export', 'orderBulkExport')->name('order-bulk-export');
+         Route::get('/filtered-orders', 'get_filter_orders')->name('orders.filter');
     });
 
     Route::controller(InvoiceController::class)->group(function () {
@@ -105,6 +123,7 @@ Route::group(['namespace' => 'App\Http\Controllers\Seller', 'prefix' => 'seller'
         Route::post('/shop/banner-update', 'bannerUpdate')->name('shop.banner.update');
         Route::get('/shop/apply-for-verification', 'verify_form')->name('shop.verify');
         Route::post('/shop/verification_info_store', 'verify_form_store')->name('shop.verify.store');
+        Route::get('/category-wise-commission', 'categoriesWiseCommission')->name('categories-wise-commission');
     });
 
     //Payments
@@ -166,6 +185,18 @@ Route::group(['namespace' => 'App\Http\Controllers\Seller', 'prefix' => 'seller'
         Route::post('/notifications/bulk-delete', 'bulkDelete')->name('notifications.bulk_delete');
         Route::get('/notification/read-and-redirect/{id}', 'readAndRedirect')->name('notification.read-and-redirect');
 
+    });
+
+    Route::controller(GSTController::class)->group(function () {
+        Route::get('/gst-configuration', 'configure_index')->name('gst.configconfiguration');
+        Route::post('/gst-docs-update', 'update_documents')->name('update_gst_docs');
+        Route::get('/product-hsn-gst-assign', 'hsn_gst_assign')->name('products.hsn-gst.assigns');
+        Route::get('/wholesale-product-hsn-gst-assign', 'wholesale_hsn_gst_assign')->name('products.wholesale-hsn-gst.assigns');
+        Route::get('/auction-product-hsn-gst-assign', 'auction_hsn_gst_assign')->name('products.auction-hsn-gst.assigns');
+        Route::get('/preorder-product-hsn-gst-assign', 'preorder_hsn_gst_assign')->name('products.preorder-hsn-gst.assigns');
+        Route::post('/products-hsn-gst-single-update', 'updateHsnGstRate')->name('products.single-hsn-gst.update');
+        Route::post('/bulk-product-gst-assign', 'updateBulkHsnGstRate')->name('products.bulk-product-gst-assign');
+        Route::get('/products/gst/products/{type}', 'get_filter_products')->name('products.gst.filter');
     });
 
 });

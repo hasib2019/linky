@@ -30,7 +30,7 @@
                               </g>
                             </g>
                         </svg>
-                        <h1 class="fs-21 fw-700 text-uppercase mt-2" style="color: #3d3d3d;">Active eCommerce CMS Update Process</h1>
+                        <h1 class="fs-21 fw-700 text-uppercase mt-2" style="color: #3d3d3d;">CreativeITbari E-Commerce CMS Update Process</h1>
                         <p class="fs-12 fw-500" style="color:  #666; line-height: 18px;">You will need to know the following items before proceeding.</p>
                     </div>
                     <ol class="list-group">

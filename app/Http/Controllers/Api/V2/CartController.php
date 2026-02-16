@@ -24,6 +24,7 @@ class CartController extends Controller
             return response()->json([
                 'sub_total' => format_price(0.00),
                 'tax' => format_price(0.00),
+                'gst' => format_price(0.00),
                 'shipping_cost' => format_price(0.00),
                 'discount' => format_price(0.00),
                 'grand_total' => format_price(0.00),
@@ -36,19 +37,22 @@ class CartController extends Controller
         $sum = 0.00;
         $subtotal = 0.00;
         $tax = 0.00;
+        $gst = 0.00;
         foreach ($items as $cartItem) {
             $product = Product::find($cartItem['product_id']);
             $subtotal += cart_product_price($cartItem, $product, false, false) * $cartItem['quantity'];
             $tax += cart_product_tax($cartItem, $product, false) * $cartItem['quantity'];
+            $gst += cart_product_gst($cartItem, $product, false);
         }
 
         $shipping_cost = $items->sum('shipping_cost');
         $discount = $items->sum('discount');
-        $sum = ($subtotal + $tax + $shipping_cost) - $discount;
+        $sum = ($subtotal + $tax +$gst + $shipping_cost) - $discount;
 
         return response()->json([
             'sub_total' => single_price($subtotal),
             'tax' => single_price($tax),
+            'gst' => single_price($gst),
             'shipping_cost' => single_price($shipping_cost),
             'discount' => single_price($discount),
             'grand_total' => single_price($sum),
@@ -98,6 +102,7 @@ class CartController extends Controller
                         $product = Product::where('id', $shop_items_raw_data_item["product_id"])->first();
                         $price = cart_product_price($shop_items_raw_data_item, $product, false, false) * intval($shop_items_raw_data_item["quantity"]);
                         $tax = cart_product_tax($shop_items_raw_data_item, $product, false);
+                        $gst = cart_product_gst($shop_items_raw_data_item, $product, false);
                         $shop_items_data_item["id"] = intval($shop_items_raw_data_item["id"]);
                         $shop_items_data_item["status"] = intval($shop_items_raw_data_item["status"]);
                         $shop_items_data_item["owner_id"] = intval($shop_items_raw_data_item["owner_id"]);
@@ -109,16 +114,18 @@ class CartController extends Controller
                         $shop_items_data_item["variation"] = $shop_items_raw_data_item["variation"];
                         $shop_items_data_item["price"] = (float) cart_product_price($shop_items_raw_data_item, $product, false, false);
                         $shop_items_data_item["currency_symbol"] = $currency_symbol;
-                        $shop_items_data_item["tax"] = (float) cart_product_tax($shop_items_raw_data_item, $product, false);
+                        //$shop_items_data_item["tax"] = (float) cart_product_tax($shop_items_raw_data_item, $product, false);
                         $shop_items_data_item["price"] = single_price($price);
                         $shop_items_data_item["currency_symbol"] = $currency_symbol;
                         $shop_items_data_item["tax"] = single_price($tax);
+                        $shop_items_data_item["gst"] = single_price($gst);
                         $shop_items_data_item["shipping_cost"] = (float) $shop_items_raw_data_item["shipping_cost"];
                         $shop_items_data_item["quantity"] = intval($shop_items_raw_data_item["quantity"]);
                         $shop_items_data_item["lower_limit"] = intval($product->min_qty);
                         $shop_items_data_item["upper_limit"] = intval($product->stocks->where('variant', $shop_items_raw_data_item['variation'])->first()->qty);
-
-                        $sub_total += $price + $tax;
+                        $shop_items_data_item["digital"] = $product->digital;   
+                        $shop_items_data_item["stock"] = $product->stocks->where('variant', $shop_items_raw_data_item['variation'])->first()->qty; 
+                        $sub_total += $price + $tax + $gst;
                         $shop_items_data[] = $shop_items_data_item;
                     }
                 }

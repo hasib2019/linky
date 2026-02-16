@@ -61,7 +61,7 @@ class RegisterController extends Controller
             'name' => 'required|string|max:255',
             'password' => 'required|string|min:6|confirmed',
             'g-recaptcha-response' => [
-                Rule::when(get_setting('google_recaptcha') == 1, ['required', new Recaptcha()], ['sometimes'])
+                Rule::when(get_setting('google_recaptcha') == 1 && get_setting('recaptcha_customer_register') == 1 , ['required', new Recaptcha()], ['sometimes'])
             ]
         ]);
     }
@@ -74,21 +74,27 @@ class RegisterController extends Controller
      */
     protected function create(array $data)
     {
-        // dd($data);
+        if(addon_is_activated('portfolio_system') && get_setting('customer_verification')){
+            $data['verification_status'] = 0;
+        }
         if (isset($data['email']) && filter_var($data['email'], FILTER_VALIDATE_EMAIL)) {
             $user = User::create([
-                'name' => $data['name'],
+                'name' => $data['name'] . (isset($data['l_name']) && $data['l_name'] !== '' ? ' ' . $data['l_name'] : ''),
                 'email' => $data['email'],
+                'phone' => isset($data['phone']) ? '+'.$data['country_code'].preg_replace('/\D+/', '', $data['phone']) : null,
                 'password' => Hash::make($data['password']),
+                'verification_status' => $data['verification_status'] ?? 1
             ]);
         }
         else {
             if (addon_is_activated('otp_system')){
+                $cleanPhone = preg_replace('/\D+/', '', $data['phone']);
                 $user = User::create([
-                    'name' => $data['name'],
-                    'phone' => '+'.$data['country_code'].$data['phone'],
+                    'name' => $data['name'] . (isset($data['l_name']) && $data['l_name'] !== '' ? ' ' . $data['l_name'] : ''),
+                    'phone' => '+'.$data['country_code'].$cleanPhone,
                     'password' => Hash::make($data['password']),
-                    'verification_code' => rand(100000, 999999)
+                    'verification_code' => rand(100000, 999999),
+                    'verification_status' => $data['verification_status'] ?? 1
                 ]);
 
                 if(get_setting('customer_registration_verify') != '1' ){
@@ -98,6 +104,8 @@ class RegisterController extends Controller
 
             }
         }
+
+         
         
         if(session('temp_user_id') != null){
             if(auth()->user()->user_type == 'customer'){
@@ -124,15 +132,19 @@ class RegisterController extends Controller
             }
         }
 
+
+
         return $user;
     }
 
     public function register(Request $request)
     {
+        //dd($request->all());
         if (filter_var($request->email, FILTER_VALIDATE_EMAIL)) {
             if(User::where('email', $request->email)->first() != null){
                 flash(translate('Email or Phone already exists.'));
                 return back();
+                
             }
         }
         elseif (User::where('phone', '+'.$request->country_code.$request->phone)->first() != null) {
@@ -172,6 +184,15 @@ class RegisterController extends Controller
             }
         }
 
+        if($user->phone != null){
+            if(get_setting('email_verification') != 1 || get_setting('customer_registration_verify') === '1'){
+                $user->email_verified_at = date('Y-m-d H:m:s');
+                $user->save();
+                offerUserWelcomeCoupon();
+                flash(translate('Registration successful.'))->success();
+            }
+        }
+
         // customer Account Opening Email to Admin
         if ( $user != null && (get_email_template_data('customer_reg_email_to_admin', 'status') == 1)) {
             try {
@@ -185,11 +206,14 @@ class RegisterController extends Controller
 
     protected function registered(Request $request, $user)
     {
-        if ($user->email == null) {
+        if ($user->email == null && $user->email_verified_at == null) {
             return redirect()->route('verification');
         }elseif(session('link') != null){
             return redirect(session('link'));
         }else {
+            if(addon_is_activated('portfolio_system') && get_setting('customer_verification')){
+                return redirect()->route('dashboard');
+            }
             return redirect()->route('home');
         }
     }

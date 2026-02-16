@@ -19,48 +19,43 @@
   					</li>
 	            @endforeach
   			</ul>
-            <form class="p-4" action="{{ route('brands.update', $brand->id) }}" method="POST" enctype="multipart/form-data">
+            <form class="p-4" action="{{ route('brands.update', $brand->id) }}" method="POST" enctype="multipart/form-data" id="aizSubmitForm">
                 <input name="_method" type="hidden" value="PATCH">
                 <input type="hidden" name="lang" value="{{ $lang }}">
                 @csrf
-                <div class="form-group row">
-                    <label class="col-sm-3 col-from-label" for="name">{{translate('Name')}} <i class="las la-language text-danger" title="{{translate('Translatable')}}"></i></label>
-                    <div class="col-sm-9">
-                        <input type="text" placeholder="{{translate('Name')}}" id="name" name="name" value="{{ $brand->getTranslation('name', $lang) }}" class="form-control" required>
-                    </div>
+                <div class="form-group mb-3">
+                    <label for="name">{{translate('Name')}} <i class="las la-language text-danger" title="{{translate('Translatable')}}"></i></label>
+                    <input type="text" placeholder="{{translate('Name')}}" id="name" name="name" maxlength="100" value="{{ $brand->getTranslation('name', $lang) }}" class="form-control" required>
                 </div>
-                <div class="form-group row">
-                    <label class="col-md-3 col-form-label" for="signinSrEmail">{{translate('Logo')}} <small>({{ translate('120x80') }})</small></label>
-                    <div class="col-md-9">
-                        <div class="input-group" data-toggle="aizuploader" data-type="image">
-                            <div class="input-group-prepend">
-                                <div class="input-group-text bg-soft-secondary font-weight-medium">{{ translate('Browse')}}</div>
-                            </div>
-                            <div class="form-control file-amount">{{ translate('Choose File') }}</div>
-                            <input type="hidden" name="logo" value="{{$brand->logo}}" class="selected-files">
+                <div class="form-group mb-3">
+                    <label for="signinSrEmail">{{translate('Logo')}} <small>({{ translate('120x80') }})</small></label>
+                    <div class="input-group" data-toggle="aizuploader" data-type="image">
+                        <div class="input-group-prepend">
+                            <div class="input-group-text bg-soft-secondary font-weight-medium">{{ translate('Browse')}}</div>
                         </div>
-                        <div class="file-preview box sm">
-                        </div>
-                        <small class="text-muted">{{ translate('Minimum dimensions required: 126px width X 100px height.') }}</small>
+                        <div class="form-control file-amount">{{ translate('Choose File') }}</div>
+                        <input type="hidden" name="logo" value="{{$brand->logo}}" class="selected-files">
                     </div>
+                    <div class="file-preview box sm">
+                    </div>
+                    <small class="text-muted">{{ translate('Minimum dimensions required: 120px width X 80px height.') }}</small>
                 </div>
-                <div class="form-group row">
-                    <label class="col-sm-3 col-from-label">{{translate('Meta Title')}}</label>
-                    <div class="col-sm-9">
-                        <input type="text" class="form-control" name="meta_title" value="{{ $brand->meta_title }}" placeholder="{{translate('Meta Title')}}">
-                    </div>
+                <div class="form-group mb-3">
+                    <label>{{translate('Meta Title')}}</label>
+                    <input type="text" class="form-control" name="meta_title" value="{{ $brand->meta_title }}" placeholder="{{translate('Meta Title')}}">
                 </div>
-                <div class="form-group row">
-                    <label class="col-sm-3 col-from-label">{{translate('Meta Description')}}</label>
-                    <div class="col-sm-9">
-                        <textarea name="meta_description" rows="8" class="form-control">{{ $brand->meta_description }}</textarea>
-                    </div>
+                <div class="form-group mb-3">
+                    <label>{{translate('Meta Description')}}</label>
+                    <textarea name="meta_description" rows="8" class="form-control">{{ $brand->meta_description }}</textarea>
                 </div>
-                <div class="form-group row">
-                    <label class="col-sm-3 col-from-label" for="name">{{translate('Slug')}}</label>
-                    <div class="col-sm-9">
-                        <input type="text" placeholder="{{translate('Slug')}}" id="slug" name="slug" value="{{ $brand->slug }}" class="form-control">
-                    </div>
+                <div class="form-group mb-3">
+                    <label>{{translate('Meta Keywords')}}</label>
+                    <textarea name="meta_keywords" class="resize-off form-control">{{ $brand->meta_keywords }}</textarea>
+                    <small class="text-muted">{{ translate('Separate with coma') }}</small>
+                </div>
+                <div class="form-group mb-3">
+                    <label for="name">{{translate('Slug')}}</label>
+                    <input type="text" placeholder="{{translate('Slug')}}" id="slug" name="slug" value="{{ $brand->slug }}" class="form-control">
                 </div>
                 <div class="form-group mb-0 text-right">
                     <button type="submit" class="btn btn-primary">{{translate('Save')}}</button>

@@ -9,13 +9,21 @@ use App\Models\PasswordReset;
 use App\Notifications\PasswordResetRequest;
 use Illuminate\Support\Str;
 use App\Http\Controllers\OTPVerificationController;
-
+use App\Rules\Recaptcha;
 use Hash;
+use Illuminate\Validation\Rule;
 
 class PasswordResetController extends Controller
 {
     public function forgetRequest(Request $request)
     {
+
+         // validate recaptcha
+        $request->validate([
+            'g-recaptcha-response' => [
+                Rule::when(get_setting('google_recaptcha') == 1 && get_setting('recaptcha_forgot_password') == 1, ['required', new Recaptcha()], ['sometimes'])
+            ],
+        ]);
         if ($request->send_code_by == 'email') {
             $user = User::where('email', $request->email_or_phone)->first();
         } else {

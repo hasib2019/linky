@@ -1,7 +1,7 @@
 @if (count(get_featured_products()) > 0)
     <section class="mb-2 mb-md-3">
         <div class="container">
-            <div class="border border-primary overflow-hidden">
+            <div class="border overflow-hidden">
                 <!-- Top Section -->
                 <div class="d-flex mb-2 mb-md-3 pt-3 pt-md-4 px-3 align-items-baseline justify-content-between">
                     <!-- Title -->

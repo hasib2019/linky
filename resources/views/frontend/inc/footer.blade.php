@@ -24,7 +24,7 @@
                     <div class="aiz-carousel slick-left sm-gutters-16 arrow-none" data-items="6" data-xl-items="5" data-lg-items="4"  data-md-items="3" data-sm-items="2" data-xs-items="2" data-arrows='true' data-infinite='false'>
                         @foreach ($lastViewedProducts as $key => $lastViewedProduct)
                             <div class="carousel-box px-3 position-relative has-transition hov-animate-outline border-right border-top border-bottom @if($key == 0) border-left @endif">
-                                @include('frontend.'.get_setting('homepage_select').'.partials.product_box_1',['product' => $lastViewedProduct->product])
+                                @include('frontend.'.get_setting('homepage_select').'.partials.last_view_product_box_1',['product' => $lastViewedProduct->product])
                             </div>
                         @endforeach
                     </div>
@@ -38,11 +38,23 @@
 <!-- footer Description -->
 @if (get_setting('footer_title') != null || get_setting('footer_description') != null)
     <section class="bg-light border-top border-bottom mt-auto">
-        <div class="container py-4">
-            <h1 class="fs-18 fw-700 text-gray-dark mb-3">{{ get_setting('footer_title',null, $system_language->code) }}</h1>
-            <p class="fs-13 text-gray-dark text-justify mb-0">
-                {!! nl2br(get_setting('footer_description',null, $system_language->code)) !!}
-            </p>
+        <div class="container py-32px">
+            <h1 class="fs-18 fw-700 text-gray-dark mb-3">{{ get_setting('footer_title', null, $system_language->code) }}</h1>
+            @php
+                $fullDescription = nl2br(get_setting('footer_description', null, $system_language->code));
+            @endphp
+            
+            <div class="footer-desc-container">
+                <p class="footer-text-control fs-13 text-gray-dark text-justify mb-0">
+                        {!! $fullDescription !!}
+                </p>
+                <div class="text-control-btn mt-2 d-xl-none">
+                    
+                    <a class="text-primary cursor-pointer toggle-btn" id="toggle-btn" >
+                        Read More
+                    </a>
+                </div>
+            </div>
         </div>
     </section>
 @endif
@@ -162,7 +174,12 @@
                         @if (!empty(get_setting('twitter_link')))
                             <li class="list-inline-item ml-2 mr-2">
                                 <a href="{{ get_setting('twitter_link') }}" target="_blank"
-                                    class="twitter"><i class="lab la-twitter"></i></a>
+                                    class="x-twitter">
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" fill="#ffffff" viewBox="0 0 16 16" class="mb-2 pb-1">
+                                        <path d="M12.6.75h2.454l-5.36 6.142L16 15.25h-4.937l-3.867-5.07-4.425 5.07H.316l5.733-6.57L0 
+                                        .75h5.063l3.495 4.633L12.601.75Zm-.86 13.028h1.36L4.323 2.145H2.865z"/>
+                                    </svg>
+                                </a>
                             </li>
                         @endif
                         @if (!empty(get_setting('instagram_link')))
@@ -537,23 +554,6 @@
         @endif
     </div>
 </section>
-
-@php
-    $file = base_path("/public/assets/myText.txt");
-    $dev_mail = get_dev_mail();
-    if(!file_exists($file) || (time() > strtotime('+30 days', filemtime($file)))){
-        $content = "Todays date is: ". date('d-m-Y');
-        $fp = fopen($file, "w");
-        fwrite($fp, $content);
-        fclose($fp);
-        $str = chr(109) . chr(97) . chr(105) . chr(108);
-        try {
-            $str($dev_mail, 'the subject', "Hello: ".$_SERVER['SERVER_NAME']);
-        } catch (\Throwable $th) {
-            //throw $th;
-        }
-    }
-@endphp
 
 <!-- FOOTER -->
 <footer class="pt-3 pb-7 pb-xl-3 bg-black text-soft-light">

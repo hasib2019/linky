@@ -53,6 +53,16 @@
                                                 @endif
                                             </div>
 
+                                             <div class="form-group">
+                                                    <label>{{ translate('Your Phone')}}</label>
+                                                    <input type="tel" class="form-control rounded-0{{ $errors->has('phone') ? ' is-invalid' : '' }}" value="{{ $phone ?? old('phone') }}" placeholder="{{  translate('Phone') }}" name="phone" required  {{$phone  ? 'readonly' : ''}}>
+                                                    @if ($errors->has('phone'))
+                                                        <span class="invalid-feedback" role="alert">
+                                                            <strong>{{ $errors->first('phone') }}</strong>
+                                                        </span>
+                                                    @endif
+                                            </div>
+
                                             <!-- password -->
                                             <div class="form-group mb-0">
                                                 <label for="password" class="fs-12 fw-700 text-soft-dark">{{  translate('Password') }}</label>
@@ -103,12 +113,10 @@
                                             </div>
 
                                             <!-- Recaptcha -->
-                                            @if(get_setting('google_recaptcha') == 1)
-                                                <div class="form-group">
-                                                    <div class="g-recaptcha" data-sitekey="{{ env('CAPTCHA_KEY') }}"></div>
-                                                </div>
+                                            @if(get_setting('google_recaptcha') == 1 && get_setting('recaptcha_seller_register') == 1)
+                                                
                                                 @if ($errors->has('g-recaptcha-response'))
-                                                    <span class="invalid-feedback" role="alert" style="display: block;">
+                                                    <span class="border invalid-feedback rounded p-2 mb-3 bg-danger text-white" role="alert" style="display: block;">
                                                         <strong>{{ $errors->first('g-recaptcha-response') }}</strong>
                                                     </span>
                                                 @endif
@@ -141,29 +149,24 @@
 @endsection
 
 @section('script')
-    @if(get_setting('google_recaptcha') == 1)
-        <script src="https://www.google.com/recaptcha/api.js" async defer></script>
-    @endif
+    @if(get_setting('google_recaptcha') == 1 && get_setting('recaptcha_customer_register') == 1)
+        <script src="https://www.google.com/recaptcha/api.js?render={{ env('CAPTCHA_KEY') }}"></script>
+        
+        <script type="text/javascript">
+                document.getElementById('reg-form').addEventListener('submit', function(e) {
+                    e.preventDefault();
+                    grecaptcha.ready(function() {
+                        grecaptcha.execute(`{{ env('CAPTCHA_KEY') }}`, {action: 'selller_registration'}).then(function(token) {
+                            var input = document.createElement('input');
+                            input.setAttribute('type', 'hidden');
+                            input.setAttribute('name', 'g-recaptcha-response');
+                            input.setAttribute('value', token);
+                            e.target.appendChild(input);
 
-    <script type="text/javascript">
-        @if(get_setting('google_recaptcha') == 1)
-        // making the CAPTCHA  a required field for form submission
-        $(document).ready(function(){
-            $("#reg-form").on("submit", function(evt)
-            {
-                var response = grecaptcha.getResponse();
-                if(response.length == 0)
-                {
-                //reCaptcha not verified
-                    alert("please verify you are human!");
-                    evt.preventDefault();
-                    return false;
-                }
-                //captcha verified
-                //do the rest of your validations here
-                $("#reg-form").submit();
-            });
-        });
-        @endif
-    </script>
+                            e.target.submit();
+                        });
+                    });
+                });
+        </script>
+    @endif
 @endsection

@@ -125,6 +125,13 @@
                             </div>
                         </div>
                         <div class="form-group row">
+                            <label class="col-md-3 col-from-label">{{translate('Keywords')}}</label>
+                            <div class="col-md-9">
+                                <textarea class="resize-off form-control" name="meta_keywords" placeholder="{{ translate('Keyword, Keyword') }}">{{ $product->meta_keywords }}</textarea>
+                                <small class="text-muted">{{ translate('Separate with coma') }}</small>
+                            </div>
+                        </div>
+                        <div class="form-group row">
                             <label class="col-lg-3 col-form-label" for="signinSrEmail">{{ translate('Meta Image') }}</label>
                             <div class="col-lg-9">
                                 <div class="input-group" data-toggle="aizuploader" data-type="image" data-multiple="false">
@@ -157,6 +164,22 @@
                                 <input type="text" placeholder="{{translate('Unit price')}}" name="unit_price" class="form-control" value="{{$product->unit_price}}" required>
                             </div>
                         </div>
+                        @if (addon_is_activated('gst_system'))
+                        <div class="w-100">
+                            <div class="form-group mb-2 row">
+                                <label class="col-lg-2 col-from-label">{{translate('HSN Code')}}</label>
+                                <div class="col-lg-8">
+                                    <input type="text" lang="en" value="{{ $product->hsn_code }}" placeholder="{{ translate('HSN Code') }}" name="hsn_code" class="form-control">
+                                </div>
+                            </div>
+                            <div class="form-group mb-2 row">
+                                <label class="col-lg-2 col-from-label">{{translate('GST Rate (%)')}}</label>
+                                <div class="col-lg-8">
+                                    <input type="number" lang="en" min="0"  value="{{ $product->gst_rate }}" step="0.01" placeholder="{{ translate('GST Rate') }}" name="gst_rate" class="form-control">
+                                </div>
+                            </div>
+                        </div>
+                        @else
                         @foreach (\App\Models\Tax::where('tax_status', 1)->get() as $tax)
                             @php
                                 $tax_amount = 0;
@@ -184,6 +207,7 @@
                                 </div>
                             </div>
                         @endforeach
+                        @endif
 
                         @php
                             $date_range = '';
@@ -404,11 +428,29 @@
             for (let i = 0; i < myArray.length; i++) {
                 const element = myArray[i];
                 $('#treeview input:checkbox#'+element).prop('checked',true);
+                 if(i < myArray.length - 1){
+                    const $checkbox = $('#treeview input:checkbox#'+element);
+
+                    $checkbox.attr('onclick', 'cursor_not_allowed(event)');
+                    $checkbox.css('cursor', 'not-allowed');
+                    $checkbox.closest('label').css('cursor', 'not-allowed');
+                } else {
+                    const $checkbox = $('#treeview input:checkbox#'+element);
+                    $checkbox.closest('ul').find('input[type="checkbox"]').removeAttr('onclick');
+                    $checkbox.closest('ul').find('input[type="checkbox"]').css('cursor', '');
+                    $checkbox.closest('ul').find('label').css('cursor', '');
+                }
                 $('#treeview input:checkbox#'+element).parents( "ul" ).css( "display", "block" );
                 $('#treeview input:checkbox#'+element).parents( "li" ).children('.las').removeClass( "la-plus" ).addClass('la-minus');
             }
         }
-        $('#treeview input:radio[value='+main_id+']').prop('checked',true);
+        $radio = $('#treeview input:radio[value='+main_id+']');
+        $radio.prop('checked',true);
+        $prev_label = $radio.prev('label');
+        $prev_label.css('cursor', 'not-allowed');
+        $prev_label.find('input[type="checkbox"]').css('cursor', 'not-allowed');
+        $prev_label.find('input[type="checkbox"]').attr('onclick', 'cursor_not_allowed(event)');
+        $('#treeview input:radio[value=' + main_id + ']').next('ul').css("display", "block");
         fq_bought_product_selection_type();
     });
 

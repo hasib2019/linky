@@ -28,7 +28,9 @@
 </div>
 
 <!-- Login Modal -->
+@if(!Auth::check())
 @include('frontend.partials.login_modal')
+@endif
 
 <!-- Bid Modal -->
 <div class="modal fade" id="bid_for_product" tabindex="-1" role="dialog" aria-labelledby="exampleModalLabel" aria-hidden="true">
@@ -50,8 +52,11 @@
                         </label>
                         <div class="form-group">
                             <input type="number" step="0.01" class="form-control form-control-sm" name="amount" id="bid_amount" min="" placeholder="{{ translate('Enter Amount') }}" required>
+                            <small class="text-danger" id="gst_applicable_alert"> </small>
                         </div>
+                        
                     </div>
+                    
                     <div class="form-group text-right">
                         <button type="submit" class="btn btn-sm btn-primary transition-3d-hover mr-1">{{ translate('Submit') }}</button>
                     </div>

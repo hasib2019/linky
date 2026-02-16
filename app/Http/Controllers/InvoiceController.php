@@ -114,4 +114,24 @@ class InvoiceController extends Controller
         flash(translate("You do not have the right permission to access this invoice."))->error();
         return redirect()->route('home');
     }
+
+    public function invoice_print($id)
+    {
+        $order = Order::findOrFail($id);
+
+        // You may want to apply the same font logic here too if needed
+        $language_code = Session::get('locale', Config::get('app.locale'));
+        $direction = Language::where('code', $language_code)->first()->rtl == 1 ? 'rtl' : 'ltr';
+        $text_align = $direction == 'rtl' ? 'right' : 'left';
+        $not_text_align = $direction == 'rtl' ? 'left' : 'right';
+
+        return view('backend.invoices.invoice', [
+            'order' => $order,
+            'font_family' => "'Roboto', sans-serif", // or reuse your logic
+            'direction' => $direction,
+            'text_align' => $text_align,
+            'not_text_align' => $not_text_align
+        ]);
+    }
+
 }

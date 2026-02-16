@@ -1,105 +1,150 @@
 @extends('frontend.layouts.user_panel')
 
 @section('panel_content')
-    <div class="card shadow-none rounded-0 border">
-        <div class="card-header border-bottom-0">
-            <h5 class="mb-0 fs-20 fw-700 text-dark">{{ translate('Purchase History') }}</h5>
-        </div>
-        <div class="card-body">
-            <table class="table aiz-table mb-0">
-                <thead class="text-gray fs-12">
-                    <tr>
-                        <th class="pl-0">{{ translate('Code')}}</th>
-                        <th data-breakpoints="md">{{ translate('Date')}}</th>
-                        <th>{{ translate('Amount')}}</th>
-                        <th data-breakpoints="md">{{ translate('Delivery Status')}}</th>
-                        <th data-breakpoints="md">{{ translate('Payment Status')}}</th>
-                        <th class="text-right pr-0">{{ translate('Options')}}</th>
-                    </tr>
-                </thead>
-                <tbody class="fs-14">
-                    @foreach ($orders as $key => $order)
-                        @if (count($order->orderDetails) > 0)
-                            <tr>
-                                <!-- Code -->
-                                <td class="pl-0">
-                                    <a href="{{route('purchase_history.details', encrypt($order->id))}}">{{ $order->code }}</a>
-                                </td>
-                                <!-- Date -->
-                                <td class="text-secondary">{{ date('d-m-Y', $order->date) }}</td>
-                                <!-- Amount -->
-                                <td class="fw-700">
-                                    {{ single_price($order->grand_total) }}
-                                </td>
-                                <!-- Delivery Status -->
-                                <td class="fw-700">
-                                    {{ translate(ucfirst(str_replace('_', ' ', $order->delivery_status))) }}
-                                    @if($order->delivery_viewed == 0)
-                                        <span class="ml-2" style="color:green"><strong>*</strong></span>
-                                    @endif
-                                </td>
-                                <!-- Payment Status -->
-                                <td>
-                                    @if ($order->payment_status == 'paid')
-                                        <span class="badge badge-inline badge-success p-3 fs-12" style="border-radius: 25px; min-width: 80px !important;">{{translate('Paid')}}</span>
-                                    @else
-                                        <span class="badge badge-inline badge-danger p-3 fs-12" style="border-radius: 25px; min-width: 80px !important;">{{translate('Unpaid')}}</span>
-                                    @endif
-                                    @if($order->payment_status_viewed == 0)
-                                        <span class="ml-2" style="color:green"><strong>*</strong></span>
-                                    @endif
-                                </td>
-                                <!-- Options -->
-                                <td class="text-right pr-0">
-                                    <!-- Re-order -->
-                                    <a class="btn-soft-white rounded-3 btn-sm mr-1" href="{{ route('re_order', encrypt($order->id)) }}">
-                                        {{ translate('Reorder') }}
-                                    </a>
-                                    <!-- Cancel -->
-                                    @if ($order->delivery_status == 'pending' && $order->payment_status == 'unpaid')
-                                        <a href="javascript:void(0)" class="btn btn-soft-danger btn-icon btn-circle btn-sm hov-svg-white mt-2 mt-sm-0 confirm-delete" data-href="{{route('purchase_history.destroy', $order->id)}}" title="{{ translate('Cancel') }}">
-                                            <svg xmlns="http://www.w3.org/2000/svg" width="9.202" height="12" viewBox="0 0 9.202 12">
-                                                <path id="Path_28714" data-name="Path 28714" d="M15.041,7.608l-.193,5.85a1.927,1.927,0,0,1-1.933,1.864H9.243A1.927,1.927,0,0,1,7.31,13.46L7.117,7.608a.483.483,0,0,1,.966-.032l.193,5.851a.966.966,0,0,0,.966.929h3.672a.966.966,0,0,0,.966-.931l.193-5.849a.483.483,0,1,1,.966.032Zm.639-1.947a.483.483,0,0,1-.483.483H6.961a.483.483,0,1,1,0-.966h1.5a.617.617,0,0,0,.615-.555,1.445,1.445,0,0,1,1.442-1.3h1.126a1.445,1.445,0,0,1,1.442,1.3.617.617,0,0,0,.615.555h1.5a.483.483,0,0,1,.483.483ZM9.913,5.178h2.333a1.6,1.6,0,0,1-.123-.456.483.483,0,0,0-.48-.435H10.516a.483.483,0,0,0-.48.435,1.6,1.6,0,0,1-.124.456ZM10.4,12.5V8.385a.483.483,0,0,0-.966,0V12.5a.483.483,0,1,0,.966,0Zm2.326,0V8.385a.483.483,0,0,0-.966,0V12.5a.483.483,0,1,0,.966,0Z" transform="translate(-6.478 -3.322)" fill="#d43533"/>
-                                            </svg>
-                                        </a>
-                                    @endif
-                                    <!-- Details -->
-                                    <a href="{{route('purchase_history.details', encrypt($order->id))}}" class="btn btn-soft-info btn-icon btn-circle btn-sm hov-svg-white mt-2 mt-sm-0" title="{{ translate('Order Details') }}">
-                                        <svg xmlns="http://www.w3.org/2000/svg" width="12" height="10" viewBox="0 0 12 10">
-                                            <g id="Group_24807" data-name="Group 24807" transform="translate(-1339 -422)">
-                                                <rect id="Rectangle_18658" data-name="Rectangle 18658" width="12" height="1" transform="translate(1339 422)" fill="#3490f3"/>
-                                                <rect id="Rectangle_18659" data-name="Rectangle 18659" width="12" height="1" transform="translate(1339 425)" fill="#3490f3"/>
-                                                <rect id="Rectangle_18660" data-name="Rectangle 18660" width="12" height="1" transform="translate(1339 428)" fill="#3490f3"/>
-                                                <rect id="Rectangle_18661" data-name="Rectangle 18661" width="12" height="1" transform="translate(1339 431)" fill="#3490f3"/>
-                                            </g>
-                                        </svg>
-                                    </a>
-                                    <!-- Invoice -->
-                                    <a class="btn btn-soft-secondary-base btn-icon btn-circle btn-sm hov-svg-white mt-2 mt-sm-0" href="{{ route('invoice.download', $order->id) }}" title="{{ translate('Download Invoice') }}">
-                                        <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12.001" viewBox="0 0 12 12.001">
-                                            <g id="Group_24807" data-name="Group 24807" transform="translate(-1341 -424.999)">
-                                              <path id="Union_17" data-name="Union 17" d="M13936.389,851.5l.707-.707,2.355,2.355V846h1v7.1l2.306-2.306.707.707-3.538,3.538Z" transform="translate(-12592.95 -421)" fill="#f3af3d"/>
-                                              <rect id="Rectangle_18661" data-name="Rectangle 18661" width="12" height="1" transform="translate(1341 436)" fill="#f3af3d"/>
-                                            </g>
-                                        </svg>
-                                    </a>
-                                </td>
-                            </tr>
-                        @endif
-                    @endforeach
-                </tbody>
-            </table>
-            <!-- Pagination -->
-            <div class="aiz-pagination mt-2">
-                {{ $orders->links() }}
-            </div>
+<div class="card shadow-none rounded-0 border p-4">
+    <h5 class="mb-2 fs-20 fw-700 text-dark">{{ translate('Purchase History') }}</h5>
+
+    <!-- Tabs & Filters -->
+    <div class="d-flex justify-content-between align-items-center border-bottom pb-3">
+        <ul class="nav nav-tabs purchase-history-tab border-0 fs-12 ml-n3" id="orderTabs">
+            @foreach (['All', 'Unpaid', 'Confirmed', 'Picked_Up', 'Delivered', 'To Review'] as $status)
+            <li class="nav-item">
+                <button class="nav-link {{ $loop->first ? 'active' : '' }}"
+                    onclick="changeTab(this, '{{ Str::slug($status) }}')">
+                    {{ translate($status) }}
+                </button>
+            </li>
+            @endforeach
+        </ul>
+
+        <div class="form-group mb-0 w-25">
+            <select class="form-control aiz-selectpicker purchase-history" name="delivery_status" id="delivery_status"
+                data-style="btn-light" data-width="100%">
+                <option value="">{{ translate('All') }}</option>
+                <option value="pending" {{ request('delivery_status') == 'pending' ? 'selected' : '' }}>{{ translate('Pending') }}</option>
+                <option value="on_the_way" {{ request('delivery_status') == 'on_the_way' ? 'selected' : '' }}>{{ translate('On The Way') }}</option>
+                <option value="delivered" {{ request('delivery_status') == 'delivered' ? 'selected' : '' }}>{{ translate('Delivered') }}</option>
+                <option value="cancelled" {{ request('delivery_status') == 'cancelled' ? 'selected' : '' }}>{{ translate('Cancelled') }}</option>
+            </select>
         </div>
     </div>
+
+    <!-- Dynamic Tab Content -->
+    <div class="tab-content mt-4" id="orderTabContent">
+        <div class="tab-pane fade show active" id="tab-content">
+            <!-- AJAX content will load here -->
+        </div>
+    </div>
+</div>
 @endsection
 
 @section('modal')
-    <!-- Delete modal -->
-    @include('modals.delete_modal')
+<!-- Product Review Modal -->
+<div class="modal fade" id="product-review-modal">
+    <div class="modal-dialog">
+        <div class="modal-content" id="product-review-modal-content"></div>
+    </div>
+</div>
 
+<!-- Delete modal -->
+<div id="delete-modal" class="modal fade">
+    <div class="modal-dialog modal-sm modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h4 class="modal-title h6">{{translate('Cancel Confirmation')}}</h4>
+                <button type="button" class="close" data-dismiss="modal" aria-hidden="true"></button>
+            </div>
+            <div class="modal-body text-center">
+                <p class="mt-1 fs-14">{{translate('Are you sure to Cancel this Order?')}}</p>
+                <button type="button" class="btn btn-secondary rounded-5 mt-2 btn-sm" data-dismiss="modal">{{translate('No')}}</button>
+                <a href="" id="delete-link" class="btn btn-primary rounded-5 mt-2 btn-sm">{{translate('Yes')}}</a>
+            </div>
+        </div>
+    </div>
+</div>
 @endsection
 
+@section('script')
+<script>
+    let currentTab = 'all';
+
+    function getOrderData(slug, page = 1) {
+        currentTab = slug;
+        $('#tab-content').html('<div class="footable-loader mt-5"><span class="fooicon fooicon-loader"></span></div>');
+        $.ajax({
+            url: `{{ route('purchase_history.filter') }}?page=${page}`,
+            method: 'GET',
+            data: {
+                tab: slug.replace(/-/g, '_'),
+            },
+            success: function(response) {
+                $('#tab-content').html(response.html);
+            },
+            error: function() {
+                $('#tab-content').html('<div class="text-danger p-4">{{ translate("Failed to load data.") }}</div>');
+            }
+        });
+    }
+
+    function changeTab(button, statusSlug) {
+        document.querySelectorAll('#orderTabs .nav-link').forEach(el => el.classList.remove('active'));
+        button.classList.add('active');
+        getOrderData(statusSlug);
+    }
+
+    document.addEventListener('DOMContentLoaded', function() {
+        const deliverySelect = document.getElementById('delivery_status');
+
+        function loadOrdersByStatus(status) {
+            getOrderData(status);
+        }
+
+        deliverySelect.addEventListener('change', function() {
+            loadOrdersByStatus(this.value || 'all');
+            document.querySelectorAll('#orderTabs .nav-link').forEach(el => el.classList.remove('active'));
+        });
+        const urlParams = new URLSearchParams(window.location.search);
+        const toReviewParam = urlParams.get('to_review');
+        if (toReviewParam && (toReviewParam === '1')) {
+            const toReviewBtn = document.querySelector(`#orderTabs button[onclick*="to-review"]`);
+            if (toReviewBtn) {
+                document.querySelectorAll('#orderTabs .nav-link').forEach(el => el.classList.remove('active'));
+                toReviewBtn.classList.add('active');
+                getOrderData('to-review');
+            }
+
+        } else {
+            loadOrdersByStatus('all');
+        }
+    });
+
+
+    $(document).on('click', '.pagination a', function(e) {
+        e.preventDefault();
+        const page = $(this).attr('href').split('page=')[1];
+        getOrderData(currentTab, page);
+    });
+
+    function product_review(product_id,order_id) {
+        $.post(`{{ route('product_review_modal') }}`, {
+            _token: '{{ @csrf_token() }}',
+            product_id: product_id,
+            order_id: order_id
+        }, function(data) {
+            $('#product-review-modal-content').html(data);
+            $('#product-review-modal').modal('show', {
+                backdrop: 'static'
+            });
+            AIZ.extra.inputRating();
+        });
+    }
+
+    $(document).on('click', '.confirm-delete', function (e) {
+        e.preventDefault();
+        let url = $(this).data('href');
+        $('#delete-link').attr('href', url);
+        $('#delete-modal').modal('show');
+    });
+</script>
+
+@endsection

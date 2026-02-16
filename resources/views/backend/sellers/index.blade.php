@@ -58,7 +58,7 @@
             @endif
             <div class="col-md-3">
                 <div class="form-group mb-0">
-                  <input type="text" class="form-control" id="search" name="search"@isset($sort_search) value="{{ $sort_search }}" @endisset placeholder="{{ translate('Type name or email & Enter') }}">
+                  <input type="text" class="form-control" id="search" name="search"@isset($sort_search) value="{{ $sort_search }}" @endisset placeholder="{{ translate('Type name or email or mobile number & Enter') }}">
                 </div>
             </div>
         </div>
@@ -82,18 +82,17 @@
                         @endif
                     </th>
                     <th>{{translate('Name')}}</th>
-                    <th data-breakpoints="lg">{{translate('Phone')}}</th>
-                    <th data-breakpoints="lg">{{translate('Email Address')}}</th>
+                    <th data-breakpoints="lg">{{translate('Contact')}}</th>
                     @if($route == 'all_seller_route')
-                        <th data-breakpoints="lg">{{translate('Verification Info')}}</th>
-                        <th data-breakpoints="lg">{{translate('Approval')}}</th>
+                        <th data-breakpoints="lg">{{ translate('Status') }}</th>
                         <th data-breakpoints="lg">{{ translate('Num. of Products') }}</th>
                         <th data-breakpoints="lg">{{ translate('Due to seller') }}</th>
                         @if(get_setting('seller_commission_type') == 'seller_based')
                             <th data-breakpoints="lg">{{ translate('Commission') }}</th>
                         @endif
                         <th data-breakpoints="lg">{{translate('Email Verification')}}</th>
-                        <th data-breakpoints="lg">{{ translate('Status') }}</th>
+                        <th data-breakpoints="lg">{{translate('Seller Verification')}}</th>
+                        <th data-breakpoints="lg">{{translate('Verification Approval')}}</th>
                     @else
                         <th data-breakpoints="lg">{{translate('Rating')}}</th>
                         <th data-breakpoints="lg">{{translate('Followers')}}</th>
@@ -124,20 +123,67 @@
                                 <div class="col-auto">
                                     <img src="{{ uploaded_asset($shop->logo) }}" class="size-40px img-fit" alt="Image" onerror="this.onerror=null;this.src='{{ static_asset('assets/img/placeholder.jpg') }}';">
                                 </div>
-                                <div class="col">
-                                    <span class="text-truncate-2">{{ $shop->name }}</span>
+                                <div class="col @if($shop->user->is_suspicious == 1) text-info @endif">
+                                    <span class="text-truncate-2">
+                                        @if($shop->user->is_suspicious == 1) 
+                                            <i class="las la-exclamation-circle" aria-hidden="true"></i> 
+                                        @endif
+                                    <a class="text-primary" href="{{route('sellers.profile', encrypt($shop->id))}}" target="_blank">{{ $shop->name }}</a></span>
                                 </div>
                             </div>
                         </td>
-                        <td>{{$shop->user->phone}}</td>
-                        <td>{{$shop->user->email}}</td>
+                        <td>{{$shop->user->phone}} 
+                            <span class="d-block text-truncate-2">{{ $shop->user->email }}</span>
+                        </td>
                         @if($route == 'all_seller_route')
                             <td>
-                                @if ($shop->verification_status != 1 && $shop->verification_info != null)
-                                    <a href="{{ route('sellers.show_verification_request', $shop->id) }}">
-                                        <span class="badge badge-inline badge-info">{{translate('Show')}}</span>
-                                    </a>
+                                @if($shop->user->banned)
+                                    <span class="badge badge-inline badge-danger">{{ translate('Banned') }}</span>
+                                @elseif($shop->user->is_suspicious)
+                                    <span class="badge badge-inline badge-info">{{ translate('Suspicious') }}</span>
+                                @elseif(!$shop->user->banned)
+                                    <span class="badge badge-inline badge-success">{{ translate('Regular') }}</span>
                                 @endif
+                            </td>
+                            <td>{{ $shop->user->products->count() }}</td>
+                            <td>
+                                @if ($shop->admin_to_pay >= 0)
+                                    {{ single_price($shop->admin_to_pay) }}
+                                @else
+                                    {{ single_price(abs($shop->admin_to_pay)) }} ({{ translate('Due to Admin') }})
+                                @endif
+                            </td>
+                           
+                         
+                            @if(get_setting('seller_commission_type') == 'seller_based')
+                                <td>{{ $shop->commission_percentage }}%</td>
+                            @endif
+                            <td>
+                                @if($shop->user->email_verified_at != null)
+                                    <span class="badge badge-inline badge-success">{{translate('Verified')}}</span>
+                                @else
+                                    <span class="badge badge-inline badge-warning">{{translate('Unverified')}}</span>
+                                @endif
+                            </td>
+                            <td>
+                                <div class="d-flex flex-column align-items-start">
+                                    @if ($shop->verification_status != 1 && $shop->verification_info != null)
+                                        <span class="badge badge-inline badge-warning mb-1"> {{ translate('Applied') }}</span>
+                                        <a href="javascript:void();" onclick="show_seller_verification_info('{{$shop->id}}');" class="badge badge-inline badge-info">
+                                            {{ translate('View Details') }}
+                                        </a>
+                                    @elseif($shop->verification_status == 1 && $shop->verification_info != null)
+                                        <span class="badge badge-inline badge-success mb-1"> {{ translate('Verified') }}</span>
+                                        <a href="javascript:void();" onclick="show_seller_verification_info('{{$shop->id}}');" class="badge badge-inline badge-info">
+                                            {{ translate('View Details') }}
+                                        </a>
+                                    @elseif($shop->verification_status == 1 && $shop->verification_info == null)
+                                        <span class="badge badge-inline badge-success mb-1"> {{ translate('Verified') }}</span>
+                                        <span class="badge badge-inline badge-secondary">{{ translate('By Admin') }}</span>
+                                    @else
+                                        <span class="badge badge-inline badge-secondary"> {{ translate('Not Applied') }}</span>
+                                    @endif
+                                </div>
                             </td>
                             <td>
                                 <label class="aiz-switch aiz-switch-success mb-0">
@@ -150,39 +196,15 @@
                                     <span class="slider round"></span>
                                 </label>
                             </td>
-                            <td>{{ $shop->user->products->count() }}</td>
-                            <td>
-                                @if ($shop->admin_to_pay >= 0)
-                                    {{ single_price($shop->admin_to_pay) }}
-                                @else
-                                    {{ single_price(abs($shop->admin_to_pay)) }} ({{ translate('Due to Admin') }})
-                                @endif
-                            </td>
-                            @if(get_setting('seller_commission_type') == 'seller_based')
-                                <td>{{ $shop->commission_percentage }}%</td>
-                            @endif
-                            <td>
-                                @if($shop->user->email_verified_at != null)
-                                    <span class="badge badge-inline badge-success">{{translate('Verified')}}</span>
-                                @else
-                                    <span class="badge badge-inline badge-warning">{{translate('Unverified')}}</span>
-                                @endif
-                            </td>
-                            <td>
-                                @if($shop->user->banned)
-                                    <span class="badge badge-inline badge-danger">{{ translate('Ban') }}</span>
-                                @else
-                                    <span class="badge badge-inline badge-success">{{ translate('Regular') }}</span>
-                                @endif
-                            </td>
+                            
                             <td>
                                 <div class="dropdown">
                                     <button type="button" class="btn btn-sm btn-circle btn-soft-primary btn-icon dropdown-toggle no-arrow" data-toggle="dropdown" href="javascript:void(0);" role="button" aria-haspopup="false" aria-expanded="false">
-                                        <i class="las la-ellipsis-v"></i>
+                                        <i class="las la-ellipsis-v seller-list-icon"></i>
                                     </button>
                                     <div class="dropdown-menu dropdown-menu-right dropdown-menu-xs">
                                         @can('view_seller_profile')
-                                            <a href="javascript:void();" onclick="show_seller_profile('{{$shop->id}}');"  class="dropdown-item">
+                                            <a href="{{route('sellers.profile', encrypt($shop->id))}}" class="dropdown-item">
                                                 {{translate('Profile')}}
                                             </a>
                                         @endcan
@@ -199,11 +221,6 @@
                                         @can('seller_payment_history')
                                             <a href="{{route('sellers.payment_history', encrypt($shop->user_id))}}" class="dropdown-item">
                                                 {{translate('Payment History')}}
-                                            </a>
-                                        @endcan
-                                        @can('seller_commission_configuration')
-                                            <a href="javascript:void();" onclick="set_commission('{{ $shop->id }}');" class="dropdown-item">
-                                                {{translate('Set Commission')}}
                                             </a>
                                         @endcan
                                         @can('edit_seller')
@@ -224,8 +241,21 @@
                                                 </a>
                                             @endif
                                         @endcan
+                                        @can('mark_seller_suspected')
+                                            @if($shop->user->is_suspicious == 1)
+                                                <a href="javascript:void();" onclick="confirm_suspicious('{{route('seller.suspicious', encrypt($shop->user->id))}}', true);" class="dropdown-item">
+                                                        {{ translate(" Mark as " . ($shop->user->is_suspicious == 1 ? 'unsuspect' : 'suspicious') . " ") }}
+                                                </a>
+                                            @else
+                                                <a href="javascript:void();" onclick="confirm_suspicious('{{route('seller.suspicious', encrypt($shop->user->id))}}', false);" class="dropdown-item">
+                                                        {{ translate(" Mark as " . ($shop->user->is_suspicious == 1 ? 'unsuspect' : 'suspicious') . " ") }}
+                                                </a>
+                                            @endif
+                                        @endcan
+
+
                                         @can('delete_seller')
-                                            <a href="javascript:void();" class="dropdown-item confirm-delete" data-href="{{route('sellers.destroy', $shop->id)}}" class="">
+                                            <a href="javascript:void();" class="dropdown-item confirm-delete" data-href="{{route('sellers.destroy', $shop->id)}}" >
                                                 {{translate('Delete')}}
                                             </a>
                                         @endcan
@@ -274,10 +304,10 @@
     <!-- Bulk Delete modal -->
     @include('modals.bulk_delete_modal')
 
-	<!-- Seller Profile Modal -->
-	<div class="modal fade" id="profile_modal">
-		<div class="modal-dialog">
-			<div class="modal-content" id="profile-modal-content">
+	<!-- Seller verification info Modal -->
+	<div class="modal fade" id="verification_info_modal">
+		<div class="modal-dialog modal-dialog-centered">
+			<div class="modal-content" id="verification-info-modal-content">
 
 			</div>
 		</div>
@@ -285,90 +315,37 @@
 
 	<!-- Seller Payment Modal -->
 	<div class="modal fade" id="payment_modal">
-	    <div class="modal-dialog">
+	    <div class="modal-dialog modal-dialog-centered">
 	        <div class="modal-content" id="payment-modal-content">
 
 	        </div>
 	    </div>
 	</div>
 
-	<!-- Ban Seller Modal -->
-	<div class="modal fade" id="confirm-ban">
-		<div class="modal-dialog">
-			<div class="modal-content">
-				<div class="modal-header">
-					<h5 class="modal-title h6">{{translate('Confirmation')}}</h5>
-					<button type="button" class="close" data-dismiss="modal">
-					</button>
-				</div>
-				<div class="modal-body">
-                    <p>{{translate('Do you really want to ban this seller?')}}</p>
-				</div>
-				<div class="modal-footer">
-					<button type="button" class="btn btn-light" data-dismiss="modal">{{translate('Cancel')}}</button>
-					<a class="btn btn-primary" id="confirmation">{{translate('Proceed!')}}</a>
-				</div>
-			</div>
-		</div>
-	</div>
-
-	<!-- Unban Seller Modal -->
-	<div class="modal fade" id="confirm-unban">
-        <div class="modal-dialog">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h5 class="modal-title h6">{{translate('Confirmation')}}</h5>
-                    <button type="button" class="close" data-dismiss="modal">
-                    </button>
-                </div>
-                <div class="modal-body">
-                        <p>{{translate('Do you really want to unban this seller?')}}</p>
-                </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-light" data-dismiss="modal">{{translate('Cancel')}}</button>
-                    <a class="btn btn-primary" id="confirmationunban">{{translate('Proceed!')}}</a>
-                </div>
+	
+<!-- Reusable Confirmation Modal -->
+<div class="modal fade" id="universal-confirm-modal">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title h6" id="universal-modal-title">{{ translate('Confirmation') }}</h5>
+                <button type="button" class="close" data-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <p id="universal-modal-message"></p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-light" data-dismiss="modal">{{ translate('Cancel') }}</button>
+                <a class="btn btn-primary" id="universal-confirm-button">{{ translate('Proceed!') }}</a>
             </div>
         </div>
     </div>
-
-    {{-- Set Selelr Commission --}}
-    <div class="modal fade" id="set_seller_commission">
-        <div class="modal-dialog">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h5 class="modal-title h6">{{translate('Set Seller Commission')}}</h5>
-                    <button type="button" class="close" data-dismiss="modal">
-                    </button>
-                </div>
-                <form class="form-horizontal" action="{{ route('set_seller_based_commission') }}" method="POST" enctype="multipart/form-data">
-                    @csrf
-                    <div class="modal-body">
-                        <input type="hidden" name="seller_ids" value="" id="seller_ids">
-                        <div class="form-group row">
-                            <label class="col-md-3 col-from-label">{{translate('Selle Commission')}}</label>
-                            <div class="col-md-9">
-                                <div class="input-group">
-                                    <input type="number" lang="en" min="0" max="100" step="0.01" placeholder="{{translate('Commission Percentage')}}" name="commission_percentage" class="form-control" required>
-                                    <div class="input-group-append">
-                                        <span class="input-group-text">%</span>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="modal-footer">
-                        <button type="submit" class="btn btn-primary btn-sm text-white">{{translate('save!')}}</button>
-                        <button type="button" class="btn btn-sm btn-light" data-dismiss="modal">{{translate('Cancel')}}</button>
-                    </div>
-                </form>
-            </div>
-        </div>
-    </div>
+</div>
+   
 
     {{-- Edit Seller Custom Followers --}}
     <div class="modal fade" id="edit_seller_custom_followers">
-        <div class="modal-dialog">
+        <div class="modal-dialog modal-dialog-centered">
             <div class="modal-content">
                 <div class="modal-header">
                     <h5 class="modal-title h6">{{translate('Edit Seller Custom Followers')}}</h5>
@@ -394,6 +371,7 @@
             </div>
         </div>
     </div>
+
 @endsection
 
 @section('script')
@@ -420,10 +398,10 @@
             });
         }
 
-        function show_seller_profile(id){
-            $.post('{{ route('sellers.profile_modal') }}',{_token:'{{ @csrf_token() }}', id:id}, function(data){
-                $('#profile_modal #profile-modal-content').html(data);
-                $('#profile_modal').modal('show', {backdrop: 'static'});
+        function show_seller_verification_info(id){
+            $.post('{{ route('sellers.verification_info_modal') }}',{_token:'{{ @csrf_token() }}', id:id}, function(data){
+                $('#verification_info_modal #verification-info-modal-content').html(data);
+                $('#verification_info_modal').modal('show', {backdrop: 'static'});
             });
         }
 
@@ -453,27 +431,36 @@
             $('#sort_sellers').submit();
         }
 
-        function confirm_ban(url)
-        {
-            if('{{env('DEMO_MODE')}}' == 'On'){
+        // Ban
+        function confirm_ban(url) {
+            showConfirmationModal({
+                url: url,
+                message: '{{ translate("Do you really want to ban this seller?") }}'
+            });
+        }
+
+        // Unban
+        function confirm_unban(url) {
+            showConfirmationModal({
+                url: url,
+                message: '{{ translate("Do you really want to unban this seller?") }}'
+            });
+        }
+
+        function showConfirmationModal({ url, message }) {
+            if ('{{ env('DEMO_MODE') }}' === 'On') {
                 AIZ.plugins.notify('info', '{{ translate('Data can not change in demo mode.') }}');
                 return;
             }
 
-            $('#confirm-ban').modal('show', {backdrop: 'static'});
-            document.getElementById('confirmation').setAttribute('href' , url);
+            // Set dynamic content
+            document.getElementById('universal-modal-message').innerText = message;
+            document.getElementById('universal-confirm-button').setAttribute('href', url);
+
+            // Show the modal
+            $('#universal-confirm-modal').modal('show', { backdrop: 'static' });
         }
 
-        function confirm_unban(url)
-        {
-            if('{{env('DEMO_MODE')}}' == 'On'){
-                AIZ.plugins.notify('info', '{{ translate('Data can not change in demo mode.') }}');
-                return;
-            }
-
-            $('#confirm-unban').modal('show', {backdrop: 'static'});
-            document.getElementById('confirmationunban').setAttribute('href' , url);
-        }
 
         function bulk_delete() {
             var data = new FormData($('#sort_sellers')[0]);
@@ -494,15 +481,6 @@
                 }
             });
         }
-
-        // Set Commission
-        function set_commission(shop_id){
-            var sellerIds = [];
-            sellerIds.push(shop_id);
-            $('#seller_ids').val(sellerIds);
-            $('#set_seller_commission').modal('show', {backdrop: 'static'});
-        }
-
         // Set seller bulk commission
         function set_bulk_commission(){
             var sellerIds = [];
@@ -524,6 +502,15 @@
             $('#shop_id').val(shop_id);
             $('#custom_followers').val(custom_followers);
             $('#edit_seller_custom_followers').modal('show', {backdrop: 'static'});
+        }
+
+        // Suspicious / Unsuspicious
+        function confirm_suspicious(url, isSuspicious) {
+            const action = isSuspicious ? 'unsuspect' : 'suspect';
+            showConfirmationModal({
+                url: url,
+                message: '{{ translate("Do you really want to") }} ' + action + ' {{ translate("this seller?") }}'
+            });
         }
 
     </script>
