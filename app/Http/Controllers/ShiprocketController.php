@@ -3,7 +3,6 @@
 namespace App\Http\Controllers;
 
 use App\Http\Requests\ShiprocketCredentialRequest;
-use CoreComponentRepository;
 use Illuminate\Http\Request;
 use App\Models\Order;
 use App\Models\PickupAddress;
